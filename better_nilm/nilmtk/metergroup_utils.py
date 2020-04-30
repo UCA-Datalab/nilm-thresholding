@@ -52,7 +52,7 @@ def get_good_sections(metergroup, sample_period, window_size,
     timestamps = sorted(timestamps)
     # Initialize the list of timestamps and sections
     good_sections = []
-    good_timestamp = {}
+    ts_start = None
     # We will be counting the overlapping sections. When overlapping equals
     # the number of meters, we will have a good section for every meter
     overlap = 0
@@ -63,14 +63,13 @@ def get_good_sections(metergroup, sample_period, window_size,
         else:
             overlap -= 1
             # If we had a start timestamp, close that section
-            if len(good_timestamp) == 1:
+            if ts_start is not None:
                 # Timestamp must be in UTC or it will give us trouble
-                good_timestamp["end"] = pd.Timestamp(stamp[0]).tz_convert(
+                ts_end = pd.Timestamp(stamp[0]).tz_convert(
                     pytz.timezone("UTC"))
                 # Check that the sections allows to take at least
                 # one data chunk
-                timedelta = (good_timestamp["end"] - good_timestamp[
-                    "start"]).total_seconds()
+                timedelta = (ts_end - ts_start).total_seconds()
                 dt = floor(timedelta / sample_period)
                 chunks = floor((dt - window_size) / step) + 1
                 # Take exactly the chunk size we need
@@ -80,14 +79,15 @@ def get_good_sections(metergroup, sample_period, window_size,
                     # Update end stamp
                     timedelta = ((chunks - 1) * step + window_size) * \
                                 sample_period
-                    good_timestamp["end"] = good_timestamp["start"] + \
-                                            pd.Timedelta(seconds=timedelta)
+                    ts_end = ts_start + pd.Timedelta(seconds=timedelta)
+                    good_timestamp = {"start": ts_start,
+                                      "end": ts_end}
                     good_sections += [good_timestamp]
-                    good_timestamp = {}
+                    ts_start = None
                     # When every meter overlaps, we open a new section
         if overlap == len(metergroup.instance()):
             # Timestamp must be in UTC or it will give us trouble
-            good_timestamp["start"] = pd.Timestamp(
+            ts_start = pd.Timestamp(
                 stamp[0]).tz_convert(pytz.timezone("UTC"))
         # Stop when we reach the number of windows
         if (max_windows is not None) and (total_chunks >= max_windows):
