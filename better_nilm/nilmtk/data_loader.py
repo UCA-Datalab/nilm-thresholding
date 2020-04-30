@@ -4,6 +4,7 @@ from nilmtk.metergroup import MeterGroup
 from better_nilm.format_utils import to_list
 from better_nilm.format_utils import to_tuple
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
+from better_nilm.print_utils import HiddenPrints
 
 
 def metergroup_from_file(path_file, building, appliances=None):
@@ -115,9 +116,15 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     good_sections = get_good_sections(metergroup, sample_period,
                                       window_size, max_windows=max_windows)
+    if type(good_sections) is not list:
+        raise TypeError("good_sections must be of type list.\n"
+                        f"Current type is: {type(good_sections)}")
 
     # Loop through the good sections
-    print(type(good_sections))
     for section in good_sections:
-        print(section)
+        # Take dataframe from section
+        with HiddenPrints():
+            df = metergroup.dataframe_of_meters(sections=section,
+                                                sample_period=sample_period)
+        print(df)
     return None

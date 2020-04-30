@@ -29,6 +29,11 @@ def get_good_sections(metergroup, sample_period, window_size,
         Steps between window origins. By default it is None, which makes
         that step = window_size (one windows starts right after another
         ends, without any overlapping).
+
+    Returns
+    -------
+    good_sections : list
+        List of timeframes
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
