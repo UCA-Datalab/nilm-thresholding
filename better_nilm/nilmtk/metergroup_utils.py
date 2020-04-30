@@ -151,4 +151,5 @@ def df_from_sections(metergroup, sections, sample_period, appliances=None):
             except Exception:
                 columns += ["ERROR"]
 
+    df.columns = columns
     return df

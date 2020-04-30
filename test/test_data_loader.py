@@ -11,5 +11,5 @@ building = 5
 appliances = ["dishwasher", "microwave"]
 
 metergroup = metergroup_from_file(path_file, building, appliances=appliances)
-output = metergroup_to_array(metergroup, max_windows=100)
+output = metergroup_to_array(metergroup, max_windows=50)
 print(output)
