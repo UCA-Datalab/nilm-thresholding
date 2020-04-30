@@ -14,11 +14,12 @@ from nilmtk.metergroup import MeterGroup
 from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
 
 from better_nilm.print_utils import HiddenPrints
+from better_nilm.str_utils import homogenize_string
 
 
 APPLIANCE_NAMES = {
     "freezer": "fridge",
-    "fridge freezer": "fridge"
+    "fridgefreezer": "fridge"
 }
 
 
@@ -105,7 +106,7 @@ def get_good_sections(metergroup, sample_period, window_size,
                         chunks -= exceed_chunks
                         total_chunks = max_windows
                     # Update end stamp
-                    timedelta = ((chunks - 1) * step + window_size) * \
+                    timedelta = ((chunks - 1) * step + window_size - 1) * \
                                 sample_period
                     ts_end = ts_start + pd.Timedelta(seconds=timedelta)
                     good_timestamp = {"start": ts_start,
@@ -121,13 +122,32 @@ def get_good_sections(metergroup, sample_period, window_size,
         if (max_windows is not None) and (total_chunks >= max_windows):
             break
 
-    print(total_chunks)
+    # The last section must have one more record, else it will be omitted by
+    # the nilmtk extract function
+    good_sections[-1]["end"] += pd.Timedelta(seconds=sample_period)
+
     # Change to list of timeframes
     good_sections = list_of_timeframes_from_list_of_dicts(good_sections)
     return good_sections
 
 
-def df_from_sections(metergroup, sections, sample_period, appliances=None):
+def df_from_sections(metergroup, sections, sample_period):
+    """
+    Params
+    ------
+    metergroup : nilmtk.metergroup.Metergroup
+        List of electric meters, including the main meters of the house
+    sections : list
+        List of timeframes
+    sample_period : int, default=6
+        Time between consecutive electric load records, in seconds.
+        By default we take 6 seconds.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Aggregated load values of each meter within the given sections.
+    """
     if type(sections) is not list:
         raise TypeError("good_sections must be of type list.\n"
                         f"Current type is: {type(sections)}")
@@ -140,6 +160,7 @@ def df_from_sections(metergroup, sections, sample_period, appliances=None):
     # Rename the columns according to their appliances
     columns = []
     for col in df.columns:
+        col = homogenize_string(col)
         try:
             app = metergroup.get_labels([col[0]])[0].lower()
             columns += [APPLIANCE_NAMES.get(app, app)]
