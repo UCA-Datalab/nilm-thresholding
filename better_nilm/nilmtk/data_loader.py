@@ -119,5 +119,15 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     df = df_from_sections(metergroup, good_sections, sample_period)
 
+    # Sum contributions of appliances with the same name
+    df = df.groupby(df.columns, axis=1).sum()
+
+    # Drop appliances not contained in given list
+    if appliances is not None:
+        drop_apps = [app for app in df.columns if app not in appliances]
+        df.drop(drop_apps, axis=1, inplace=True)
+    else:
+        appliances = df.columns
+
     print(df)
     return None

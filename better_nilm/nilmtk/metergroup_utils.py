@@ -172,5 +172,6 @@ def df_from_sections(metergroup, sections, sample_period):
         app = homogenize_string(app)
         columns += [APPLIANCE_NAMES.get(app, app)]
 
+    # Rename columns
     df.columns = columns
     return df
