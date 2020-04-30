@@ -136,5 +136,13 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     else:
         appliances = df.columns
 
+    # Ensure every appliance is in the dataframe
+    for app in appliances:
+        if app not in df.columns:
+            df[app] = 0
+    
+    # Sort columns by name
+    df = df.reindex(sorted(df.columns), axis=1)
+
     print(df)
     return None
