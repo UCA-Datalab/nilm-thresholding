@@ -3,6 +3,7 @@ import pytz
 
 from math import floor
 from nilmtk.metergroup import MeterGroup
+from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
 
 
 def get_good_sections(metergroup, sample_period, window_size,
@@ -92,4 +93,7 @@ def get_good_sections(metergroup, sample_period, window_size,
         # Stop when we reach the number of windows
         if (max_windows is not None) and (total_chunks >= max_windows):
             break
+
+    # Change to list of timeframes
+    good_sections = list_of_timeframes_from_list_of_dicts(good_sections)
     return good_sections

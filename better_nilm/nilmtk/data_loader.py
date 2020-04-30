@@ -115,6 +115,9 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     good_sections = get_good_sections(metergroup, sample_period,
                                       window_size, max_windows=max_windows)
-    return good_sections
 
-
+    # Loop through the good sections
+    print(type(good_sections))
+    for section in good_sections:
+        print(section)
+    return None
