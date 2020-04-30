@@ -119,6 +119,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     df = df_from_sections(metergroup, good_sections, sample_period)
 
+    # TODO: ensure windows are consecutive
+
     # Sum contributions of appliances with the same name
     df = df.groupby(df.columns, axis=1).sum()
 
@@ -144,5 +146,6 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
 
-    print(df)
-    return None
+    # TODO: df to numpy array of set shape
+
+    return df
