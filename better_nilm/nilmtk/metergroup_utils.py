@@ -160,17 +160,17 @@ def df_from_sections(metergroup, sections, sample_period):
     # Rename the columns according to their appliances
     columns = []
     for col in df.columns:
-        col = homogenize_string(col)
         try:
-            app = metergroup.get_labels([col[0]])[0].lower()
-            columns += [APPLIANCE_NAMES.get(app, app)]
+            app = metergroup.get_labels([col[0]])[0]
         except Exception:
             try:
                 with HiddenPrints():
                     app = metergroup.get_labels([col[0][0][0]])[0].lower()
-                    columns += [APPLIANCE_NAMES.get(app, app)]
             except Exception:
-                columns += ["ERROR"]
+                raise ValueError(f"Something went wrong when trying to name "
+                                 f"'{col}' column")
+        app = homogenize_string(app)
+        columns += [APPLIANCE_NAMES.get(app, app)]
 
     df.columns = columns
     return df
