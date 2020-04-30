@@ -84,6 +84,11 @@ def get_good_sections(metergroup, sample_period, window_size,
                                             pd.Timedelta(seconds=timedelta)
                     good_sections += [good_timestamp]
                     good_timestamp = {}
+                    # When every meter overlaps, we open a new section
+        if overlap == len(metergroup.instance()):
+            # Timestamp must be in UTC or it will give us trouble
+            good_timestamp["start"] = pd.Timestamp(
+                stamp[0]).tz_convert(pytz.timezone("UTC"))
         # Stop when we reach the number of windows
         if (max_windows is not None) and (total_chunks >= max_windows):
             break
