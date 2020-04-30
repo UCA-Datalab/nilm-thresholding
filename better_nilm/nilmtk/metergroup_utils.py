@@ -1,9 +1,25 @@
+"""
+Attributes
+----------
+APPLIANCE_NAMES : dict
+    {original name: new name}
+    Used to change the name of appliances contained in the MeterGroup
+"""
+
 import pandas as pd
 import pytz
 
 from math import floor
 from nilmtk.metergroup import MeterGroup
 from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
+
+from better_nilm.print_utils import HiddenPrints
+
+
+APPLIANCE_NAMES = {
+    "freezer": "fridge",
+    "fridge freezer": "fridge"
+}
 
 
 def get_good_sections(metergroup, sample_period, window_size,
@@ -82,6 +98,12 @@ def get_good_sections(metergroup, sample_period, window_size,
                 if chunks > 0:
                     # Add chunks to total
                     total_chunks += chunks
+                    # Ensure we do not exceed the allowed limit
+                    if (max_windows is not None) and (total_chunks >
+                                                      max_windows):
+                        exceed_chunks = total_chunks - max_windows
+                        chunks -= exceed_chunks
+                        total_chunks = max_windows
                     # Update end stamp
                     timedelta = ((chunks - 1) * step + window_size) * \
                                 sample_period
@@ -99,6 +121,34 @@ def get_good_sections(metergroup, sample_period, window_size,
         if (max_windows is not None) and (total_chunks >= max_windows):
             break
 
+    print(total_chunks)
     # Change to list of timeframes
     good_sections = list_of_timeframes_from_list_of_dicts(good_sections)
     return good_sections
+
+
+def df_from_sections(metergroup, sections, sample_period, appliances=None):
+    if type(sections) is not list:
+        raise TypeError("good_sections must be of type list.\n"
+                        f"Current type is: {type(sections)}")
+
+    # Load dataframe composed by the good sections
+    with HiddenPrints():
+        df = metergroup.dataframe_of_meters(sections=sections,
+                                            sample_period=sample_period)
+
+    # Rename the columns according to their appliances
+    columns = []
+    for col in df.columns:
+        try:
+            app = metergroup.get_labels([col[0]])[0].lower()
+            columns += [APPLIANCE_NAMES.get(app, app)]
+        except Exception:
+            try:
+                with HiddenPrints():
+                    app = metergroup.get_labels([col[0][0][0]])[0].lower()
+                    columns += [APPLIANCE_NAMES.get(app, app)]
+            except Exception:
+                columns += ["ERROR"]
+
+    return df
