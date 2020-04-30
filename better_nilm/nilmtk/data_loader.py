@@ -3,6 +3,7 @@ from nilmtk.metergroup import MeterGroup
 
 from better_nilm.format_utils import to_list
 from better_nilm.format_utils import to_tuple
+from better_nilm.nilmtk.metergroup_utils import get_good_sections
 
 
 def metergroup_from_file(path_file, building, appliances=None):
@@ -83,8 +84,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     appliances : list, default=None
         List of appliances to include in the array. They don't need
         to be in the metergroup - in those cases, we assume that the
-        appliances are always off (load 0). If None, take all the
-        appliances in the metergroup.
+        missing appliances are always turned off (load = 0).
+        If None, take all the appliances in the metergroup.
     sample_period : int, default=6
         Time between consecutive electric load records, in seconds.
         By default we take 6 seconds.
@@ -101,13 +102,19 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         shape = (meters, window_size, windows)
         - meters : The number of appliances, plus the main meter.
             They are sorted alphabetically by appliance name, excluding
-            the main meter, which always goes first.
-        - window_size : see Params
+            the main meter, which always comes first.
+        - window_size : see Params.
         - windows : The amount of windows that could be extracted from the
             metergroup.
 
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
-                                           f"Provided param is type " \
+                                           f"Input param is type " \
                                            f"{type(metergroup)}"
+
+    good_sections = get_good_sections(metergroup, sample_period,
+                                      window_size, max_windows=max_windows)
+    return good_sections
+
+
