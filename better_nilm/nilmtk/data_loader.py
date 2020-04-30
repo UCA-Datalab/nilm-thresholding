@@ -117,8 +117,7 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     good_sections = get_good_sections(metergroup, sample_period,
                                       window_size, max_windows=max_windows)
 
-    df = df_from_sections(metergroup, good_sections, sample_period,
-                          appliances=appliances)
+    df = df_from_sections(metergroup, good_sections, sample_period)
 
     print(df)
     return None
