@@ -120,11 +120,9 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         raise TypeError("good_sections must be of type list.\n"
                         f"Current type is: {type(good_sections)}")
 
-    # Loop through the good sections
-    for section in good_sections:
-        # Take dataframe from section
-        with HiddenPrints():
-            df = metergroup.dataframe_of_meters(sections=section,
-                                                sample_period=sample_period)
-        print(df)
+    # Take dataframe composed of the good sections
+    with HiddenPrints():
+        df = metergroup.dataframe_of_meters(sections=good_sections,
+                                            sample_period=sample_period)
+    print(df)
     return None
