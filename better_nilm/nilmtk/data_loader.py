@@ -122,8 +122,15 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     # Sum contributions of appliances with the same name
     df = df.groupby(df.columns, axis=1).sum()
 
+    if "_main" not in df.columns:
+        raise ValueError("No '_main' meter contained in df columns:\n"
+                         f"{', '.join(df.columns.tolist())}")
+
     # Drop appliances not contained in given list
     if appliances is not None:
+        # Ensure main meter is contained in the list
+        if "_main" not in appliances:
+            appliances += ["_main"]
         drop_apps = [app for app in df.columns if app not in appliances]
         df.drop(drop_apps, axis=1, inplace=True)
     else:
