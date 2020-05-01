@@ -1,3 +1,6 @@
+import numpy as np
+import pandas as pd
+
 from nilmtk import DataSet
 from nilmtk.metergroup import MeterGroup
 
@@ -74,8 +77,30 @@ def metergroup_from_file(path_file, building, appliances=None):
     return metergroup
 
 
+def _ensure_continuous_series(df, sample_period, series_len):
+    """
+    Raise an error if any time series is not continuous.
+
+    Params
+    ------
+    df : pandas.DataFrame
+    series_len : int
+    """
+    if not isinstance(df.index, pd.DatetimeIndex):
+        raise TypeError("df index must be dates.\nCurrent type is: "
+                        f"{df.index.dtype}")
+    dates = df.index.values
+    series_num = len(dates) / series_len
+    dates = np.reshape(dates, (series_len, series_num))
+    print(dates)
+
+    expected_delta = sample_period * series_len
+    dates_delta = dates[:, -1] - dates[:, 0]
+    print(dates_delta)
+
+
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
-                        window_size=600, max_windows=None):
+                        series_len=600, max_series=None):
     """
 
     Params
@@ -90,22 +115,22 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     sample_period : int, default=6
         Time between consecutive electric load records, in seconds.
         By default we take 6 seconds.
-    window_size : int, default=600
+    series_len : int, default=600
         Number of consecutive records to take at once. By default is 600,
-        which implies that a default time windows comprehends one hour
+        which implies that a default time series comprehends one hour
         worth of records (600 records x 6 seconds between each).
-    max_windows : int, default=None
-        Maximum number of windows to output.
+    max_series : int, default=None
+        Maximum number of series to output.
 
     Returns
     -------
     ser : numpy.array
-        shape = (meters, window_size, windows)
+        shape = (meters, series_len, series)
         - meters : The number of appliances, plus the main meter.
             They are sorted alphabetically by appliance name, excluding
             the main meter, which always comes first.
-        - window_size : see Params.
-        - windows : The amount of windows that could be extracted from the
+        - series_len : see Params.
+        - series : The amount of series that could be extracted from the
             metergroup.
 
     """
@@ -115,11 +140,12 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                                            f"{type(metergroup)}"
 
     good_sections = get_good_sections(metergroup, sample_period,
-                                      window_size, max_windows=max_windows)
+                                      series_len, max_series=max_series)
 
     df = df_from_sections(metergroup, good_sections, sample_period)
 
-    # TODO: ensure windows are consecutive
+    # Ensure series are continuous
+    _ensure_continuous_series(df, sample_period, series_len)
 
     # Sum contributions of appliances with the same name
     df = df.groupby(df.columns, axis=1).sum()

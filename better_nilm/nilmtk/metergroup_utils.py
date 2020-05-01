@@ -24,14 +24,14 @@ APPLIANCE_NAMES = {
 }
 
 
-def get_good_sections(metergroup, sample_period, window_size,
-                      max_windows=None, step=None):
+def get_good_sections(metergroup, sample_period, series_len,
+                      max_series=None, step=None):
     """
     Get the good sections of a metergroup. That is, all the sections that
     meet the following requesites:
         - All its meters have been recording during that section.
         - The section contains enough consecutive records to fill at least
-        one window (defined by the sample_period and window_size).
+        one serie (defined by the sample_period and series_len).
 
     Params
     ------
@@ -39,13 +39,13 @@ def get_good_sections(metergroup, sample_period, window_size,
         List of electric meters, including the main meters of the house
     sample_period : int
         Time between consecutive electric load records, in seconds.
-    window_size : int
+    series_len : int
         Number of consecutive records to take at once.
-    max_windows : int, default=None
-        Maximum number of windows to output.
+    max_series : int, default=None
+        Maximum number of series to output.
     step : int, default=None
-        Steps between window origins. By default it is None, which makes
-        that step = window_size (one windows starts right after another
+        Steps between serie origins. By default it is None, which makes
+        that step = series_len (one series starts right after another
         ends, without any overlapping).
 
     Returns
@@ -58,7 +58,7 @@ def get_good_sections(metergroup, sample_period, window_size,
                                            f"Input param is type " \
                                            f"{type(metergroup)}"
     if step is None:
-        step = window_size
+        step = series_len
 
     timestamps = []
 
@@ -67,7 +67,7 @@ def get_good_sections(metergroup, sample_period, window_size,
         # Take sections with enough size
         for section in meter.good_sections():
             delta = (section.end - section.start).total_seconds()
-            if delta >= (sample_period * window_size):
+            if delta >= (sample_period * series_len):
                 timestamps += [(v, k) for k, v in section.to_dict().items()]
 
     # Count the number of chunks available for the house
@@ -95,19 +95,19 @@ def get_good_sections(metergroup, sample_period, window_size,
                 # one data chunk
                 timedelta = (ts_end - ts_start).total_seconds()
                 dt = floor(timedelta / sample_period)
-                chunks = floor((dt - window_size) / step) + 1
+                chunks = floor((dt - series_len) / step) + 1
                 # Take exactly the chunk size we need
                 if chunks > 0:
                     # Add chunks to total
                     total_chunks += chunks
                     # Ensure we do not exceed the allowed limit
-                    if (max_windows is not None) and (total_chunks >
-                                                      max_windows):
-                        exceed_chunks = total_chunks - max_windows
+                    if (max_series is not None) and (total_chunks >
+                                                      max_series):
+                        exceed_chunks = total_chunks - max_series
                         chunks -= exceed_chunks
-                        total_chunks = max_windows
+                        total_chunks = max_series
                     # Update end stamp
-                    timedelta = ((chunks - 1) * step + window_size - 1) * \
+                    timedelta = ((chunks - 1) * step + series_len - 1) * \
                                 sample_period
                     ts_end = ts_start + pd.Timedelta(seconds=timedelta)
                     good_timestamp = {"start": ts_start,
@@ -119,8 +119,8 @@ def get_good_sections(metergroup, sample_period, window_size,
             # Timestamp must be in UTC or it will give us trouble
             ts_start = pd.Timestamp(stamp[0])
             ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
-        # Stop when we reach the number of windows
-        if (max_windows is not None) and (total_chunks >= max_windows):
+        # Stop when we reach the number of series
+        if (max_series is not None) and (total_chunks >= max_series):
             break
 
     # The last section must have one more record, else it will be omitted by
@@ -175,4 +175,5 @@ def df_from_sections(metergroup, sections, sample_period):
 
     # Rename columns
     df.columns = columns
+
     return df

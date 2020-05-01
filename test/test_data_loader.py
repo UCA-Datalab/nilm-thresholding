@@ -12,7 +12,7 @@ appliances = ["dishwasher", "microwave"]
 sample_period = 6
 
 metergroup = metergroup_from_file(path_file, building, appliances=appliances)
-output = metergroup_to_array(metergroup, max_windows=50,
+output = metergroup_to_array(metergroup, max_series=50,
                              appliances=appliances,
                              sample_period=sample_period)
 print(output)
