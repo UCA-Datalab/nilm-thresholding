@@ -97,10 +97,12 @@ def _ensure_continuous_series(df, sample_period, series_len):
     expected_delta = sample_period * (series_len - 1)
     # Get series delta in seconds
     dates_delta = (dates[:, -1] - dates[:, 0]) / np.timedelta64(1, 's')
-    print(expected_delta, dates_delta)
+
     for idx, delta in enumerate(dates_delta):
         if delta != expected_delta:
-            print(idx)
+            raise ValueError(f"Error in series {idx}.\nExpected a delta "
+                             f"between begin and end of {expected_delta} "
+                             f"seconds.\nGot {delta} seconds instead.")
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
@@ -176,6 +178,10 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
 
-    # TODO: df to numpy array of set shape
+    # Turn df into numpy array
+    ser = df.values
 
-    return None
+    series_num = int(df.shape[0] / series_len)
+    ser = np.reshape(ser, (series_len, len(appliances), series_num))
+
+    return ser
