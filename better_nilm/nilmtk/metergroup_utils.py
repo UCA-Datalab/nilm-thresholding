@@ -132,10 +132,6 @@ def get_good_sections(metergroup, sample_period, series_len,
         if (max_series is not None) and (total_chunks >= max_series):
             break
 
-    # The last section must have one more record, else it will be omitted by
-    # the nilmtk extract function
-    good_sections[-1]["end"] += pd.Timedelta(seconds=sample_period)
-
     # Change to list of timeframes
     good_sections = list_of_timeframes_from_list_of_dicts(good_sections)
     return good_sections
