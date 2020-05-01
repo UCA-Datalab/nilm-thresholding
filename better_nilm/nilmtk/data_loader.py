@@ -140,6 +140,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         - meters : The number of appliances, plus the main meter.
             They are sorted alphabetically by appliance name, excluding
             the main meter, which always comes first.
+    appliances : list
+        List of the meters in the time series, properly sorted.
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
@@ -196,4 +198,4 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
                              "output the expected tensor."
 
-    return ser
+    return ser, appliances
