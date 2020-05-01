@@ -92,11 +92,13 @@ def _ensure_continuous_series(df, sample_period, series_len):
     dates = df.index.values
     series_num = int(len(dates) / series_len)
     dates = np.reshape(dates, (series_num, series_len))
-    print(dates.shape)
 
     expected_delta = sample_period * series_len
     dates_delta = dates[:, -1] - dates[:, 0]
-    print(dates_delta)
+    print(expected_delta, dates_delta)
+    for delta in dates_delta:
+        if delta != expected_delta:
+            print("What?")
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
@@ -174,4 +176,4 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     # TODO: df to numpy array of set shape
 
-    return df
+    return None
