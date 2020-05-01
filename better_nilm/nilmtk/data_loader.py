@@ -93,12 +93,14 @@ def _ensure_continuous_series(df, sample_period, series_len):
     series_num = int(len(dates) / series_len)
     dates = np.reshape(dates, (series_num, series_len))
 
-    expected_delta = sample_period * series_len
-    dates_delta = dates[:, -1] - dates[:, 0]
+    # Get expected delta in seconds
+    expected_delta = sample_period * (series_len - 1)
+    # Get series delta in seconds
+    dates_delta = (dates[:, -1] - dates[:, 0]) / np.timedelta64(1, 's')
     print(expected_delta, dates_delta)
-    for delta in dates_delta:
+    for idx, delta in enumerate(dates_delta):
         if delta != expected_delta:
-            print("What?")
+            print(idx)
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,

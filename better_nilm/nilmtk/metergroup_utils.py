@@ -61,6 +61,7 @@ def get_good_sections(metergroup, sample_period, series_len,
         step = series_len
 
     timestamps = []
+    ts_main = None
 
     # Get the good sections of each meter
     for meter in metergroup.all_meters():
@@ -69,6 +70,8 @@ def get_good_sections(metergroup, sample_period, series_len,
             delta = (section.end - section.start).total_seconds()
             if delta >= (sample_period * series_len):
                 timestamps += [(v, k) for k, v in section.to_dict().items()]
+            if ts_main is None:
+                ts_main = section["start"]
 
     # Count the number of chunks available for the house
     total_chunks = 0
@@ -116,8 +119,12 @@ def get_good_sections(metergroup, sample_period, series_len,
                     ts_start = None
         # When every meter overlaps, we open a new section
         if overlap == len(metergroup.instance()):
-            # Timestamp must be in UTC or it will give us trouble
             ts_start = pd.Timestamp(stamp[0])
+            # The timestamp should also be coherent with the main meter stamps
+            timedelta = (ts_start - ts_main).total_seconds()
+            timedelta = sample_period * (timedelta // sample_period)
+            ts_start = ts_main + pd.Timedelta(seconds=timedelta)
+            # Timestamp must be in UTC or it will give us trouble
             ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
         # Stop when we reach the number of series
         if (max_series is not None) and (total_chunks >= max_series):
