@@ -131,14 +131,13 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     Returns
     -------
     ser : numpy.array
-        shape = (meters, series_len, series)
+        shape = (series_num, series_len, meters)
+        - series_num : The amount of series that could be extracted from the
+            metergroup.
+        - series_len : see Params.
         - meters : The number of appliances, plus the main meter.
             They are sorted alphabetically by appliance name, excluding
             the main meter, which always comes first.
-        - series_len : see Params.
-        - series : The amount of series that could be extracted from the
-            metergroup.
-
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
@@ -181,7 +180,14 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     # Turn df into numpy array
     ser = df.values
 
+    # Shape appropriately
     series_num = int(df.shape[0] / series_len)
-    ser = np.reshape(ser, (series_len, len(appliances), series_num))
+    ser = np.reshape(ser, (series_num, series_len, len(appliances)))
+
+    # Ensure the reshape has been done correctly
+    df_ser_diff = (ser[0, :, 0] - df.iloc[:series_len, 0])
+    df_ser_diff = (df_ser_diff != 0).sum()
+    assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
+                             "output the expected tensor."
 
     return ser
