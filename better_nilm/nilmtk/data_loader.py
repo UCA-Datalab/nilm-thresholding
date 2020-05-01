@@ -106,7 +106,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
-                        series_len=600, max_series=None):
+                        series_len=600, max_series=None, to_int=True):
     """
 
     Params
@@ -127,6 +127,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         worth of records (600 records x 6 seconds between each).
     max_series : int, default=None
         Maximum number of series to output.
+    to_int : bool, default=True
+        If True, values are changed to integer. This reduces memory usage.
 
     Returns
     -------
@@ -154,6 +156,10 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     # Sum contributions of appliances with the same name
     df = df.groupby(df.columns, axis=1).sum()
+
+    # Change values to integer to reduce memory usage
+    if to_int:
+        df = df.astype(int)
 
     if "_main" not in df.columns:
         raise ValueError("No '_main' meter contained in df columns:\n"
