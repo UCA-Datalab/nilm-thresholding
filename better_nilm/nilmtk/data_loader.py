@@ -90,9 +90,9 @@ def _ensure_continuous_series(df, sample_period, series_len):
         raise TypeError("df index must be dates.\nCurrent type is: "
                         f"{df.index.dtype}")
     dates = df.index.values
-    series_num = len(dates) / series_len
+    series_num = int(len(dates) / series_len)
     dates = np.reshape(dates, (series_len, series_num))
-    print(dates)
+    print(dates.shape)
 
     expected_delta = sample_period * series_len
     dates_delta = dates[:, -1] - dates[:, 0]
