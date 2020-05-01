@@ -91,7 +91,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
                         f"{df.index.dtype}")
     dates = df.index.values
     series_num = int(len(dates) / series_len)
-    dates = np.reshape(dates, (series_len, series_num))
+    dates = np.reshape(dates, (series_num, series_len))
     print(dates.shape)
 
     expected_delta = sample_period * series_len
