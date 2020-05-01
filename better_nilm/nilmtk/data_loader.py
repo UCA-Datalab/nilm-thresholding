@@ -172,10 +172,11 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         # Ensure main meter is contained in the list
         if "_main" not in appliances:
             appliances += ["_main"]
+            appliances = sorted(appliances)
         drop_apps = [app for app in df.columns if app not in appliances]
         df.drop(drop_apps, axis=1, inplace=True)
     else:
-        appliances = df.columns
+        appliances = sorted(df.columns)
 
     # Ensure every appliance is in the dataframe
     for app in appliances:
