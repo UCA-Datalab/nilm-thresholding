@@ -7,14 +7,18 @@ from better_nilm.nilmtk.data_loader import metergroup_to_array
 
 # This path is set to work on Zappa
 path_file = "../nilm/data/nilmtk/redd.h5"
+
 building = 5
 
 appliances = None
-#appliances = ["dishwasher", "microwave"]
+# appliances = ["dishwasher", "microwave"]
 
 sample_period = 6
+
 series_len = 500
+
 max_series = None
+
 to_int = True
 
 metergroup = metergroup_from_file(path_file,

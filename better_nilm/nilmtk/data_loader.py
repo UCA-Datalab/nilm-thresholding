@@ -31,7 +31,7 @@ def metergroup_from_file(path_file, building, appliances=None):
         also including the main (whole house) meter
     """
     assert path_file.endswith(".h5"), "Path must lead to h5 file. " \
-                                     f"Input path:\n {path_file}"
+                                      f"Input path:\n {path_file}"
     # Load the dataset (in h5 format) from given path
     data = DataSet(path_file)
 
@@ -181,7 +181,7 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     else:
         meters += df.columns.tolist()
         meters = sorted(set(meters))
-        
+
     print(meters)
 
     # Ensure every appliance is in the dataframe

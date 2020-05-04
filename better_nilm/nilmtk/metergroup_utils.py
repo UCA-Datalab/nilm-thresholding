@@ -9,7 +9,6 @@ APPLIANCE_NAMES : dict
 import pandas as pd
 import pytz
 
-from math import ceil
 from math import floor
 from nilmtk.metergroup import MeterGroup
 from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
@@ -68,7 +67,7 @@ def get_good_sections(metergroup, sample_period, series_len,
     timestamps = []
 
     # Get the good sections of each meter
-    for idx, meter in enumerate(metergroup.all_meters()):
+    for meter in metergroup.all_meters():
         # Take sections with enough size
         with HiddenPrints():
             good_sections = meter.good_sections(ac_type="best",
@@ -76,7 +75,7 @@ def get_good_sections(metergroup, sample_period, series_len,
         for section in good_sections:
             delta = (section.end - section.start).total_seconds()
             if delta >= (sample_period * series_len):
-                timestamps += [(v, k, idx) for k, v in section.to_dict().items()]
+                timestamps += [(v, k) for k, v in section.to_dict().items()]
 
     # Count the number of chunks available for the house
     total_chunks = 0
@@ -97,7 +96,6 @@ def get_good_sections(metergroup, sample_period, series_len,
     for stamp in timestamps:
         timestamp = stamp[0]
         event = stamp[1]
-        meter = stamp[2]
         if event == "start":
             overlap += 1
         elif event == "end":
@@ -136,7 +134,7 @@ def get_good_sections(metergroup, sample_period, series_len,
             # Timestamp must be in UTC or it will give us trouble
             ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
         if overlap > num_meters:
-            raise ValueError("More meters are recording than the existing ones")
+            raise ValueError("More meters recording than the existing ones")
         # Stop when we reach the number of series
         if (max_series is not None) and (total_chunks >= max_series):
             break
@@ -205,12 +203,16 @@ def df_from_sections(metergroup, sections, sample_period):
         ts_start = section.start
         ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
         if ts_start not in df.index:
-            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(pytz.timezone("UTC")) - ts_start))
-            raise ValueError(f"Start timestamp {ts_start} missing.\nNearest is {ts_nearest}")
+            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(
+                pytz.timezone("UTC")) - ts_start))
+            raise ValueError(f"Start timestamp {ts_start} missing.\n"
+                             f"Nearest is {ts_nearest}")
         ts_end = section.end - pd.Timedelta(seconds=sample_period)
         ts_end = ts_end.tz_convert(pytz.timezone("UTC"))
         if ts_end not in df.index:
-            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(pytz.timezone("UTC")) - ts_end))
-            raise ValueError(f"End timestamp {ts_end} missing.\nNearest is {ts_nearest}")
+            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(
+                pytz.timezone("UTC")) - ts_end))
+            raise ValueError(f"End timestamp {ts_end} missing.\n"
+                             f"Nearest is {ts_nearest}")
     
     return df
