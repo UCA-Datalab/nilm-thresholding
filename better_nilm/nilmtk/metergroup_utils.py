@@ -9,9 +9,11 @@ APPLIANCE_NAMES : dict
 import pandas as pd
 import pytz
 
+from math import ceil
 from math import floor
 from nilmtk.metergroup import MeterGroup
 from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
+from nilmtk.utils import normalise_timestamp
 
 from nilmtk.elecmeter import ElecMeterID
 from nilmtk.metergroup import MeterGroupID
@@ -25,7 +27,7 @@ APPLIANCE_NAMES = {
     "freezer": "fridge",
     "fridgefreezer": "fridge"
 }
-
+    
 
 def get_good_sections(metergroup, sample_period, series_len,
                       max_series=None, step=None):
@@ -66,16 +68,15 @@ def get_good_sections(metergroup, sample_period, series_len,
     timestamps = []
 
     # Get the good sections of each meter
-    for meter in metergroup.all_meters():
+    for idx, meter in enumerate(metergroup.all_meters()):
         # Take sections with enough size
-        for section in meter.good_sections():
+        with HiddenPrints():
+            good_sections = meter.good_sections(ac_type="best",
+                                                physical_quantity="power")
+        for section in good_sections:
             delta = (section.end - section.start).total_seconds()
             if delta >= (sample_period * series_len):
-                timestamps += [(v, k) for k, v in section.to_dict().items()]
-
-    # Store a timestamp of the first meter. This timestamp will be our
-    # reference to keep synchronized all the other timestamps
-    ts_main = pd.Timestamp(timestamps[0][0])
+                timestamps += [(v, k, idx) for k, v in section.to_dict().items()]
 
     # Count the number of chunks available for the house
     total_chunks = 0
@@ -87,16 +88,24 @@ def get_good_sections(metergroup, sample_period, series_len,
     # We will be counting the overlapping sections. When overlapping equals
     # the number of meters, we will have a good section for every meter
     overlap = 0
+    num_meters = len(metergroup.instance())
+    
+    # The frequency will be used to normalize our timestamps
+    # Normalization ensures every timestamp is synchronized
+    freq = '{:d}S'.format(int(sample_period))
 
     for stamp in timestamps:
-        if stamp[1] == "start":
+        timestamp = stamp[0]
+        event = stamp[1]
+        meter = stamp[2]
+        if event == "start":
             overlap += 1
-        else:
+        elif event == "end":
             overlap -= 1
             # If we had a start timestamp, close that section
             if ts_start is not None:
+                ts_end = normalise_timestamp(timestamp, freq)
                 # Timestamp must be in UTC or it will give us trouble
-                ts_end = pd.Timestamp(stamp[0])
                 ts_end = ts_end.tz_convert(pytz.timezone("UTC"))
                 # Check that the sections allows to take at least
                 # one data chunk
@@ -113,7 +122,7 @@ def get_good_sections(metergroup, sample_period, series_len,
                         chunks -= exceed_chunks
                         total_chunks = max_series
                     # Update end stamp
-                    timedelta = (chunks - 1) * step + series_len - 1
+                    timedelta = (chunks - 1) * step + series_len
                     timedelta *= sample_period
                     ts_end = ts_start + pd.Timedelta(seconds=timedelta)
                     good_timestamp = {"start": ts_start,
@@ -122,15 +131,12 @@ def get_good_sections(metergroup, sample_period, series_len,
                     # Restart the timestamp record
                     ts_start = None
         # When every meter recording overlaps, we open a new section
-        if overlap == len(metergroup.instance()):
-            ts_start = pd.Timestamp(stamp[0])
-            # The timestamp should also be synchronized with the main meter
-            # timestamps
-            timedelta = (ts_start - ts_main).total_seconds()
-            timedelta = sample_period * (timedelta // sample_period)
-            ts_start = ts_main + pd.Timedelta(seconds=timedelta)
+        if overlap == num_meters:
+            ts_start = normalise_timestamp(timestamp, freq)
             # Timestamp must be in UTC or it will give us trouble
             ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
+        if overlap > num_meters:
+            raise ValueError("More meters are recording than the existing ones")
         # Stop when we reach the number of series
         if (max_series is not None) and (total_chunks >= max_series):
             break
@@ -167,7 +173,9 @@ def df_from_sections(metergroup, sections, sample_period):
     # Load dataframe composed by the good sections
     with HiddenPrints():
         df = metergroup.dataframe_of_meters(sections=sections,
-                                            sample_period=sample_period)
+                                            sample_period=sample_period,
+                                            ac_type="best",
+                                            physical_quantity="power")
 
     # Rename the columns according to their meter label
     columns = []
@@ -191,5 +199,18 @@ def df_from_sections(metergroup, sections, sample_period):
 
     # Rename columns
     df.columns = columns
-
+    
+    # Ensure sections are followed strictly
+    for section in sections:
+        ts_start = section.start
+        ts_start = ts_start.tz_convert(pytz.timezone("UTC"))
+        if ts_start not in df.index:
+            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(pytz.timezone("UTC")) - ts_start))
+            raise ValueError(f"Start timestamp {ts_start} missing.\nNearest is {ts_nearest}")
+        ts_end = section.end - pd.Timedelta(seconds=sample_period)
+        ts_end = ts_end.tz_convert(pytz.timezone("UTC"))
+        if ts_end not in df.index:
+            ts_nearest = min(df.index, key=lambda x: abs(x.tz_convert(pytz.timezone("UTC")) - ts_end))
+            raise ValueError(f"End timestamp {ts_end} missing.\nNearest is {ts_nearest}")
+    
     return df

@@ -8,7 +8,10 @@ from better_nilm.nilmtk.data_loader import metergroup_to_array
 # This path is set to work on Zappa
 path_file = "../nilm/data/nilmtk/redd.h5"
 building = 5
+
 appliances = None
+#appliances = ["dishwasher", "microwave"]
+
 sample_period = 6
 series_len = 500
 max_series = None
@@ -28,6 +31,6 @@ ser, meters = metergroup_to_array(metergroup,
 print(f"Meters:\n{', '.join(meters)}")
 
 print("Array shape should be: (num_series, series_len, num_meters)")
-print(f"Expected shape: ({max_series if max_series is None else '?'}, "
+print(f"Expected shape: ({max_series if max_series is not None else 'any'}, "
       f"{series_len}, {len(meters)})")
-print(f"Array shape: {meters.shape}")
+print(f"Output shape:   {ser.shape}")
