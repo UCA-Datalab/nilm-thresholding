@@ -9,7 +9,7 @@ APPLIANCES = {
 
 MODEL = {
     "sample_period": 6,
-    "window_size": 600,
+    "series_len": 600,
     "hidden_size": 100,
     "lstm_layers": 1,
     "output": "regression"
