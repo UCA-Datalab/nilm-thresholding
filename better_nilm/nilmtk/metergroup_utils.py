@@ -13,6 +13,9 @@ from math import floor
 from nilmtk.metergroup import MeterGroup
 from nilmtk.timeframe import list_of_timeframes_from_list_of_dicts
 
+from nilmtk.elecmeter import ElecMeterID
+from nilmtk.metergroup import MeterGroupID
+
 from better_nilm.print_utils import HiddenPrints
 from better_nilm.str_utils import homogenize_string
 
@@ -28,7 +31,7 @@ def get_good_sections(metergroup, sample_period, series_len,
                       max_series=None, step=None):
     """
     Get the good sections of a metergroup. That is, all the sections that
-    meet the following requesites:
+    meet the following requisites:
         - All its meters have been recording during that section.
         - The section contains enough consecutive records to fill at least
         one serie (defined by the sample_period and series_len).
@@ -105,24 +108,24 @@ def get_good_sections(metergroup, sample_period, series_len,
                     # Add chunks to total
                     total_chunks += chunks
                     # Ensure we do not exceed the allowed limit
-                    if (max_series is not None) and (total_chunks >
-                                                      max_series):
+                    if (max_series is not None) and (total_chunks > max_series):
                         exceed_chunks = total_chunks - max_series
                         chunks -= exceed_chunks
                         total_chunks = max_series
                     # Update end stamp
-                    timedelta = ((chunks - 1) * step + series_len - 1) * \
-                                sample_period
+                    timedelta = (chunks - 1) * step + series_len - 1
+                    timedelta *= sample_period
                     ts_end = ts_start + pd.Timedelta(seconds=timedelta)
                     good_timestamp = {"start": ts_start,
                                       "end": ts_end}
-                    good_sections += [good_timestamp]
+                    good_sections += [good_timestamp.copy()]
+                    # Restart the timestamp record
                     ts_start = None
-        # When every meter overlaps, we open a new section
+        # When every meter recording overlaps, we open a new section
         if overlap == len(metergroup.instance()):
             ts_start = pd.Timestamp(stamp[0])
             # The timestamp should also be synchronized with the main meter
-            # stimestamps
+            # timestamps
             timedelta = (ts_start - ts_main).total_seconds()
             timedelta = sample_period * (timedelta // sample_period)
             ts_start = ts_main + pd.Timedelta(seconds=timedelta)
@@ -139,6 +142,9 @@ def get_good_sections(metergroup, sample_period, series_len,
 
 def df_from_sections(metergroup, sections, sample_period):
     """
+    Extracts a dataframe from the metergroup, containing only the chosen time
+    sections, with the given sample period.
+
     Params
     ------
     metergroup : nilmtk.metergroup.Metergroup
@@ -166,16 +172,21 @@ def df_from_sections(metergroup, sections, sample_period):
     # Rename the columns according to their appliances
     columns = []
     for col in df.columns:
-        try:
-            app = metergroup.get_labels([col[0]])[0]
-        except Exception:
-            try:
-                with HiddenPrints():
-                    app = metergroup.get_labels([col[0][0][0]])[0].lower()
-            except Exception:
-                raise ValueError(f"Something went wrong when trying to name "
-                                 f"'{col}' column")
-        app = homogenize_string(app)
+        if type(col) is ElecMeterID:
+            # If the meter is on its own, its current column name is:
+            # col = ElecMeterID(instance, building, dataset)
+            instance = col[0]
+        elif type(col) is MeterGroupID:
+            # If the meter is grouped with others, its current column name is:
+            # MeterGroup(meters=(ElecMeterID(instance, building, dataset)))
+            instance = col[0][0][0]
+        else:
+            raise ValueError(f"Unexpected type of meter ID for'{col}' "
+                             f"column:\n {type(col)}")
+        # We use its instance to get the appliance label
+        with HiddenPrints():
+            labels = metergroup.get_labels([instance])
+        app = homogenize_string(labels[0])
         columns += [APPLIANCE_NAMES.get(app, app)]
 
     # Rename columns
