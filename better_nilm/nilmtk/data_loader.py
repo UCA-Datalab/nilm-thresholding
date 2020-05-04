@@ -90,8 +90,8 @@ def _ensure_continuous_series(df, sample_period, series_len):
         raise TypeError("df index must be dates.\nCurrent type is: "
                         f"{df.index.dtype}")
     dates = df.index.values
-    series_num = int(len(dates) / series_len)
-    dates = np.reshape(dates, (series_num, series_len))
+    num_series = int(len(dates) / series_len)
+    dates = np.reshape(dates, (num_series, series_len))
 
     # Get expected delta in seconds
     expected_delta = sample_period * (series_len - 1)
@@ -108,6 +108,8 @@ def _ensure_continuous_series(df, sample_period, series_len):
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                         series_len=600, max_series=None, to_int=True):
     """
+    Extracts a time series numpy array containing the aggregated load for each
+    meter in given nilmtk.metergroup.MeterGroup object.
 
     Params
     ------
@@ -133,14 +135,14 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     Returns
     -------
     ser : numpy.array
-        shape = (series_num, series_len, meters)
-        - series_num : The amount of series that could be extracted from the
+        shape = (num_series, series_len, num_meters)
+        - num_series : The amount of series that could be extracted from the
             metergroup.
         - series_len : see Params.
-        - meters : The number of appliances, plus the main meter.
+        - num_meters : The number of meters (appliances + main meter).
             They are sorted alphabetically by appliance name, excluding
             the main meter, which always comes first.
-    appliances : list
+    meters : list
         List of the meters in the time series, properly sorted.
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
@@ -167,21 +169,23 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         raise ValueError("No '_main' meter contained in df columns:\n"
                          f"{', '.join(df.columns.tolist())}")
 
-    # Drop appliances not contained in given list
+    # Initialize meter list with the main meter
+    meters = ["_main"]
+
+    # Add the appliances to the meter list
     if appliances is not None:
-        # Ensure main meter is contained in the list
-        if "_main" not in appliances:
-            appliances += ["_main"]
-            appliances = sorted(appliances)
-        drop_apps = [app for app in df.columns if app not in appliances]
+        meters += appliances
+        meters = sorted(set(meters))
+        drop_apps = [app for app in df.columns if app not in meters]
         df.drop(drop_apps, axis=1, inplace=True)
     else:
-        appliances = sorted(df.columns)
+        meters += df.columns
+        meters = sorted(set(meters))
 
     # Ensure every appliance is in the dataframe
-    for app in appliances:
-        if app not in df.columns:
-            df[app] = 0
+    for meter in meters:
+        if meter not in df.columns:
+            df[meter] = 0
 
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
@@ -190,8 +194,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     ser = df.values
 
     # Shape appropriately
-    series_num = int(df.shape[0] / series_len)
-    ser = np.reshape(ser, (series_num, series_len, len(appliances)))
+    num_series = int(df.shape[0] / series_len)
+    ser = np.reshape(ser, (num_series, series_len, len(meters)))
 
     # Ensure the reshape has been done correctly
     df_ser_diff = (ser[0, :, 0] - df.iloc[:series_len, 0])
@@ -199,4 +203,4 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
                              "output the expected tensor."
 
-    return ser, appliances
+    return ser, meters

@@ -169,7 +169,7 @@ def df_from_sections(metergroup, sections, sample_period):
         df = metergroup.dataframe_of_meters(sections=sections,
                                             sample_period=sample_period)
 
-    # Rename the columns according to their appliances
+    # Rename the columns according to their meter label
     columns = []
     for col in df.columns:
         if type(col) is ElecMeterID or type(col) is tuple:
@@ -186,8 +186,8 @@ def df_from_sections(metergroup, sections, sample_period):
         # We use its instance to get the appliance label
         with HiddenPrints():
             labels = metergroup.get_labels([instance])
-        app = homogenize_string(labels[0])
-        columns += [APPLIANCE_NAMES.get(app, app)]
+        label = homogenize_string(labels[0])
+        columns += [APPLIANCE_NAMES.get(label, label)]
 
     # Rename columns
     df.columns = columns
