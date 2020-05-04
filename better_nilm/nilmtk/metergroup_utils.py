@@ -172,7 +172,7 @@ def df_from_sections(metergroup, sections, sample_period):
     # Rename the columns according to their appliances
     columns = []
     for col in df.columns:
-        if type(col) is ElecMeterID:
+        if type(col) is ElecMeterID or type(col) is tuple:
             # If the meter is on its own, its current column name is:
             # col = ElecMeterID(instance, building, dataset)
             instance = col[0]
