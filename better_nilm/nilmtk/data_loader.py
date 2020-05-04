@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import pandas as pd
 
 from nilmtk import DataSet
@@ -206,3 +207,37 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                              "output the expected tensor."
 
     return ser, meters
+
+
+def buildings_to_array(dict_path_buildings, appliances=None,
+                       sample_period=6, series_len=600,
+                       max_series=None, to_int=True):
+    assert type(dict_path_buildings) is dict, f"dict_path_buildings must be " \
+                                              f"dict. Current type:\n" \
+                                              f"{type(dict_path_buildings)}"
+
+    # Initialize list of time series and meters per building
+    list_ser = []
+    list_meters = []
+
+    for path_file, buildings in dict_path_buildings.items():
+        assert os.path.isfile(path_file), f"Key '{path_file}' is not" \
+                                          "a valid path."
+        buildings = to_list(buildings)
+        for building in buildings:
+            metergroup = metergroup_from_file(path_file, building,
+                                              appliances=appliances)
+            ser, meters = metergroup_to_array(metergroup,
+                                              appliances=appliances,
+                                              sample_period=sample_period,
+                                              series_len=series_len,
+                                              max_series=max_series,
+                                              to_int=to_int)
+            assert "_main" in meters, f"'_main' missing in meters:\n" \
+                                      f"{', '.join(meters)}"
+            list_ser += [ser]
+            list_meters += [meters]
+
+    # Some series may be lacking some meters. We fill the missing meters
+    # with 0 value (we assume those appliances are always off)
+    return
