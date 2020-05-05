@@ -238,7 +238,7 @@ def _ensure_same_meters(list_ser, list_meters, meters=None):
                 if meter not in build_meters:
                     build_ser = np.insert(build_ser, idx, 0, axis=2)
                     build_meters = np.insert(build_meters, idx, meter)
-                    if build_meters[:, :, building].sum() != 0:
+                    if build_ser[:, :, idx].sum() != 0:
                         raise ValueError(f"Meter {meter} wasnt added properly")
             list_ser[building] = build_ser.copy()
             list_meters[building] = build_meters.tolist()

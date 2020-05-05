@@ -11,7 +11,8 @@ dict_path_buildings = {
 appliances = None
 sample_period = 6
 series_len = 600
-max_series = None
+max_series = 50
+skip_first = 10
 to_int = True
 
 ser, meters = buildings_to_array(dict_path_buildings,
@@ -19,6 +20,7 @@ ser, meters = buildings_to_array(dict_path_buildings,
                                  sample_period=sample_period,
                                  series_len=series_len,
                                  max_series=max_series,
+                                 skip_first=skip_first,
                                  to_int=to_int)
 
 print(ser.shape)
