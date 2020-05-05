@@ -28,12 +28,12 @@ ser, meters = buildings_to_array(dict_path_buildings,
                                  max_series=max_series,
                                  skip_first=skip_first,
                                  to_int=to_int)
-print(f"Shape array: {ser.shape}")
+print(f"Original array shape: {ser.shape}")
 
 ser_train, ser_test = train_test_split(ser, train_size)
-print(f"Shape train: {ser_train.shape}")
-print(f"Shape test: {ser_test.shape}")
+print(f"Train shape: {ser_train.shape}")
+print(f"Test shape: {ser_test.shape}")
 
 x_train, y_train = feature_target_split(ser_train, meters)
-print(f"Shape X train: {x_train.shape}")
-print(f"Shape Y train: {y_train.shape}")
+print(f"X train shape: {x_train.shape}")
+print(f"Y train shape: {y_train.shape}")

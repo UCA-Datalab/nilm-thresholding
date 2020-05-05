@@ -6,6 +6,9 @@ from math import ceil
 def train_test_split(ser, train_size, random_seed=0):
     assert 0 < train_size < 1, "Train size must be in range (0, 1)"
 
+    # We don't want to modify the original series
+    ser = ser.copy()
+
     # Compute the number of time series that will be used in training
     num_series = ser.shape[0]
     num_train = ceil(num_series * train_size)
@@ -14,11 +17,11 @@ def train_test_split(ser, train_size, random_seed=0):
 
     # Shuffle our time series array
     np.random.seed(random_seed)
-    shuffled = np.random.shuffle(ser)
+    np.random.shuffle(ser)
 
     # Split the shuffled array into train and test
-    ser_train = shuffled[:num_train, :, :]
-    ser_test = shuffled[num_train:, :, :]
+    ser_train = ser[:num_train, :, :]
+    ser_test = ser[num_train:, :, :]
 
     num_new_series = ser_train.shape[0] + ser_test.shape[0]
     assert num_series == num_new_series, f"Number of time series after split" \
@@ -39,7 +42,6 @@ def feature_target_split(ser, meters, target="_main"):
 
     # Split X and Y data
     y = ser[:, :, idx].copy()
-    x = ser.copy()
-    x = x.delete(idx, axis=2)
+    x = np.delete(ser.copy(), idx, axis=2)
 
     return x, y
