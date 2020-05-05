@@ -18,3 +18,21 @@ def to_tuple(x):
         return (x,)
     else:
         return x
+
+
+def flatten_list(ls, no_duplicates=True, sort=True):
+    """
+    Flats a list of sublists.
+    """
+    flatlist = []
+    for sublist in ls:
+        for item in sublist:
+            flatlist += [item]
+
+    if no_duplicates:
+        flatlist = list(set(flatlist))
+
+    if sort:
+        flatlist = sorted(flatlist)
+
+    return flatlist

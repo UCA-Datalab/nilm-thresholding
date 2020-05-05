@@ -7,6 +7,7 @@ from nilmtk.metergroup import MeterGroup
 
 from better_nilm.format_utils import to_list
 from better_nilm.format_utils import to_tuple
+from better_nilm.format_utils import flatten_list
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
 from better_nilm.nilmtk.metergroup_utils import df_from_sections
 
@@ -207,18 +208,27 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     return ser, meters
 
 
-def _flatten_list_meters(list_meters):
-    # Flatten the meter list
-    flatten = lambda l: [item for sublist in l for item in sublist]
-    meters = flatten(list_meters)
-    meters = sorted(set(meters))
-    return meters
-
-
 def _ensure_same_meters(list_ser, list_meters, meters=None):
-    if meters is None:
-        meters = _flatten_list_meters(list_meters)
+    """
+    Makes sure every time series from the list_ser contains the same meters.
 
+    Params
+    ------
+    list_ser : list
+        Time series in numpy array format.
+    list_meters : list
+        Meters of each time series, sorted alphabetically.
+    meters : list, default=None
+        List of the meters that should have each time series, sorted
+        alphabetically.
+    """
+    # If no final meters were provided, take all contained in the list_meters
+    if meters is None:
+        meters = flatten_list(list_meters)
+
+    # Loop through each building, then loop through each of the meters that
+    # should be in the building. If a meter is missing, insert it in the
+    # proper position of the time series, as a record of constant 0 value.
     num_buildings = len(list_ser)
     for building in range(num_buildings):
         build_meters = list_meters[building]
@@ -228,14 +238,60 @@ def _ensure_same_meters(list_ser, list_meters, meters=None):
                 if meter not in build_meters:
                     build_ser = np.insert(build_ser, idx, 0, axis=2)
                     build_meters = np.insert(build_meters, idx, meter)
+                    if build_meters[:, :, building].sum() != 0:
+                        raise ValueError(f"Meter {meter} wasnt added properly")
             list_ser[building] = build_ser.copy()
             list_meters[building] = build_meters.tolist()
+
     return list_ser, list_meters
 
 
 def buildings_to_array(dict_path_buildings, appliances=None,
                        sample_period=6, series_len=600,
-                       max_series=None, to_int=True):
+                       max_series=None, skip_first=None, to_int=True):
+    """
+    Returns a time series numpy array containing the aggregated load for each
+    meter in a subset of buildings defined by dict_path_buildings.
+
+    Parameters
+    ----------
+    dict_path_buildings : dict
+        {file_path : list_buildings}
+        Keys are paths to nilmtk files
+        Values are a list with the buildings IDs
+    appliances : list, default=None
+        List of appliances to include in the array. They don't need
+        to be in the metergroup - in those cases, we assume that the
+        missing appliances are always turned off (load = 0).
+        If None, take all the appliances in the metergroup.
+    sample_period : int, default=6
+        Time between consecutive electric load records, in seconds.
+        By default we take 6 seconds.
+    series_len : int, default=600
+        Number of consecutive records to take at once. By default is 600,
+        which implies that a default time series comprehends one hour
+        worth of records (600 records x 6 seconds between each).
+    max_series : int, default=None
+        Maximum number of series to output per building.
+    skip_first : int, default=None
+        Number of time series to skip for each building, after having applied
+        the max_series. The series are skipped in chronological order.
+    to_int : bool, default=True
+        If True, values are changed to integer. This reduces memory usage.
+
+    Returns
+    -------
+    ser : numpy.array
+        shape = (num_series, series_len, num_meters)
+        - num_series : The amount of series that could be extracted from the
+            metergroup.
+        - series_len : see Params.
+        - num_meters : The number of meters (appliances + main meter).
+            They are sorted alphabetically by appliance name, excluding
+            the main meter, which always comes first.
+    meters : list
+        List of the meters in the time series, properly sorted.
+    """
     assert type(dict_path_buildings) is dict, f"dict_path_buildings must be " \
                                               f"dict. Current type:\n" \
                                               f"{type(dict_path_buildings)}"
@@ -243,6 +299,12 @@ def buildings_to_array(dict_path_buildings, appliances=None,
     # Initialize list of time series and meters per building
     list_ser = []
     list_meters = []
+
+    if (skip_first is not None) and (max_series is not None):
+        assert max_series > skip_first, f"Number of max_series={max_series} " \
+                                        f"must be greater than the number of" \
+                                        f"skipped ones, skip_first " \
+                                        f"={skip_first}"
 
     for path_file, buildings in dict_path_buildings.items():
         assert os.path.isfile(path_file), f"Key '{path_file}' is not" \
@@ -259,10 +321,23 @@ def buildings_to_array(dict_path_buildings, appliances=None,
                                               to_int=to_int)
             assert "_main" in meters, f"'_main' missing in meters:\n" \
                                       f"{', '.join(meters)}"
-            list_ser += [ser]
-            list_meters += [meters]
 
-    meters = _flatten_list_meters(list_meters)
+            if (skip_first is not None) and (ser.shape[0] <= skip_first):
+                print(f"Building {building} from {path_file}\nreturned "
+                      f"{ser.shape[0]} time series, which are less than "
+                      f"the skipped amount {skip_first}"
+                      f"\nThe entire building was skipped")
+                continue
+            elif skip_first is not None:
+                list_ser += [ser[skip_first:, :, :]]
+                list_meters += [meters]
+            else:
+                list_ser += [ser]
+                list_meters += [meters]
+
+    assert len(list_ser) > 0, "No time series in list"
+
+    meters = flatten_list(list_meters)
 
     # If an appliance list was not specified, some series may be lacking some
     # meters. We fill the missing meters with 0 value (we assume those
@@ -271,6 +346,12 @@ def buildings_to_array(dict_path_buildings, appliances=None,
         list_ser, list_meters = _ensure_same_meters(list_ser, list_meters,
                                                     meters=meters)
 
-    ser = np.concatenate(list_ser, sort=False)
-
+    ser = np.concatenate(list_ser)
+    assert ser.shape[1] == series_len, f"Length of array series " \
+                                       f"{ser.shape[1]} does not match with " \
+                                       f"input length {series_len}"
+    assert ser.shape[2] == len(meters), f"Number of meters in array " \
+                                        f"{ser.shape[2]} does not " \
+                                        f"match\nwith the number of listed " \
+                                        f"meters {len(meters)}"
     return ser, meters

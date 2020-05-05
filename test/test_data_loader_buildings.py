@@ -14,11 +14,12 @@ series_len = 600
 max_series = None
 to_int = True
 
-output = buildings_to_array(dict_path_buildings,
-                            appliances=appliances,
-                            sample_period=sample_period,
-                            series_len=series_len,
-                            max_series=max_series,
-                            to_int=to_int)
+ser, meters = buildings_to_array(dict_path_buildings,
+                                 appliances=appliances,
+                                 sample_period=sample_period,
+                                 series_len=series_len,
+                                 max_series=max_series,
+                                 to_int=to_int)
 
-print(output)
+print(ser.shape)
+print(meters)
