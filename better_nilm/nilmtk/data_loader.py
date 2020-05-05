@@ -183,8 +183,6 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         meters += df.columns.tolist()
         meters = sorted(set(meters))
 
-    print(meters)
-
     # Ensure every appliance is in the dataframe
     for meter in meters:
         if meter not in df.columns:
@@ -207,6 +205,32 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                              "output the expected tensor."
 
     return ser, meters
+
+
+def _flatten_list_meters(list_meters):
+    # Flatten the meter list
+    flatten = lambda l: [item for sublist in l for item in sublist]
+    meters = flatten(list_meters)
+    meters = sorted(set(meters))
+    return meters
+
+
+def _ensure_same_meters(list_ser, list_meters, meters=None):
+    if meters is None:
+        meters = _flatten_list_meters(list_meters)
+
+    num_buildings = len(list_ser)
+    for building in range(num_buildings):
+        build_meters = list_meters[building]
+        if build_meters != meters:
+            build_ser = list_ser[building]
+            for idx, meter in enumerate(meters):
+                if meter not in build_meters:
+                    build_ser = np.insert(build_ser, idx, 0, axis=2)
+                    build_meters = np.insert(build_meters, idx, meter)
+            list_ser[building] = build_ser.copy()
+            list_meters[building] = build_meters.tolist()
+    return list_ser, list_meters
 
 
 def buildings_to_array(dict_path_buildings, appliances=None,
@@ -238,6 +262,15 @@ def buildings_to_array(dict_path_buildings, appliances=None,
             list_ser += [ser]
             list_meters += [meters]
 
-    # Some series may be lacking some meters. We fill the missing meters
-    # with 0 value (we assume those appliances are always off)
-    return
+    meters = _flatten_list_meters(list_meters)
+
+    # If an appliance list was not specified, some series may be lacking some
+    # meters. We fill the missing meters with 0 value (we assume those
+    # appliances are always off)
+    if appliances is None:
+        list_ser, list_meters = _ensure_same_meters(list_ser, list_meters,
+                                                    meters=meters)
+
+    ser = np.concatenate(list_ser, sort=False)
+
+    return ser, meters
