@@ -17,7 +17,7 @@ from better_nilm.plot_utils import comparison_plot
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
 
-appliances = "fridge"
+appliances = ["fridge", "microwave"]
 sample_period = 6
 series_len = 600
 max_series = None
