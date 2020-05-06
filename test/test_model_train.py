@@ -25,7 +25,7 @@ skip_first = None
 to_int = True
 
 train_size = .75
-epochs = 100
+epochs = 1
 batch_size = 64
 
 """

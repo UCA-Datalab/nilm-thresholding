@@ -53,11 +53,13 @@ def normalize_meters(ser, max_values=None):
     ser = ser.copy()
 
     if max_values is not None:
-        if len(max_values) != ser.shape[2]:
-            raise ValueError(f"Length of max_values array {len(max_values)} "
-                             f"must be the number of meters in the series "
-                             f"{ser.shape[2]}")
+        # Ensure max_values is a numpy array
         max_values = np.array(max_values)
+        if len(max_values.flatten()) != ser.shape[2]:
+            raise ValueError(f"Length of max_values array"
+                             f"({len(max_values.flatten())}) must be the "
+                             f"number of meters in the series "
+                             f"({ser.shape[2]})")
     else:
         max_values = ser.max(axis=1).max(axis=0)
 
@@ -70,10 +72,17 @@ def denormalize_meters(ser, max_values):
     # We do not want to modify the original series
     ser = ser.copy()
 
-    if len(max_values) != ser.shape[2]:
-        raise ValueError(f"Length of max_values array {len(max_values)} "
-                         f"must be the number of meters in the series "
-                         f"{ser.shape[2]}")
+    # Ensure max_values is a numpy array
+    max_values = np.array(max_values)
+
+    if len(max_values.flatten()) != ser.shape[2]:
+        raise ValueError(f"Length of max_values array"
+                         f"({len(max_values.flatten())}) must be the "
+                         f"number of meters in the series "
+                         f"({ser.shape[2]})")
+
+    # Ensure proper dimensions
+    max_values = max_values.reshape((1, 1, ser.shape[2]))
 
     ser = ser * max_values
     return ser
