@@ -3,7 +3,6 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
-from keras.layers import Reshape
 
 
 def create_gru_model(series_len, num_appliances):

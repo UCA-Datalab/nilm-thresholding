@@ -25,7 +25,7 @@ skip_first = None
 to_int = True
 
 train_size = .75
-epochs = 20
+epochs = 100
 batch_size = 64
 
 """
@@ -53,7 +53,9 @@ y_train, y_max = normalize_meters(y_train)
 x_test, y_test = feature_target_split(ser_test, meters)
 x_test, _ = normalize_meters(x_test, max_values=x_max)
 
-num_appliances = len(meters) - 1
+appliances = meters.copy()
+appliances.remove("_main")
+num_appliances = len(appliances)
 
 """
 Training
@@ -74,6 +76,7 @@ path_plots = "test/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_fig = os.path.join(path_plots, "model_train.png")
+for idx, app in enumerate(appliances):
+    path_fig = os.path.join(path_plots, f"model_train_{app}.png")
 
-comparison_plot(y_test, y_pred, savefig=path_fig)
+    comparison_plot(y_test, y_pred, idx=idx, savefig=path_fig)

@@ -59,7 +59,7 @@ def normalize_meters(ser, max_values=None):
                              f"{ser.shape[2]}")
         max_values = np.array(max_values)
     else:
-        max_values = ser.max(axis=2)
+        max_values = ser.max(axis=1).max(axis=0)
 
     max_values = max_values.reshape((1, 1, ser.shape[2]))
     ser = ser / max_values
