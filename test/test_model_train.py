@@ -1,3 +1,4 @@
+import os
 import sys
 
 sys.path.insert(0, "../better_nilm")
@@ -9,7 +10,7 @@ from better_nilm.model.preprocessing import feature_target_split
 
 from better_nilm.model.gru import create_gru_model
 
-from better_nilm.plot_utils import simple_plot
+from better_nilm.plot_utils import comparison_plot
 
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
@@ -61,5 +62,11 @@ y_pred = model.predict(x_test)
 """
 Plot
 """
-simple_plot(y_test, y_pred)
-plt.savefig("test/plots/model_train.png")
+
+path_plots = "test/plots"
+if not os.path.isdir(path_plots):
+    os.mkdir(path_plots)
+
+path_fig = os.path.join(path_plots, "model_train.png")
+
+comparison_plot(y_test, y_pred, savefig=path_fig)
