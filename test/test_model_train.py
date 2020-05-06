@@ -7,6 +7,8 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 
 from better_nilm.model.preprocessing import train_test_split
 from better_nilm.model.preprocessing import feature_target_split
+from better_nilm.model.preprocessing import normalize_meters
+from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
 
@@ -23,7 +25,7 @@ skip_first = None
 to_int = True
 
 train_size = .75
-epochs = 200
+epochs = 20
 batch_size = 64
 
 """
@@ -45,7 +47,11 @@ Preprocessing
 ser_train, ser_test = train_test_split(ser, train_size)
 
 x_train, y_train = feature_target_split(ser_train, meters)
+x_train, x_max = normalize_meters(x_train)
+y_train, y_max = normalize_meters(y_train)
+
 x_test, y_test = feature_target_split(ser_test, meters)
+x_test, _ = normalize_meters(x_test, max_values=x_max)
 
 num_appliances = len(meters) - 1
 
@@ -58,6 +64,7 @@ model.fit(x_train, y_train,
           epochs=epochs, batch_size=batch_size, shuffle=True)
 
 y_pred = model.predict(x_test)
+y_pred = denormalize_meters(y_pred, y_max)
 
 """
 Plot

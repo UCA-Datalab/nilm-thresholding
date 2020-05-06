@@ -46,3 +46,34 @@ def feature_target_split(ser, meters, target="_main"):
     y = np.delete(ser.copy(), idx, axis=2)
 
     return x, y
+
+
+def normalize_meters(ser, max_values=None):
+    # We do not want to modify the original series
+    ser = ser.copy()
+
+    if max_values is not None:
+        if len(max_values) != ser.shape[2]:
+            raise ValueError(f"Length of max_values array {len(max_values)} "
+                             f"must be the number of meters in the series "
+                             f"{ser.shape[2]}")
+        max_values = np.array(max_values)
+    else:
+        max_values = ser.max(axis=2)
+
+    max_values = max_values.reshape((1, 1, ser.shape[2]))
+    ser = ser / max_values
+    return ser, max_values
+
+
+def denormalize_meters(ser, max_values):
+    # We do not want to modify the original series
+    ser = ser.copy()
+
+    if len(max_values) != ser.shape[2]:
+        raise ValueError(f"Length of max_values array {len(max_values)} "
+                         f"must be the number of meters in the series "
+                         f"{ser.shape[2]}")
+
+    ser = ser * max_values
+    return ser
