@@ -42,6 +42,7 @@ def feature_target_split(ser, meters, target="_main"):
 
     # Split X and Y data
     x = ser[:, :, idx].copy()
+    x = np.expand_dims(x, axis=2)
     y = np.delete(ser.copy(), idx, axis=2)
 
     return x, y
