@@ -5,7 +5,8 @@ from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
 
-from better_nilm.model.loss import model_loss
+from better_nilm.model.loss import regression_loss
+from better_nilm.model.loss import classification_loss
 
 
 def create_gru_model(series_len, num_appliances):
@@ -36,6 +37,8 @@ def create_gru_model(series_len, num_appliances):
     dense = Dense(num_appliances, activation='relu')(gru2)
 
     model = Model(inputs=inputs, outputs=dense)
-    model.compile(loss=model_loss(), optimizer='adam')
+    model.compile(loss=[regression_loss(), classification_loss()],
+                  loss_weights=[1, 1],
+                  optimizer='adam')
 
     return model
