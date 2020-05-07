@@ -9,6 +9,8 @@ from better_nilm.model.preprocessing import train_test_split
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
 from better_nilm.model.preprocessing import denormalize_meters
+from better_nilm.model.preprocessing import get_thresholds
+from better_nilm.model.preprocessing import binarize
 
 from better_nilm.model.gru import create_gru_model
 
@@ -53,6 +55,9 @@ y_train, y_max = normalize_meters(y_train)
 x_test, y_test = feature_target_split(ser_test, meters)
 x_test, _ = normalize_meters(x_test, max_values=x_max)
 
+thresholds = get_thresholds(y_train)
+bin_train = binarize(y_train, thresholds)
+
 appliances = meters.copy()
 appliances.remove("_main")
 num_appliances = len(appliances)
@@ -61,11 +66,11 @@ num_appliances = len(appliances)
 Training
 """
 
-model = create_gru_model(series_len, num_appliances)
-model.fit(x_train, y_train,
+model = create_gru_model(series_len, num_appliances, thresholds)
+model.fit(x_train, [y_train, bin_train],
           epochs=epochs, batch_size=batch_size, shuffle=True)
 
-y_pred = model.predict(x_test)
+[y_pred, bin_pred] = model.predict(x_test)
 y_pred = denormalize_meters(y_pred, y_max)
 
 """

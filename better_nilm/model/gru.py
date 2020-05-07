@@ -5,11 +5,13 @@ from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
 
-from better_nilm.model.loss import regression_loss
-from better_nilm.model.loss import classification_loss
+from keras import backend as K
+from keras.layers import Susbtract
+from keras.activations import softmax
 
 
-def create_gru_model(series_len, num_appliances):
+def create_gru_model(series_len, num_appliances, classification_thresholds,
+                     regression_weight=1, classification_weight=1):
     """
     Creates a Gated Recurrent Unit model.
 
@@ -33,12 +35,18 @@ def create_gru_model(series_len, num_appliances):
     gru2 = Bidirectional(GRU(128, return_sequences=True, stateful=False),
                          merge_mode='concat')(gru1)
 
+    # Regression output
     # Fully Connected Layers (batch, series_len, num_appliances)
-    dense = Dense(num_appliances, activation='relu')(gru2)
+    regression = Dense(num_appliances, activation='relu')(gru2)
 
-    model = Model(inputs=inputs, outputs=dense)
-    model.compile(loss=[regression_loss(), classification_loss()],
-                  loss_weights=[1, 1],
+    # Classification output
+    thresh = K.constant(classification_thresholds)
+    substract = Susbtract()([regression, thresh])
+    classification = softmax(substract)
+
+    model = Model(inputs=inputs, outputs=[regression, classification])
+    model.compile(loss=["mean_squared_error", "binary_crossentropy"],
+                  loss_weights=[regression_weight, classification_weight],
                   optimizer='adam')
 
     return model
