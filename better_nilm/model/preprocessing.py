@@ -66,6 +66,10 @@ def normalize_meters(ser, max_values=None):
 
     max_values = max_values.reshape((1, 1, ser.shape[2]))
     ser = ser / max_values
+    
+    # Fill NaNs in case one max value is 0
+    ser = np.nan_to_num(ser)
+    
     return ser, max_values
 
 
@@ -97,18 +101,22 @@ def _get_cluster_centroids(ser):
     ser = ser.copy()
 
     # Reshape in order to have one dimension per meter
-    num_records = ser.shape[0] * ser.shape[1]
     num_meters = ser.shape[2]
-    meters = ser.reshape(num_records, num_meters)
 
     # Initialize center list
     centers = []
-    for meter in meters:
+    for idx in range(num_meters):
+        meter = ser[:, :, idx]
         kmeans = KMeans(n_clusters=2).fit(meter)
-        centers += [sorted([a[0] for a in kmeans.cluster_centers_.tolist()])]
+        cc = kmeans.cluster_centers_
+        # Ensure the lesser value goes first
+        cc = np.sort(cc, axis=0)
+        centers += [cc]
+    
     centers = np.array(centers)
-    mean = centers.mean(axis=0)
-    std = centers.std(axis=0)
+    mean = centers.mean(axis=2)
+    std = centers.std(axis=2)
+    
     return mean, std
 
 
@@ -117,12 +125,17 @@ def get_thresholds(ser):
 
     # Sigma is a value between 0 and 1
     # sigma = the distance from OFF to ON at which we set the threshold
-    sigma = std[0, :] / (std.sum(axis=0))
-    sigma = sigma.fillna(.1)
+    sigma = std[:, 0] / (std.sum(axis=1))
+    sigma = np.nan_to_num(sigma)
+    
     # Add threshold
-    threshold = mean[0, :] * (1 - sigma) + mean[1, :] * sigma
+    threshold = mean[:, 0] * (1 - sigma) + mean[:, 1] * sigma
     return threshold
 
 
 def binarize(ser, thresholds):
-    return ser
+    # We dont want to modify the original series
+    ser = ser.copy()
+    
+    ser = ser >= thresholds
+    return ser.astype(int)
