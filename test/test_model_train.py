@@ -55,6 +55,7 @@ y_train, y_max = normalize_meters(y_train)
 
 x_test, y_test = feature_target_split(ser_test, meters)
 x_test, _ = normalize_meters(x_test, max_values=x_max)
+y_test, _ = normalize_meters(y_test, max_values=y_max)
 
 thresholds = get_thresholds(y_train)
 bin_train = binarize(y_train, thresholds)
@@ -75,6 +76,8 @@ model.fit(x_train, [y_train, bin_train],
 [y_pred, bin_pred] = model.predict(x_test)
 y_pred = denormalize_meters(y_pred, y_max)
 print(y_pred)
+
+y_test = denormalize_meters(y_test, y_max)
 
 """
 Plot

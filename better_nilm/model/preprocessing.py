@@ -134,8 +134,15 @@ def get_thresholds(ser):
 
 
 def binarize(ser, thresholds):
-    # We dont want to modify the original series
+    # We don't want to modify the original series
     ser = ser.copy()
-    
-    ser = ser >= thresholds
-    return ser.astype(int)
+
+    ser_bin = np.zeros(ser.shape)
+    num_app = ser.shape[2]
+
+    # Iterate through all the appliances
+    for idx in range(num_app):
+        mask_on = ser[:, :, idx] >= thresholds[idx]
+        ser_bin[mask_on] = 1
+
+    return ser_bin.astype(int)
