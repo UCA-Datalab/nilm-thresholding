@@ -72,6 +72,7 @@ model.fit(x_train, [y_train, bin_train],
 
 [y_pred, bin_pred] = model.predict(x_test)
 y_pred = denormalize_meters(y_pred, y_max)
+print(y_pred)
 
 """
 Plot

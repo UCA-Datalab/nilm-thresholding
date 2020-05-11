@@ -11,7 +11,12 @@ from keras.layers import Softmax
 
 
 def _subtract_tensor(classification_thresholds):
+    """
+    This function generates a lambda function that subtracts a constant vector
+    classification_thresholds from given tensor.
+    """
     thresh = K.constant(classification_thresholds)
+
     def _lambda(x):
         return x - thresh
     return _lambda
@@ -48,8 +53,8 @@ def create_gru_model(series_len, num_appliances, classification_thresholds,
                        name='regression')(gru2)
 
     # Classification output
-    substract = Lambda(_subtract_tensor(classification_thresholds))(regression)
-    classification = Softmax(name='classification')(substract)
+    subtract = Lambda(_subtract_tensor(classification_thresholds))(regression)
+    classification = Softmax(name='classification')(subtract)
 
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
