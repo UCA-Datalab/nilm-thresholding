@@ -11,9 +11,19 @@ def create_gru_model(series_len, num_appliances,
     """
     Creates a Gated Recurrent Unit model.
 
+    Parameters
+    ----------
+    series_len : int
+    num_appliances : int
+    regression_weight : float, default=1
+        Weight for the regression loss (MSE)
+    classification_weight : float, default=1
+        Weight for the classification loss (BCE)
+
     Returns
     -------
     model : keras.models.Sequential
+
     """
 
     # Input layer (batch, series_len, 1)
@@ -37,6 +47,7 @@ def create_gru_model(series_len, num_appliances,
                        name='regression')(gru2)
 
     # Classification output
+    # Fully Connected Layers (batch, series_len, num_appliances)
     classification = Dense(num_appliances, activation="sigmoid",
                            name="classification")(gru2)
 

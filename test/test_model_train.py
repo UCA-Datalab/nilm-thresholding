@@ -5,12 +5,8 @@ sys.path.insert(0, "../better_nilm")
 
 from better_nilm.nilmtk.data_loader import buildings_to_array
 
-from better_nilm.model.preprocessing import train_test_split
-from better_nilm.model.preprocessing import feature_target_split
-from better_nilm.model.preprocessing import normalize_meters
+from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
-from better_nilm.model.preprocessing import get_thresholds
-from better_nilm.model.preprocessing import binarize
 
 from better_nilm.model.gru import create_gru_model
 
@@ -27,8 +23,9 @@ max_series = None
 skip_first = None
 to_int = True
 
-train_size = .75
-epochs = 10
+train_size = .6
+validation_size = .2
+epochs = 100
 batch_size = 64
 
 # Weights
@@ -51,23 +48,26 @@ ser, meters = buildings_to_array(dict_path_buildings,
 Preprocessing
 """
 
-ser_train, ser_test = train_test_split(ser, train_size)
+dict_prepro = preprocessing_pipeline_dict(ser, meters,
+                                          train_size=train_size,
+                                          validation_size=validation_size)
 
-x_train, y_train = feature_target_split(ser_train, meters)
-x_train, x_max = normalize_meters(x_train)
-y_train, y_max = normalize_meters(y_train)
+x_train = dict_prepro["train"]["x"]
+y_train = dict_prepro["train"]["y"]
+bin_train = dict_prepro["train"]["bin"]
 
-x_test, y_test = feature_target_split(ser_test, meters)
-x_test, _ = normalize_meters(x_test, max_values=x_max)
-y_test, _ = normalize_meters(y_test, max_values=y_max)
+x_val = dict_prepro["validation"]["x"]
+y_val = dict_prepro["validation"]["y"]
+bin_val = dict_prepro["validation"]["bin"]
 
-thresholds = get_thresholds(y_train)
-bin_train = binarize(y_train, thresholds)
-bin_test = binarize(y_test, thresholds)
+x_test = dict_prepro["test"]["x"]
+y_test = dict_prepro["test"]["y"]
+bin_test = dict_prepro["test"]["bin"]
 
-appliances = meters.copy()
-appliances.remove("_main")
-num_appliances = len(appliances)
+y_max = dict_prepro["max_values"]["y"]
+
+appliances = dict_prepro["appliances"]
+num_appliances = dict_prepro["num_appliances"]
 
 """
 Training
@@ -76,7 +76,9 @@ Training
 model = create_gru_model(series_len, num_appliances,
                          classification_weight=class_w,
                          regression_weight=reg_w)
+
 model.fit(x_train, [y_train, bin_train],
+          validation_data=(x_val, [y_val, bin_val]),
           epochs=epochs, batch_size=batch_size, shuffle=True)
 
 [y_pred, bin_pred] = model.predict(x_test)
