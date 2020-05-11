@@ -99,7 +99,7 @@ for idx, app in enumerate(appliances):
     plot_real_vs_prediction(y_test, y_pred, idx=idx, savefig=path_fig)
 
     path_fig = os.path.join(path_plots, f"model_train_{app}_bin.png")
-    plot_real_vs_prediction(bin_test, bin_pred, idx=idx, savefig=path_fig)
+    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, savefig=path_fig)
 
     path_fig = os.path.join(path_plots, f"model_train_{app}_real.png")
     plot_load_and_state(y_test, bin_test, idx=idx, savefig=path_fig)

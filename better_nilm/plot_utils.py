@@ -57,8 +57,8 @@ def plot_load_and_state(load, state, idx=0, savefig=None):
 
     color = 'tab:red'
     ax1.set_xlabel('Time')
-    ax1.set_ylabel('State', color=color)
-    ax1.plot(plt_x, plt_state, color=color)
+    ax1.set_ylabel('Load(w)', color=color)
+    ax1.plot(plt_x, plt_load, color=color)
     ax1.tick_params(axis='y', labelcolor=color)
 
     # instantiate a second axes that shares the same x-axis
@@ -66,8 +66,8 @@ def plot_load_and_state(load, state, idx=0, savefig=None):
 
     color = 'tab:blue'
     # we already handled the x-label with ax1
-    ax2.set_ylabel('Load(w)', color=color)
-    ax2.plot(plt_x, plt_load, color=color, alpha=.75)
+    ax2.set_ylabel('State', color=color)
+    ax2.plot(plt_x, plt_state, color=color, alpha=.5)
     ax2.tick_params(axis='y', labelcolor=color)
 
     # Do the following. Otherwise the right y-label is slightly clipped
