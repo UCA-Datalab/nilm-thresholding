@@ -45,6 +45,8 @@ def metergroup_from_file(path_file, building, appliances=None):
     if appliances is None:
         # Take all appliances
         return elec
+    else:
+        appliances = to_list(appliances)
 
     # Check which target appliances are in the building
     building_appliances = elec.label().split(", ")
@@ -295,10 +297,16 @@ def buildings_to_array(dict_path_buildings, appliances=None,
     assert type(dict_path_buildings) is dict, f"dict_path_buildings must be " \
                                               f"dict. Current type:\n" \
                                               f"{type(dict_path_buildings)}"
+    
+    # Ensure appliances are a list
+    if appliances is not None:
+        appliances = to_list(appliances)
 
     # Initialize list of time series and meters per building
     list_ser = []
     list_meters = []
+    
+    
 
     if (skip_first is not None) and (max_series is not None):
         assert max_series > skip_first, f"Number of max_series={max_series} " \
