@@ -4,25 +4,9 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
-
-from keras import backend as K
-from keras.layers import Lambda
-from keras.layers import Softmax
-
-
-def _subtract_tensor(classification_thresholds):
-    """
-    This function generates a lambda function that subtracts a constant vector
-    classification_thresholds from given tensor.
-    """
-    thresh = K.constant(classification_thresholds)
-
-    def _lambda(x):
-        return x - thresh
-    return _lambda
     
 
-def create_gru_model(series_len, num_appliances, classification_thresholds,
+def create_gru_model(series_len, num_appliances,
                      regression_weight=1, classification_weight=1):
     """
     Creates a Gated Recurrent Unit model.
@@ -53,8 +37,8 @@ def create_gru_model(series_len, num_appliances, classification_thresholds,
                        name='regression')(gru2)
 
     # Classification output
-    subtract = Lambda(_subtract_tensor(classification_thresholds))(regression)
-    classification = Softmax(name='classification')(subtract)
+    classification = Dense(num_appliances, activation="sigmoid",
+                           name="classification")(gru2)
 
     model = Model(inputs=inputs,
                   outputs=[regression, classification])

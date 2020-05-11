@@ -31,6 +31,10 @@ train_size = .75
 epochs = 10
 batch_size = 64
 
+# Weights
+class_w = 1
+reg_w = 1
+
 """
 Load the data
 """
@@ -69,13 +73,16 @@ num_appliances = len(appliances)
 Training
 """
 
-model = create_gru_model(series_len, num_appliances, thresholds)
+model = create_gru_model(series_len, num_appliances,
+                         classification_weight=class_w,
+                         regression_weight=reg_w)
 model.fit(x_train, [y_train, bin_train],
           epochs=epochs, batch_size=batch_size, shuffle=True)
 
 [y_pred, bin_pred] = model.predict(x_test)
 y_pred = denormalize_meters(y_pred, y_max)
-print(y_pred)
+bin_pred[bin_pred > .5] = 1
+bin_pred[bin_pred <= 0.5] = 0
 
 y_test = denormalize_meters(y_test, y_max)
 
