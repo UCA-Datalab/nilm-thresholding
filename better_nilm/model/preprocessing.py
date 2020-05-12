@@ -214,20 +214,29 @@ def _get_cluster_centroids(ser):
     # Reshape in order to have one dimension per meter
     num_meters = ser.shape[2]
 
-    # Initialize center list
-    centers = []
+    # Initialize mean and std arrays
+    mean = np.zeros((num_meters, 2))
+    std = np.zeros((num_meters, 2))
+    
     for idx in range(num_meters):
-        meter = ser[:, :, idx]
+        # Take one meter record, and sort the in ascending order
+        # to ensure the first values correspond to OFF state
+        meter = ser[:, :, idx].flatten()
+        meter = np.sort(meter)
+        meter = meter.reshape((len(meter), -1))
         kmeans = KMeans(n_clusters=2).fit(meter)
-        cc = kmeans.cluster_centers_
-        # Ensure the lesser value goes first
-        cc = np.sort(cc, axis=0)
-        centers += [cc]
-
-    centers = np.array(centers)
-    mean = centers.mean(axis=2)
-    std = centers.std(axis=2)
-
+        
+        # The mean of a cluster is the cluster centroid
+        mean[idx, :] = kmeans.cluster_centers_.reshape(2)
+        
+        # Compute the standard deviation of the points in
+        # each cluster
+        labels = kmeans.labels_
+        lab0 = meter[labels == 0]
+        lab1 = meter[labels == 1]
+        std[idx, 0] = lab0.std()
+        std[idx, 1] = lab1.std()
+    
     return mean, std
 
 
@@ -257,7 +266,7 @@ def get_thresholds(ser):
     sigma = np.nan_to_num(sigma)
 
     # Add threshold
-    threshold = mean[:, 0] * (1 - sigma) + mean[:, 1] * sigma
+    threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
     return threshold
 
 
