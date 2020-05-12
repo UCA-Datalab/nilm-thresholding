@@ -25,7 +25,7 @@ to_int = True
 
 train_size = .6
 validation_size = .2
-epochs = 100
+epochs = 5
 batch_size = 64
 
 # Weights
