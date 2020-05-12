@@ -216,9 +216,18 @@ def _get_cluster_centroids(ser):
 
     # Initialize center list
     centers = []
+    mean = []
+    std = []
     for idx in range(num_meters):
-        meter = ser[:, :, idx]
+        meter = ser[:, :, idx].flatten()
         kmeans = KMeans(n_clusters=2).fit(meter)
+        labels = kmeans.labels_
+        lab0 = meter[labels == 0]
+        lab1 = meter[labels == 1]
+        mean += [[lab0.mean(), lab1.mean()]]
+        std += [[lab0.std(), lab1.std()]]
+
+    """
         cc = kmeans.cluster_centers_
         # Ensure the lesser value goes first
         cc = np.sort(cc, axis=0)
@@ -227,6 +236,7 @@ def _get_cluster_centroids(ser):
     centers = np.array(centers)
     mean = centers.mean(axis=2)
     std = centers.std(axis=2)
+    """
 
     return mean, std
 
