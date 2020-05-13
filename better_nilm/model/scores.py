@@ -58,10 +58,12 @@ def regression_score_dict(y_pred, y_real, appliances):
         app_pred = y_pred[:, :, idx].flatten()
         app_real = y_real[:, :, idx].flatten()
 
-        # RMSE
-        app_rmse = mean_squared_error(app_real, app_pred)
+        # MSE and RMSE
+        app_mse = mean_squared_error(app_real, app_pred)
+        app_rmse = np.sqrt(app_mse)
 
-        scores[app] = {"rmse": round(app_rmse, 2)}
+        scores[app] = {"mse": round(app_mse, 2),
+                       "rmse": round(app_rmse, 2)}
 
     return scores
 
