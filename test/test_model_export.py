@@ -24,7 +24,7 @@ to_int = True
 
 train_size = .6
 validation_size = .2
-epochs = 5
+epochs = 1
 batch_size = 64
 
 # Weights
@@ -89,7 +89,7 @@ path_output = "test/output"
 if not os.path.isdir(path_output):
     os.mkdir(path_output)
 
-path_model = path_output / "model.json"
+path_model = path_output + "/model.json"
 
 store_model_json(model, path_model)
 
