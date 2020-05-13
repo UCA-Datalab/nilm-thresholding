@@ -54,7 +54,7 @@ if not os.path.isdir(path_output):
     os.mkdir(path_output)
 
 test_size = 1 - train_size - validation_size
-test_len = series_len * test_size
+test_len = int(series_len * test_size)
 
 # Turn dictionary into list
 buildings = []
@@ -125,13 +125,12 @@ for app in appliances:
         dataset = tuple_[0].rsplit("/")[1]
         dataset = dataset.rsplit(".")[0]
         building_name = dataset + str(tuple_[1])
+        file_name = app + "_" + building_name
 
-        path_model = os.path.join(path_output, app + "_" + building_name +
-                                  ".json")
+        path_model = os.path.join(path_output, file_name + ".json")
         store_model_json(model, path_model)
 
-        path_dic = os.path.join(path_output, app + "_" + building_name +
-                                ".pkl")
+        path_dic = os.path.join(path_output, file_name + ".pkl")
         store_dict_pkl(dict_prepro["max_values"], path_dic)
 
         """
@@ -195,5 +194,5 @@ for app in appliances:
 
         # Create dataframe from dictionary
         df = pd.from_dict(scores)
-        path_df = os.path.join(path_output, app + "_" + building_name + ".csv")
+        path_df = os.path.join(path_output, file_name + ".csv")
         df.to_csv(path_df)
