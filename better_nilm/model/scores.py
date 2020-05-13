@@ -23,6 +23,7 @@ def _assert_shape(y_pred, y_real, appliances):
 def regression_score_dict(y_pred, y_real, appliances):
     """
     Returns a dictionary with some regression scores, for each appliance.
+        - MSE, Mean Square Error
         - RMSE, Root Mean Squared Error
 
     Parameters
@@ -71,7 +72,10 @@ def regression_score_dict(y_pred, y_real, appliances):
 def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
     """
     Returns a dictionary with some regression scores, for each appliance.
-        -
+        - Accuracy
+        - F1-Score
+        - Precision
+        - Recall
 
     Parameters
     ----------
