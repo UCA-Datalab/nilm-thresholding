@@ -70,13 +70,17 @@ for app in appliances:
         Load the data
         """
 
-        ser, meters = buildings_to_array(dict_path_building,
-                                         appliances=app,
-                                         sample_period=sample_period,
-                                         series_len=series_len,
-                                         max_series=max_series,
-                                         skip_first=skip_first,
-                                         to_int=to_int)
+        try:
+            ser, meters = buildings_to_array(dict_path_building,
+                                             appliances=app,
+                                             sample_period=sample_period,
+                                             series_len=series_len,
+                                             max_series=max_series,
+                                             skip_first=skip_first,
+                                             to_int=to_int)
+        except ValueError:
+            # If the appliance is not in the building, skip it
+            continue
 
         """
         Preprocessing
@@ -158,13 +162,18 @@ for app in appliances:
 
             dict_path_building = {tuple_2[0]: tuple_2[1]}
 
-            ser, meters = buildings_to_array(dict_path_building,
-                                             appliances=app,
-                                             sample_period=sample_period,
-                                             series_len=series_len,
-                                             max_series=num_test,
-                                             skip_first=skip_first,
-                                             to_int=to_int)
+            try:
+                ser, meters = buildings_to_array(dict_path_building,
+                                                 appliances=app,
+                                                 sample_period=sample_period,
+                                                 series_len=series_len,
+                                                 max_series=num_test,
+                                                 skip_first=skip_first,
+                                                 to_int=to_int)
+            except ValueError:
+                # If the app is not in the building, skip it
+                continue
+
             # Split data into X and Y
             x_test, y_test = feature_target_split(ser, meters)
 
