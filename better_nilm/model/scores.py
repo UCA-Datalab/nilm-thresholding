@@ -126,8 +126,8 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
     scores = {}
 
     for idx, app in enumerate(appliances):
-        app_pred = bin_pred[:, :, idx]
-        app_real = bin_real[:, :, idx]
+        app_pred = bin_pred[:, :, idx].flatten()
+        app_real = bin_real[:, :, idx].flatten()
 
         # F1-Score
         app_f1 = f1_score(app_real, app_pred)
