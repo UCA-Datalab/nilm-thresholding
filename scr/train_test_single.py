@@ -54,7 +54,7 @@ if not os.path.isdir(path_output):
     os.mkdir(path_output)
 
 test_size = 1 - train_size - validation_size
-test_len = int(series_len * test_size)
+num_test = int(series_len * test_size)
 
 # Turn dictionary into list
 buildings = []
@@ -122,8 +122,8 @@ for app in appliances:
         Store
         """
         # Building name
-        dataset = tuple_[0].rsplit("/")[1]
-        dataset = dataset.rsplit(".")[0]
+        dataset = tuple_[0].rsplit("/", 1)[1]
+        dataset = dataset.rsplit(".", 1)[0]
         building_name = dataset + str(tuple_[1])
         file_name = app + "_" + building_name
 
@@ -161,8 +161,8 @@ for app in appliances:
             ser, meters = buildings_to_array(dict_path_building,
                                              appliances=app,
                                              sample_period=sample_period,
-                                             series_len=test_len,
-                                             max_series=max_series,
+                                             series_len=series_len,
+                                             max_series=num_test,
                                              skip_first=skip_first,
                                              to_int=to_int)
             # Split data into X and Y
@@ -185,8 +185,8 @@ for app in appliances:
                                                       appliances)
 
             # Building name
-            dataset = tuple_[0].rsplit("/")[1]
-            dataset = dataset.rsplit(".")[0]
+            dataset = tuple_[0].rsplit("/", 1)[1]
+            dataset = dataset.rsplit(".", 1)[0]
             building_name = dataset + str(tuple_[1])
 
             # Add to scores dictionary
