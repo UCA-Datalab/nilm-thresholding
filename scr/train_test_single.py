@@ -194,9 +194,9 @@ for app in appliances:
                                                       appliances)
 
             # Building name
-            dataset = tuple_[0].rsplit("/", 1)[1]
+            dataset = tuple_2[0].rsplit("/", 1)[1]
             dataset = dataset.rsplit(".", 1)[0]
-            building_name = dataset + str(tuple_[1])
+            building_name = dataset + str(tuple_2[1])
 
             # Add to scores dictionary
             scores[building_name] = {**reg_scores[app], **class_scores[app]}
