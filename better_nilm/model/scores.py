@@ -1,25 +1,11 @@
 import numpy as np
 
 from sklearn.metrics import mean_squared_error
+
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
-
-
-def rmse_score(pred, real):
-    assert pred.shape == real.shape, "Both predicted and real arrays must " \
-                                     "have the same shape."
-
-    num_appliances = pred.shape[2]
-    mse = np.zeros(num_appliances)
-
-    for idx in range(num_appliances):
-        p = pred[:, :, idx].copy()
-        p = p.flatten()
-        r = real[:, :, idx].copy()
-        r = r.flatten()
-        mse[idx] = mean_squared_error(p, r)
-
-    rmse = np.sqrt(mse)
-    return rmse
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 
 
 def _assert_shape(y_pred, y_real, appliances):
@@ -68,14 +54,14 @@ def regression_score_dict(y_pred, y_real, appliances):
     # Initialize dict
     scores = {}
 
-    # Compute RMSE for all appliances
-    rmse = rmse_score(y_pred, y_real)
-
     for idx, app in enumerate(appliances):
-        # RMSE
-        app_rmse = round(rmse[idx], 2)
+        app_pred = y_pred[:, :, idx].flatten()
+        app_real = y_real[:, :, idx].flatten()
 
-        scores[app] = {"rmse": app_rmse}
+        # RMSE
+        app_rmse = mean_squared_error(app_real, app_pred)
+
+        scores[app] = {"rmse": round(app_rmse, 2)}
 
     return scores
 
@@ -129,9 +115,21 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
         app_pred = bin_pred[:, :, idx].flatten()
         app_real = bin_real[:, :, idx].flatten()
 
+        # Precision
+        app_accuracy = accuracy_score(app_real, app_pred)
+
         # F1-Score
         app_f1 = f1_score(app_real, app_pred)
 
-        scores[app] = {"f1score": round(app_f1, 4)}
+        # Precision
+        app_precision = precision_score(app_real, app_pred)
+
+        # Recall
+        app_recall = recall_score(app_real, app_pred)
+
+        scores[app] = {"accuracy": round(app_accuracy, 4),
+                       "f1": round(app_f1, 4),
+                       "precision": round(app_precision, 4),
+                       "recall": round(app_recall, 4)}
 
     return scores
