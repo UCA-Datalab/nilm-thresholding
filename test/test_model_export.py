@@ -10,7 +10,10 @@ from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.gru import create_gru_model
 
 from better_nilm.model.export import store_model_json
+from better_nilm.model.export import store_dict_pkl
 from better_nilm.model.export import load_model_json
+from better_nilm.model.export import load_dict_pkl
+
 
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
@@ -85,19 +88,24 @@ model.fit(x_train, [y_train, bin_train],
 """
 Store
 """
+
 path_output = "test/output"
 if not os.path.isdir(path_output):
     os.mkdir(path_output)
 
 path_model = path_output + "/model.json"
-
 store_model_json(model, path_model)
+
+path_dic = path_output + "/model.pkl"
+store_dict_pkl(dict_prepro["max_values"], path_dic)
+
 
 """
 Load
 """
 
 model = load_model_json(path_model)
+dic = load_dict_pkl(path_dic)
 
 # Lets assure its predictions are the same
 [y_new, bin_new] = model.predict(x_test)
