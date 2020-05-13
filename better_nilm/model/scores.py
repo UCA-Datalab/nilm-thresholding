@@ -48,8 +48,8 @@ def regression_score_dict(y_pred, y_real, appliances):
 
     for idx, app in enumerate(appliances):
         # RMSE
-        app_rmse = rmse[idx]
-        
+        app_rmse = round(rmse[idx], 2)
+
         scores[app] = {"rmse": app_rmse}
 
     return scores
