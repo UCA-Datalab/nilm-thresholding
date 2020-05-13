@@ -114,13 +114,13 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
         raise ValueError("Classification values must be between 0 and 1.")
 
     # Binarize the arrays
-    bin_pred = y_pred.copy()
-    bin_pred[y_pred < threshold] = 0
+    bin_pred = np.zeros(y_pred.shape)
     bin_pred[y_pred >= threshold] = 1
+    bin_pred = bin_pred.astype(int)
 
-    bin_real = y_real.copy()
-    bin_real[y_real < threshold] = 0
+    bin_real = np.zeros(y_real.shape)
     bin_real[y_real >= threshold] = 1
+    bin_real = bin_real.astype(int)
 
     # Initialize dict
     scores = {}
