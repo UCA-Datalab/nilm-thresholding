@@ -11,6 +11,7 @@ from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.gru import create_gru_model
 
 from better_nilm.model.scores import regression_score_dict
+from better_nilm.model.scores import classification_scores_dict
 
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
@@ -93,3 +94,6 @@ Scores
 
 reg_scores = regression_score_dict(y_pred, y_test, appliances)
 print(reg_scores)
+
+class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
+print(class_scores)
