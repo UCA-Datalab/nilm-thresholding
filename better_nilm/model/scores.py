@@ -132,6 +132,6 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
         # F1-Score
         app_f1 = f1_score(app_real, app_pred)
 
-        scores[app] = {"f1score": app_f1}
+        scores[app] = {"f1score": round(app_f1, 4)}
 
     return scores
