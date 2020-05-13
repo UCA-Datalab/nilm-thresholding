@@ -1,4 +1,5 @@
 import os
+import pickle
 
 from keras.models import model_from_json
 
@@ -83,3 +84,55 @@ def load_model_json(path_model, path_weights=None):
     model.load_weights(path_weights)
     print("Loaded model from disk")
     return model
+
+
+def store_dict_pkl(dic, path_dic):
+    """
+    Stores a dictionary into a pkl file.
+
+    Parameters
+    ----------
+    dic : dict
+        Dictionary to store.
+    path_dic : str
+        Path to where the pkl is created, including the filename and pkl
+        termination.
+
+    """
+
+    if not path_dic.endswith(".pkl"):
+        raise ValueError("path_dic must end in a pkl file. Current "
+                         f"route:\n{path_dic}")
+
+    a_file = open(path_dic, "wb")
+    pickle.dump(dic, a_file)
+    a_file.close()
+
+
+def load_dict_pkl(path_dic):
+    """
+    Loads a dictionary from a pkl file.
+
+    Parameters
+    ----------
+    path_dic : str
+        Path to where the dictionary is stored, in pkl format.
+
+    Returns
+    -------
+    dic : dict
+        Dictionary.
+
+    """
+    if not path_dic.endswith(".pkl"):
+        raise ValueError("path_pkl must end in a pkl file. Current "
+                         f"route:\n{path_dic}")
+
+    if not os.path.isfile(path_dic):
+        raise FileNotFoundError(f"path_dic does not lead to an existing "
+                                f"file:\n{path_dic}")
+
+    a_file = open(path_dic, "rb")
+    dic = pickle.load(a_file)
+
+    return dic
