@@ -21,7 +21,7 @@ def rmse_score(pred, real):
 
 
 def _assert_shape(y_pred, y_real, appliances):
-    if not (y_pred.shape == y_real.shape).all():
+    if not y_pred.shape == y_real.shape:
         raise ValueError("Array shape mismatch.\n"
                          f"y_pred shape: {y_pred.shape}\n"
                          f"y_real_shape: {y_real.shape}")
