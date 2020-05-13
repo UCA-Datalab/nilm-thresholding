@@ -102,7 +102,7 @@ model = load_model_json(path_model)
 # Lets assure its predictions are the same
 [y_new, bin_new] = model.predict(x_test)
 
-if y_pred == y_new:
+if (y_pred == y_new).all():
     print("Model store and load was succesful!")
 else:
     raise ValueError("Model predictions changed after being stored and loaded")
