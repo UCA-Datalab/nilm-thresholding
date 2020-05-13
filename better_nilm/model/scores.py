@@ -109,8 +109,8 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
 
     _assert_shape(y_pred, y_real, appliances)
 
-    if ((y_pred.max() > 1) or (y_real > 1)
-            or (y_pred.min() < 0) or (y_real.min() < 0)):
+    if ((y_pred.max() > 1).any() or (y_real > 1).any()
+            or (y_pred.min() < 0).any() or (y_real.min() < 0).any()):
         raise ValueError("Classification values must be between 0 and 1.")
 
     # Binarize the arrays
