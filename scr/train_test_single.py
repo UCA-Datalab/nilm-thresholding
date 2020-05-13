@@ -202,6 +202,6 @@ for app in appliances:
             scores[building_name] = {**reg_scores[app], **class_scores[app]}
 
         # Create dataframe from dictionary
-        df = pd.from_dict(scores)
+        df = pd.DataFrame.from_dict(scores)
         path_df = os.path.join(path_output, file_name + ".csv")
         df.to_csv(path_df)
