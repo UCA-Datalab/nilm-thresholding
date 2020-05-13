@@ -43,12 +43,13 @@ def regression_score_dict(y_pred, y_real, appliances):
     # Initialize dict
     scores = {}
 
-    for idx, app in enumerate(appliances):
-        app_pred = y_pred[:, :, idx].copy()
-        app_real = y_real[:, :, idx].copy()
-        # RMSE score
-        rmse = rmse_score(app_pred, app_real)
+    # Compute RMSE for all appliances
+    rmse = rmse_score(y_pred, y_real)
 
-        scores[app] = {"rmse": rmse}
+    for idx, app in enumerate(appliances):
+        # RMSE
+        app_rmse = rmse[idx]
+        
+        scores[app] = {"rmse": app_rmse}
 
     return scores
