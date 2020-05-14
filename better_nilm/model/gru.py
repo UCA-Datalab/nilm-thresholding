@@ -13,7 +13,7 @@ from keras.optimizers import Adam
 
 def create_gru_model(series_len, num_appliances, thresholds,
                      regression_weight=1, classification_weight=1,
-                     learning_rate=0.001):
+                     learning_rate=0.001, sigma_c=10):
     """
     Creates a Gated Recurrent Unit model.
     Based on OdysseasKr GRU model:
@@ -32,6 +32,10 @@ def create_gru_model(series_len, num_appliances, thresholds,
         Weight for the classification loss (BCE)
     learning_rate : float, default=0.001
         Starting learning rate for the Adam optimizer.
+    sigma_c : float, default=10
+        Controls the slope of the sigma function. Being T the threshold and
+        C this parameters sigma_c, we define the sigma as:
+        f(x) = ( 1 + exp( C * (x - T) ) ) ^ (-1)
 
     Returns
     -------
@@ -58,7 +62,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
     gru2 = Bidirectional(GRU(128, return_sequences=True, stateful=False),
                          merge_mode='concat')(gru1)
 
-    # Dense layer
+    # Dense layer (batch, series_len, 64)
     dense = Dense(64, activation='relu')(gru2)
 
     # Regression output
@@ -67,7 +71,8 @@ def create_gru_model(series_len, num_appliances, thresholds,
                        name='regression')(dense)
 
     # Classification output
-    subtract = Lambda(lambda x: x - thresholds)(regression)
+    # Apply a sigmoid centered around the threshold value of each appliance
+    subtract = Lambda(lambda x: (x - thresholds) * sigma_c)(regression)
     # Fully Connected Layers (batch, series_len, num_appliances)
     classification = Activation(sigmoid, name='classification')(subtract)
 
