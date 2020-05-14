@@ -13,6 +13,7 @@ from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import binarize
 
 from better_nilm.model.gru import create_gru_model
+from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.export import store_model_json
 from better_nilm.model.export import store_dict_pkl
@@ -25,7 +26,7 @@ This script is designed to train models in only one house and one appliance,
 then test that model against all the other houses.
 """
 
-appliances = ["fridge", "microwave"]
+appliances = ["dishwasher", "fridge", "microwave"]
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
@@ -39,8 +40,9 @@ to_int = True
 
 train_size = .6
 validation_size = .2
-epochs = 100
+epochs = 1000
 batch_size = 64
+patience = 100
 
 # Weights
 class_w = 1
@@ -118,9 +120,10 @@ for app in appliances:
                                  classification_weight=class_w,
                                  regression_weight=reg_w)
 
-        model.fit(x_train, [y_train, bin_train],
-                  validation_data=(x_val, [y_val, bin_val]),
-                  epochs=epochs, batch_size=batch_size, shuffle=True)
+        model = train_with_validation(x_train, [y_train, bin_train],
+                                      x_val, [y_val, bin_val],
+                                      epochs=epochs, batch_size=batch_size,
+                                      patience=patience)
 
         """
         Store
