@@ -4,6 +4,8 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
+from keras.layers import Activation
+from keras.activations import sigmoid
     
 
 def create_gru_model(series_len, num_appliances,
@@ -53,8 +55,7 @@ def create_gru_model(series_len, num_appliances,
 
     # Classification output
     # Fully Connected Layers (batch, series_len, num_appliances)
-    classification = Dense(num_appliances, activation="sigmoid",
-                           name="classification")(dense)
+    classification = Activation(sigmoid, name='classification')(regression)
 
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
