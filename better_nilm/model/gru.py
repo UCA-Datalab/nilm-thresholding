@@ -10,6 +10,8 @@ def create_gru_model(series_len, num_appliances,
                      regression_weight=1, classification_weight=1):
     """
     Creates a Gated Recurrent Unit model.
+    Based on OdysseasKr GRU model:
+    https://github.com/OdysseasKr/neural-disaggregator/blob/master/GRU
 
     Parameters
     ----------
@@ -41,15 +43,18 @@ def create_gru_model(series_len, num_appliances,
     gru2 = Bidirectional(GRU(128, return_sequences=True, stateful=False),
                          merge_mode='concat')(gru1)
 
+    # Dense layer
+    dense = Dense(64, activation='relu')(gru2)
+
     # Regression output
     # Fully Connected Layers (batch, series_len, num_appliances)
     regression = Dense(num_appliances, activation='relu',
-                       name='regression')(gru2)
+                       name='regression')(dense)
 
     # Classification output
     # Fully Connected Layers (batch, series_len, num_appliances)
     classification = Dense(num_appliances, activation="sigmoid",
-                           name="classification")(gru2)
+                           name="classification")(dense)
 
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
