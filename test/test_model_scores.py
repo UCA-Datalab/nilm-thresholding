@@ -66,6 +66,7 @@ bin_test = dict_prepro["test"]["bin"]
 
 y_max = dict_prepro["max_values"]["y"]
 
+thresholds = dict_prepro["thresholds"]
 appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 
@@ -73,7 +74,7 @@ num_appliances = dict_prepro["num_appliances"]
 Training
 """
 
-model = create_gru_model(series_len, num_appliances,
+model = create_gru_model(series_len, num_appliances, thresholds,
                          classification_weight=class_w,
                          regression_weight=reg_w)
 

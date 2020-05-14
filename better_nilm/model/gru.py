@@ -38,6 +38,8 @@ def create_gru_model(series_len, num_appliances, thresholds,
     model : keras.models.Sequential
 
     """
+    assert len(thresholds) == num_appliances, "Number of thresholds must " \
+                                              "equal the amount of appliances"
 
     # ARCHITECTURE
 

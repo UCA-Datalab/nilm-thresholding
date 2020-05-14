@@ -114,7 +114,7 @@ for app in appliances:
         Training
         """
 
-        model = create_gru_model(series_len, num_appliances,
+        model = create_gru_model(series_len, num_appliances, thresholds,
                                  classification_weight=class_w,
                                  regression_weight=reg_w)
 
