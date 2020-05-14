@@ -4,11 +4,12 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
+from keras.layers import Lambda
 from keras.layers import Activation
 from keras.activations import sigmoid
     
 
-def create_gru_model(series_len, num_appliances,
+def create_gru_model(series_len, num_appliances, thresholds,
                      regression_weight=1, classification_weight=1):
     """
     Creates a Gated Recurrent Unit model.
@@ -54,8 +55,9 @@ def create_gru_model(series_len, num_appliances,
                        name='regression')(dense)
 
     # Classification output
+    subtract = Lambda(lambda x: x - thresholds)(regression)
     # Fully Connected Layers (batch, series_len, num_appliances)
-    classification = Activation(sigmoid, name='classification')(regression)
+    classification = Activation(sigmoid, name='classification')(subtract)
 
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
