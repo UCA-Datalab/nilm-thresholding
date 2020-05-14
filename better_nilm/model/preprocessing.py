@@ -296,7 +296,7 @@ def binarize(ser, thresholds):
     # Iterate through all the appliances
     for idx in range(num_app):
         mask_on = ser[:, :, idx] > thresholds[idx]
-        ser_bin[mask_on] = 1
+        ser_bin[:, :, idx] = mask_on.astype(int)
 
     ser_bin = ser_bin.astype(int)
 
