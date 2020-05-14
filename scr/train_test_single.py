@@ -26,7 +26,7 @@ This script is designed to train models in only one house and one appliance,
 then test that model against all the other houses.
 """
 
-appliances = ["dishwasher", "fridge", "microwave"]
+appliances = ["fridge", "microwave"]
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
@@ -34,7 +34,7 @@ path_output = "outputs/"
 
 sample_period = 6
 series_len = 600
-max_series = 80
+num_series = 80
 skip_first = None
 to_int = True
 
@@ -87,12 +87,21 @@ for app in appliances:
                                              appliances=app,
                                              sample_period=sample_period,
                                              series_len=series_len,
-                                             max_series=max_series,
+                                             max_series=num_series,
                                              skip_first=skip_first,
                                              to_int=to_int)
         except ValueError:
             # If the appliance is not in the building, skip it
+            print("Appliance not found in building.\nSkipped.\n")
             continue
+
+        if ser.shape[0] != num_series:
+            print(f"WARNING\nDesired number of series is {num_series}\n"
+                  f"but the amount retrieved is {ser.shape[0]}")
+
+        if ser.shape[1] != series_len:
+            raise ValueError(f"Series length must be {series_len}\n"
+                             f"Retrieved length is {ser.shape[1]}")
 
         """
         Preprocessing
