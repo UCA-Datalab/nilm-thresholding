@@ -66,6 +66,16 @@ for path, ls in dict_path_buildings.items():
 
 for app in appliances:
     for tuple_ in buildings:
+
+        # Building name
+        dataset = tuple_[0].rsplit("/", 1)[1]
+        dataset = dataset.rsplit(".", 1)[0]
+        building_name = dataset + str(tuple_[1])
+        file_name = app + "_" + building_name
+
+        print("\n----------------------------------------------------------\n")
+        print(f"Appliance: {app}\nBuilding: {building_name}\n")
+
         dict_path_building = {tuple_[0]: tuple_[1]}
 
         """
@@ -128,12 +138,6 @@ for app in appliances:
         """
         Store
         """
-        # Building name
-        dataset = tuple_[0].rsplit("/", 1)[1]
-        dataset = dataset.rsplit(".", 1)[0]
-        building_name = dataset + str(tuple_[1])
-        file_name = app + "_" + building_name
-
         path_model = os.path.join(path_output, file_name + ".json")
         store_model_json(model, path_model)
 
@@ -208,3 +212,5 @@ for app in appliances:
         df = pd.DataFrame.from_dict(scores)
         path_df = os.path.join(path_output, file_name + ".csv")
         df.to_csv(path_df)
+
+        print("Done.\n")
