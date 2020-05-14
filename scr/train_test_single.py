@@ -120,7 +120,7 @@ for app in appliances:
                                  classification_weight=class_w,
                                  regression_weight=reg_w)
 
-        model = train_with_validation(x_train, [y_train, bin_train],
+        model = train_with_validation(model, x_train, [y_train, bin_train],
                                       x_val, [y_val, bin_val],
                                       epochs=epochs, batch_size=batch_size,
                                       patience=patience)
