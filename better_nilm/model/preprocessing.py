@@ -219,10 +219,8 @@ def _get_cluster_centroids(ser):
     std = np.zeros((num_meters, 2))
     
     for idx in range(num_meters):
-        # Take one meter record, and sort the in ascending order
-        # to ensure the first values correspond to OFF state
+        # Take one meter record
         meter = ser[:, :, idx].flatten()
-        meter = np.sort(meter)
         meter = meter.reshape((len(meter), -1))
         kmeans = KMeans(n_clusters=2).fit(meter)
         
@@ -297,8 +295,8 @@ def binarize(ser, thresholds):
 
     # Iterate through all the appliances
     for idx in range(num_app):
-        mask_on = ser[:, :, idx] >= thresholds[idx]
-        ser_bin[mask_on] = 1
+        mask_on = ser[:, :, idx] > thresholds[idx]
+        ser_bin[:, :, idx] = mask_on.astype(int)
 
     ser_bin = ser_bin.astype(int)
 

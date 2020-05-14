@@ -6,12 +6,14 @@ sys.path.insert(0, "../better_nilm")
 from better_nilm.nilmtk.data_loader import buildings_to_array
 
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
-from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
 
-from better_nilm.plot_utils import plot_real_vs_prediction
-from better_nilm.plot_utils import plot_load_and_state
+from better_nilm.model.export import store_model_json
+from better_nilm.model.export import store_dict_pkl
+from better_nilm.model.export import load_model_json
+from better_nilm.model.export import load_dict_pkl
+
 
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
@@ -25,14 +27,12 @@ to_int = True
 
 train_size = .6
 validation_size = .2
-epochs = 5
+epochs = 1
 batch_size = 64
-
-learning_rate = 0.001
 
 # Weights
 class_w = 1
-reg_w = 2
+reg_w = 1
 
 """
 Load the data
@@ -78,34 +78,40 @@ Training
 
 model = create_gru_model(series_len, num_appliances, thresholds,
                          classification_weight=class_w,
-                         regression_weight=reg_w,
-                         learning_rate=learning_rate)
+                         regression_weight=reg_w)
 
 model.fit(x_train, [y_train, bin_train],
           validation_data=(x_val, [y_val, bin_val]),
           epochs=epochs, batch_size=batch_size, shuffle=True)
 
 [y_pred, bin_pred] = model.predict(x_test)
-y_pred = denormalize_meters(y_pred, y_max)
-bin_pred[bin_pred > .5] = 1
-bin_pred[bin_pred <= 0.5] = 0
-
-y_test = denormalize_meters(y_test, y_max)
 
 """
-Plot
+Store
 """
 
-path_plots = "test/plots"
-if not os.path.isdir(path_plots):
-    os.mkdir(path_plots)
+path_output = "test/output"
+if not os.path.isdir(path_output):
+    os.mkdir(path_output)
 
-for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"model_train_{app}.png")
-    plot_real_vs_prediction(y_test, y_pred, idx=idx, savefig=path_fig)
+path_model = path_output + "/model.json"
+store_model_json(model, path_model)
 
-    path_fig = os.path.join(path_plots, f"model_train_{app}_bin.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, savefig=path_fig)
+path_dic = path_output + "/model.pkl"
+store_dict_pkl(dict_prepro["max_values"], path_dic)
 
-    path_fig = os.path.join(path_plots, f"model_train_{app}_real.png")
-    plot_load_and_state(y_test, bin_test, idx=idx, savefig=path_fig)
+
+"""
+Load
+"""
+
+model = load_model_json(path_model)
+dic = load_dict_pkl(path_dic)
+
+# Lets assure its predictions are the same
+[y_new, bin_new] = model.predict(x_test)
+
+if (y_pred == y_new).all():
+    print("Model store and load was succesful!")
+else:
+    raise ValueError("Model predictions changed after being stored and loaded")

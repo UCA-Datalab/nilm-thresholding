@@ -10,8 +10,8 @@ from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
 
-from better_nilm.plot_utils import plot_real_vs_prediction
-from better_nilm.plot_utils import plot_load_and_state
+from better_nilm.model.scores import regression_score_dict
+from better_nilm.model.scores import classification_scores_dict
 
 # This path is set to work on Zappa
 dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
@@ -28,11 +28,9 @@ validation_size = .2
 epochs = 5
 batch_size = 64
 
-learning_rate = 0.001
-
 # Weights
 class_w = 1
-reg_w = 2
+reg_w = 1
 
 """
 Load the data
@@ -78,8 +76,7 @@ Training
 
 model = create_gru_model(series_len, num_appliances, thresholds,
                          classification_weight=class_w,
-                         regression_weight=reg_w,
-                         learning_rate=learning_rate)
+                         regression_weight=reg_w)
 
 model.fit(x_train, [y_train, bin_train],
           validation_data=(x_val, [y_val, bin_val]),
@@ -93,19 +90,11 @@ bin_pred[bin_pred <= 0.5] = 0
 y_test = denormalize_meters(y_test, y_max)
 
 """
-Plot
+Scores
 """
 
-path_plots = "test/plots"
-if not os.path.isdir(path_plots):
-    os.mkdir(path_plots)
+reg_scores = regression_score_dict(y_pred, y_test, appliances)
+print(reg_scores)
 
-for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"model_train_{app}.png")
-    plot_real_vs_prediction(y_test, y_pred, idx=idx, savefig=path_fig)
-
-    path_fig = os.path.join(path_plots, f"model_train_{app}_bin.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, savefig=path_fig)
-
-    path_fig = os.path.join(path_plots, f"model_train_{app}_real.png")
-    plot_load_and_state(y_test, bin_test, idx=idx, savefig=path_fig)
+class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
+print(class_scores)
