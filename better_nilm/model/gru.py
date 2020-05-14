@@ -13,7 +13,7 @@ from keras.optimizers import Adam
 
 def create_gru_model(series_len, num_appliances, thresholds,
                      regression_weight=1, classification_weight=1,
-                     learning_rate=0.01):
+                     learning_rate=0.001):
     """
     Creates a Gated Recurrent Unit model.
     Based on OdysseasKr GRU model:
@@ -23,11 +23,14 @@ def create_gru_model(series_len, num_appliances, thresholds,
     ----------
     series_len : int
     num_appliances : int
+    thresholds : numpy.array
+        shape = (num_appliances, )
+        Load threshold for each appliance
     regression_weight : float, default=1
         Weight for the regression loss (MSE)
     classification_weight : float, default=1
         Weight for the classification loss (BCE)
-    learning_rate : float, default=0.01
+    learning_rate : float, default=0.001
         Starting learning rate for the Adam optimizer.
 
     Returns

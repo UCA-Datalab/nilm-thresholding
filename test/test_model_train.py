@@ -28,7 +28,7 @@ validation_size = .2
 epochs = 5
 batch_size = 64
 
-learning_rate = 0.01
+learning_rate = 0.001
 
 # Weights
 class_w = 1
