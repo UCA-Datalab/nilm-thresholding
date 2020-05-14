@@ -28,9 +28,11 @@ validation_size = .2
 epochs = 5
 batch_size = 64
 
+learning_rate = 0.001
+
 # Weights
 class_w = 1
-reg_w = 1
+reg_w = 2
 
 """
 Load the data
@@ -66,6 +68,7 @@ bin_test = dict_prepro["test"]["bin"]
 
 y_max = dict_prepro["max_values"]["y"]
 
+thresholds = dict_prepro["thresholds"]
 appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 
@@ -73,9 +76,10 @@ num_appliances = dict_prepro["num_appliances"]
 Training
 """
 
-model = create_gru_model(series_len, num_appliances,
+model = create_gru_model(series_len, num_appliances, thresholds,
                          classification_weight=class_w,
-                         regression_weight=reg_w)
+                         regression_weight=reg_w,
+                         learning_rate=learning_rate)
 
 model.fit(x_train, [y_train, bin_train],
           validation_data=(x_val, [y_val, bin_val]),
