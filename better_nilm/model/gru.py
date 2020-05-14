@@ -35,7 +35,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
     sigma_c : float, default=10
         Controls the slope of the sigma function. Being T the threshold and
         C this parameters sigma_c, we define the sigma as:
-        f(x) = ( 1 + exp( C * (x - T) ) ) ^ (-1)
+        f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
 
     Returns
     -------
