@@ -27,7 +27,10 @@ This script is designed to train models in only one house and one appliance,
 then test that model against all the other houses.
 """
 
-appliances = ["fridge", "microwave"]
+appliances = ['diswasher',
+              'fridge',
+              'microwave',
+              'television']
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
