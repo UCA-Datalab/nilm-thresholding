@@ -10,6 +10,7 @@ from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import normalize_meters
 from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.preprocessing import feature_target_split
+from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import binarize
 
 from better_nilm.model.gru import create_gru_model
@@ -195,15 +196,14 @@ for app in appliances:
 
             # Normalize
             x_test, _ = normalize_meters(x_test, max_values=x_max)
-            y_test, _ = normalize_meters(y_test, max_values=y_max)
 
             # Get the binary meter status of each Y series
+            thresholds = get_thresholds(y_test)
             bin_test = binarize(y_test, thresholds)
 
+            # Propagate X data through the model to get the predictions
             [y_pred, bin_pred] = model.predict(x_test)
             y_pred = denormalize_meters(y_pred, y_max)
-
-            y_test = denormalize_meters(y_test, y_max)
 
             reg_scores = regression_score_dict(y_pred, y_test, appliances)
             class_scores = classification_scores_dict(bin_pred, bin_test,
