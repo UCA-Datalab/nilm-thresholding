@@ -129,6 +129,9 @@ for app in appliances:
         num_appliances = dict_prepro["num_appliances"]
         thresholds = dict_prepro["thresholds"]
 
+        # Denormalized threshold
+        threshold = denormalize_meters(thresholds, y_max)[0]
+
         # Create sub-folder
         path_subfolder = os.path.join(path_output,
                                       app + '_' + building_name)
@@ -199,7 +202,7 @@ for app in appliances:
             # Store plots
             path_fig = os.path.join(path_subfolder, f"{file_name}_reg.png")
             plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
-                                    savefig=path_fig, threshold=y_max)
+                                    savefig=path_fig, threshold=threshold)
 
             path_fig = os.path.join(path_subfolder, f"{file_name}_class.png")
             plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
