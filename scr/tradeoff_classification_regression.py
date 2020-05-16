@@ -21,8 +21,8 @@ from better_nilm.model.scores import regression_score_dict
 from better_nilm.model.scores import classification_scores_dict
 
 """
-This script is designed to train models in only one house and one appliance,
-then test that model against all the other houses that have the appliance.
+Test different classification and regression weights for each of the listed 
+appliances in each listed house.
 """
 
 appliances = ['dishwasher',
@@ -32,7 +32,7 @@ appliances = ['dishwasher',
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
-path_output = "outputs/tradeoff_regression_classification/"
+path_output = "outputs/tradeoff_classification_regression/"
 
 sample_period = 6
 series_len = 600
