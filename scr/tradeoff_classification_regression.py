@@ -130,7 +130,7 @@ for app in appliances:
         thresholds = dict_prepro["thresholds"]
 
         # Denormalized threshold
-        threshold = denormalize_meters(thresholds, y_max)[0]
+        threshold = int(thresholds[0] * y_max[0])
 
         # Create sub-folder
         path_subfolder = os.path.join(path_output,
