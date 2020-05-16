@@ -199,7 +199,7 @@ for app in appliances:
             # Store plots
             path_fig = os.path.join(path_subfolder, f"{file_name}_reg.png")
             plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
-                                    savefig=path_fig)
+                                    savefig=path_fig, threshold=y_max)
 
             path_fig = os.path.join(path_subfolder, f"{file_name}_class.png")
             plot_real_vs_prediction(bin_test, -bin_pred, idx=0,

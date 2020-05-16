@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_real_vs_prediction(y_test, y_pred, idx=0, savefig=None):
+def plot_real_vs_prediction(y_test, y_pred, idx=0, savefig=None,
+                            threshold=None):
     """
     Plots the evolution of real and predicted appliance load values,
     assuming all are consecutive.
@@ -15,6 +16,8 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0, savefig=None):
         Appliance index
     savefig : str, default=None
         Path where the figure is stored
+    threshold : float, default=None
+        If provided, draw the threshold line
 
     """
 
@@ -27,6 +30,11 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0, savefig=None):
     plt.figure(dpi=180)
     plt.plot(plt_x, plt_test)
     plt.plot(plt_x, plt_pred, alpha=.75)
+
+    if threshold is not None:
+        plt.hlines(threshold, plt_x[0], plt_x[-1], colors='g',
+                   linestyles='dashed')
+
     plt.legend(["Test", "Prediction"])
     if savefig is not None:
         plt.savefig(savefig)
