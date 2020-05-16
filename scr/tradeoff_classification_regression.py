@@ -160,12 +160,14 @@ for app in appliances:
             Store
             """
 
-            file_name = "class_weight_" + str(class_w)
+            # Multiply weight x100 and change to integer to avoid points in
+            # the file names
+            file_name = "class_weight_" + str(int(class_w * 100))
 
             path_model = os.path.join(path_subfolder, file_name + ".json")
             store_model_json(model, path_model)
 
-            path_dic = os.path.join(path_output, file_name + ".pkl")
+            path_dic = os.path.join(path_subfolder, file_name + ".pkl")
             store_dict_pkl(dict_prepro["max_values"], path_dic)
 
             """
@@ -175,9 +177,10 @@ for app in appliances:
             [y_pred, bin_pred] = model.predict(x_test)
             y_pred = denormalize_meters(y_pred, y_max)
 
-            y_test = denormalize_meters(y_test, y_max)
+            y_test_denorm = denormalize_meters(y_test, y_max)
 
-            reg_scores = regression_score_dict(y_pred, y_test, appliances)
+            reg_scores = regression_score_dict(y_pred, y_test_denorm,
+                                               appliances)
             class_scores = classification_scores_dict(bin_pred, bin_test,
                                                       appliances)
 
@@ -188,8 +191,13 @@ for app in appliances:
             Plot
             """
 
+            # Denormalize regression and binarize classification
+            bin_pred[bin_pred > .5] = 1
+            bin_pred[bin_pred <= 0.5] = 0
+
+            # Store plots
             path_fig = os.path.join(path_subfolder, f"{file_name}_reg.png")
-            plot_real_vs_prediction(y_test, y_pred, idx=0,
+            plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
                                     savefig=path_fig)
 
             path_fig = os.path.join(path_subfolder, f"{file_name}_class.png")
