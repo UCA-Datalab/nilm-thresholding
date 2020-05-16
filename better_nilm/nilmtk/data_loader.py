@@ -8,6 +8,8 @@ from nilmtk.metergroup import MeterGroup
 from better_nilm.format_utils import to_list
 from better_nilm.format_utils import to_tuple
 from better_nilm.format_utils import flatten_list
+from better_nilm.str_utils import homogenize_string
+
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
 from better_nilm.nilmtk.metergroup_utils import df_from_sections
 
@@ -49,11 +51,16 @@ def metergroup_from_file(path_file, building, appliances=None):
         appliances = to_list(appliances)
 
     # Check which target appliances are in the building
+    # We must maintain the original name of the appliances in the
+    # metergroup, but also check if that name coincides with target
+    # appliances names - which may not be the same
     building_appliances = elec.label().split(", ")
     building_appliances = set([app.lower() for app in building_appliances])
-    # Remove from list the appliances not in the building
-    target_appliances = [app for app in to_list(appliances) if
-                         app in building_appliances]
+    # Target appliances names are suppossed to be homogenized
+    # We homogenize the building names for the comparisson, but then store
+    # their original name in order to retrieve their meter later
+    target_appliances = [app for app in building_appliances if
+                         homogenize_string(app) in to_list(appliances)]
 
     # If there are no target appliances, raise error
     if len(target_appliances) == 0:
@@ -297,7 +304,7 @@ def buildings_to_array(dict_path_buildings, appliances=None,
     assert type(dict_path_buildings) is dict, f"dict_path_buildings must be " \
                                               f"dict. Current type:\n" \
                                               f"{type(dict_path_buildings)}"
-    
+
     # Ensure appliances are a list
     if appliances is not None:
         appliances = to_list(appliances)
@@ -305,8 +312,6 @@ def buildings_to_array(dict_path_buildings, appliances=None,
     # Initialize list of time series and meters per building
     list_ser = []
     list_meters = []
-    
-    
 
     if (skip_first is not None) and (max_series is not None):
         assert max_series > skip_first, f"Number of max_series={max_series} " \
