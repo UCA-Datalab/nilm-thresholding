@@ -24,10 +24,10 @@ from better_nilm.model.scores import classification_scores_dict
 
 """
 This script is designed to train models in only one house and one appliance,
-then test that model against all the other houses.
+then test that model against all the other houses that have the appliance.
 """
 
-appliances = ['diswasher',
+appliances = ['dishwasher',
               'fridge',
               'microwave',
               'television']
