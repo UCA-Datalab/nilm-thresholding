@@ -107,7 +107,8 @@ for app in appliances:
         dict_prepro = preprocessing_pipeline_dict(ser, meters,
                                                   train_size=train_size,
                                                   validation_size=
-                                                  validation_size)
+                                                  validation_size,
+                                                  shuffle=False)
 
         x_train = dict_prepro["train"]["x"]
         y_train = dict_prepro["train"]["y"]
