@@ -51,6 +51,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
     inputs = Input(shape=(series_len, 1))
 
     # 1D Conv (batch, series_len, 16)
+    # filters = 16, kernel_size = 4
     conv1 = Conv1D(16, 4, activation="relu", padding="same", strides=1)(inputs)
     # 1D Conv (batch, series_len, 8)
     conv2 = Conv1D(8, 4, activation="relu", padding="same", strides=1)(conv1)
