@@ -104,6 +104,15 @@ for app in appliances:
 
             reg_w = 1 - class_w
 
+            # Create sub-folder
+            path_subfolder = os.path.join(path_output,
+                                          app + '_' + building_name)
+            if not os.path.isdir(path_subfolder):
+                os.mkdir(path_subfolder)
+
+            # Initialize scores dictionary
+            scores = {}
+
             # Choose random seeds (-1 = do not shuffle the data)
             seeds = [0, 1, 2, 3, 4, -1]
 
@@ -117,7 +126,8 @@ for app in appliances:
                 """
 
                 dict_prepro = preprocessing_pipeline_dict(ser, meters,
-                                                          train_size=train_size,
+                                                          train_size=
+                                                          train_size,
                                                           validation_size=
                                                           validation_size,
                                                           shuffle=True,
@@ -144,15 +154,6 @@ for app in appliances:
 
                 # Denormalized threshold
                 threshold = int(thresholds[0] * y_max[0])
-
-                # Create sub-folder
-                path_subfolder = os.path.join(path_output,
-                                              app + '_' + building_name)
-                if not os.path.isdir(path_subfolder):
-                    os.mkdir(path_subfolder)
-
-                # Initialize scores dictionary
-                scores = {}
 
                 """
                 Training
