@@ -15,9 +15,6 @@ from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.model.gru import create_gru_model
 from better_nilm.model.train import train_with_validation
 
-from better_nilm.model.export import store_model_json
-from better_nilm.model.export import store_dict_pkl
-
 from better_nilm.model.scores import regression_score_dict
 from better_nilm.model.scores import classification_scores_dict
 
