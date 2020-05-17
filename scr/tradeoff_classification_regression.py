@@ -47,19 +47,26 @@ patience = 100
 # Weights
 class_weights = [0, 0.25, 0.5, 0.75, 1]
 
+# Choose random seeds (-1 = do not shuffle the data)
+# We will train one model per seed, shuffling the data randomly
+seeds = [0, 1, 2, 3, -1]
+
 """
 Begin script
 """
 
+# Create output directory
 if not os.path.isdir(path_output):
     os.mkdir(path_output)
 
-# Turn dictionary into list
+# Turn buildings dictionary into list of tuples
+# [(dataset, building_number), ...]
 buildings = []
 for path, ls in dict_path_buildings.items():
     for build in ls:
         buildings += [(path, build)]
 
+# Loop through appliances, then through buildings
 for app in appliances:
     for tuple_ in buildings:
 
@@ -77,6 +84,7 @@ for app in appliances:
 
         dict_path_building = {tuple_[0]: tuple_[1]}
 
+        # If the appliance is not in the building, skip it
         try:
             ser, meters = buildings_to_array(dict_path_building,
                                              appliances=app,
@@ -86,7 +94,6 @@ for app in appliances:
                                              skip_first=skip_first,
                                              to_int=to_int)
         except ValueError:
-            # If the appliance is not in the building, skip it
             print("Appliance not found in building.\nSkipped.\n")
             continue
 
@@ -98,29 +105,28 @@ for app in appliances:
             raise ValueError(f"Series length must be {series_len}\n"
                              f"Retrieved length is {ser.shape[1]}")
 
+        # Create sub-folder containing appliance + building
+        path_subfolder = os.path.join(path_output,
+                                      app + '_' + building_name)
+        if not os.path.isdir(path_subfolder):
+            os.mkdir(path_subfolder)
+
+        # Initialize scores dictionary
+        scores = {}
+
+        # Iterate through scores
         for class_w in class_weights:
             print("\n------------------------------------------------------\n")
             print(f"Classification weight: {class_w}\n")
 
             reg_w = 1 - class_w
 
-            # Create sub-folder
-            path_subfolder = os.path.join(path_output,
-                                          app + '_' + building_name)
-            if not os.path.isdir(path_subfolder):
-                os.mkdir(path_subfolder)
-
-            # Initialize scores dictionary
-            scores = {}
-
-            # Choose random seeds (-1 = do not shuffle the data)
-            seeds = [0, 1, 2, 3, 4, -1]
-
             # Initialize score list
             scores_values = []
 
-            # Do each weight 5 times with different samples
+            # Iterate through random seeds
             for seed in seeds:
+                
                 """
                 Preprocessing
                 """
@@ -180,45 +186,52 @@ for app in appliances:
 
                 y_test_denorm = denormalize_meters(y_test, y_max)
 
+                # Get scores dictionaries, which have the format
+                # {app: {score: value, score: value, ...}}
                 reg_scores = regression_score_dict(y_pred, y_test_denorm,
                                                    appliances)
                 class_scores = classification_scores_dict(bin_pred, bin_test,
                                                           appliances)
 
-                # Merge both dicts
-                all_scores = reg_scores
-                all_scores.update(class_scores)
+                # Merge both dicts into a single dict with format
+                # {score: value, ...}
+                all_scores = reg_scores[app]
+                all_scores.update(class_scores[app])
 
-                # Add scores to list
-                scores_values += [all_scores.values()]
+                # Add scores' values to list of values only
+                # [[values_seed_0], [values_seed_1], ...]
+                scores_values += [list(all_scores.values())]
 
             # Turn list of list to np array and average values
+            # We get one value per metric
             scores_values = np.array(scores_values)
             scores_values = np.mean(scores_values, axis=0)
             scores_values = np.round(scores_values, 4).tolist()
 
-
             # Multiply weight x100 and change to integer to avoid points in
             # the file names
-            file_name = "class_weight_" + str(int(class_w * 100))
+            name_weight = "class_weight_" + str(int(class_w * 100))
 
             # Add to scores dictionary
-            scores[file_name] = {dict(zip(all_scores.keys(), scores_values))}
+            # {name_weight: {score: value, ...}, ...}
+            scores[name_weight] = dict(zip(all_scores.keys(), scores_values))
 
             """
             Plot
             """
 
+            # We will plot the last random seed, which should be the
+            # un-shuffled one
             # Denormalize regression and binarize classification
             bin_pred[bin_pred > .5] = 1
             bin_pred[bin_pred <= 0.5] = 0
 
             # Store plots
-            path_fig = os.path.join(path_subfolder, f"{file_name}_reg.png")
+            path_fig = os.path.join(path_subfolder, f"{name_weight}_reg.png")
             plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
                                     savefig=path_fig, threshold=threshold)
 
-            path_fig = os.path.join(path_subfolder, f"{file_name}_class.png")
+            path_fig = os.path.join(path_subfolder, f"{name_weight}_class.png")
             plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
                                     savefig=path_fig)
 
