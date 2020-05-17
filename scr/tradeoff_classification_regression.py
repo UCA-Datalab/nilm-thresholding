@@ -1,4 +1,5 @@
 import os
+import numpy array as np
 import pandas as pd
 import sys
 
@@ -100,96 +101,111 @@ for app in appliances:
             raise ValueError(f"Series length must be {series_len}\n"
                              f"Retrieved length is {ser.shape[1]}")
 
-        """
-        Preprocessing
-        """
-
-        dict_prepro = preprocessing_pipeline_dict(ser, meters,
-                                                  train_size=train_size,
-                                                  validation_size=
-                                                  validation_size,
-                                                  shuffle=False)
-
-        x_train = dict_prepro["train"]["x"]
-        y_train = dict_prepro["train"]["y"]
-        bin_train = dict_prepro["train"]["bin"]
-
-        x_val = dict_prepro["validation"]["x"]
-        y_val = dict_prepro["validation"]["y"]
-        bin_val = dict_prepro["validation"]["bin"]
-
-        x_test = dict_prepro["test"]["x"]
-        y_test = dict_prepro["test"]["y"]
-        bin_test = dict_prepro["test"]["bin"]
-
-        x_max = dict_prepro["max_values"]["x"]
-        y_max = dict_prepro["max_values"]["y"]
-
-        appliances = dict_prepro["appliances"]
-        num_appliances = dict_prepro["num_appliances"]
-        thresholds = dict_prepro["thresholds"]
-
-        # Denormalized threshold
-        threshold = int(thresholds[0] * y_max[0])
-
-        # Create sub-folder
-        path_subfolder = os.path.join(path_output,
-                                      app + '_' + building_name)
-        if not os.path.isdir(path_subfolder):
-            os.mkdir(path_subfolder)
-
-        # Initialize scores dictionary
-        scores = {}
-
-        """
-        Training
-        """
-
         for class_w in class_weights:
             print("\n------------------------------------------------------\n")
             print(f"Classification weight: {class_w}\n")
 
             reg_w = 1 - class_w
 
-            model = create_gru_model(series_len, num_appliances, thresholds,
-                                     classification_weight=class_w,
-                                     regression_weight=reg_w)
+            # Choose random seeds (-1 = do not shuffle the data)
+            seeds = [0, 1, 2, 3, 4, -1]
 
-            model = train_with_validation(model, x_train, [y_train, bin_train],
-                                          x_val, [y_val, bin_val],
-                                          epochs=epochs, batch_size=batch_size,
-                                          patience=patience)
+            # Initialize score list
+            scores_values = []
 
-            """
-            Store
-            """
+            # Do each weight 5 times with different samples
+            for seed in seeds:
+                """
+                Preprocessing
+                """
+
+                dict_prepro = preprocessing_pipeline_dict(ser, meters,
+                                                          train_size=train_size,
+                                                          validation_size=
+                                                          validation_size,
+                                                          shuffle=True,
+                                                          random_seed=seed)
+
+                x_train = dict_prepro["train"]["x"]
+                y_train = dict_prepro["train"]["y"]
+                bin_train = dict_prepro["train"]["bin"]
+
+                x_val = dict_prepro["validation"]["x"]
+                y_val = dict_prepro["validation"]["y"]
+                bin_val = dict_prepro["validation"]["bin"]
+
+                x_test = dict_prepro["test"]["x"]
+                y_test = dict_prepro["test"]["y"]
+                bin_test = dict_prepro["test"]["bin"]
+
+                x_max = dict_prepro["max_values"]["x"]
+                y_max = dict_prepro["max_values"]["y"]
+
+                appliances = dict_prepro["appliances"]
+                num_appliances = dict_prepro["num_appliances"]
+                thresholds = dict_prepro["thresholds"]
+
+                # Denormalized threshold
+                threshold = int(thresholds[0] * y_max[0])
+
+                # Create sub-folder
+                path_subfolder = os.path.join(path_output,
+                                              app + '_' + building_name)
+                if not os.path.isdir(path_subfolder):
+                    os.mkdir(path_subfolder)
+
+                # Initialize scores dictionary
+                scores = {}
+
+                """
+                Training
+                """
+
+                model = create_gru_model(series_len, num_appliances,
+                                         thresholds,
+                                         classification_weight=class_w,
+                                         regression_weight=reg_w)
+
+                model = train_with_validation(model,
+                                              x_train, [y_train, bin_train],
+                                              x_val, [y_val, bin_val],
+                                              epochs=epochs,
+                                              batch_size=batch_size,
+                                              patience=patience)
+
+                """
+                Score
+                """
+
+                [y_pred, bin_pred] = model.predict(x_test)
+                y_pred = denormalize_meters(y_pred, y_max)
+
+                y_test_denorm = denormalize_meters(y_test, y_max)
+
+                reg_scores = regression_score_dict(y_pred, y_test_denorm,
+                                                   appliances)
+                class_scores = classification_scores_dict(bin_pred, bin_test,
+                                                          appliances)
+
+                # Merge both dicts
+                all_scores = reg_scores
+                all_scores.update(class_scores)
+
+                # Add scores to list
+                scores_values += [all_scores.values()]
+
+            # Turn list of list to np array and average values
+            scores_values = np.array(scores_values)
+            scores_values = np.mean(scores_values, axis=0)
+            scores_values = np.round(scores_values, 4).tolist()
+
 
             # Multiply weight x100 and change to integer to avoid points in
             # the file names
             file_name = "class_weight_" + str(int(class_w * 100))
 
-            path_model = os.path.join(path_subfolder, file_name + ".json")
-            store_model_json(model, path_model)
-
-            path_dic = os.path.join(path_subfolder, file_name + ".pkl")
-            store_dict_pkl(dict_prepro["max_values"], path_dic)
-
-            """
-            Score
-            """
-
-            [y_pred, bin_pred] = model.predict(x_test)
-            y_pred = denormalize_meters(y_pred, y_max)
-
-            y_test_denorm = denormalize_meters(y_test, y_max)
-
-            reg_scores = regression_score_dict(y_pred, y_test_denorm,
-                                               appliances)
-            class_scores = classification_scores_dict(bin_pred, bin_test,
-                                                      appliances)
-
             # Add to scores dictionary
-            scores[file_name] = {**reg_scores[app], **class_scores[app]}
+            scores[file_name] = {dict(zip(all_scores.keys(), scores_values))}
 
             """
             Plot
