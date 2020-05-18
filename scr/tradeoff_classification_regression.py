@@ -37,20 +37,20 @@ num_series = 80
 skip_first = None
 to_int = True
 
-train_size = .6
-validation_size = .2
+train_size = .8
+validation_size = .1
 epochs = 1000
 batch_size = 64
 patience = 100
-learning_rate=1e-4
-sigma_c = 50
+learning_rate=1e-3
+sigma_c = 10
 
 # Weights
 class_weights = [0, 0.5, 1]
 
 # Choose random seeds (-1 = do not shuffle the data)
 # We will train one model per seed, shuffling the data randomly
-seeds = [1, -1]
+seeds = [-1]
 
 """
 Begin script
@@ -185,7 +185,12 @@ for app in appliances:
                 """
 
                 [y_pred, bin_pred] = model.predict(x_test)
+                
+                # Denormalize regression and binarize classification
+                y_pred[y_pred < 0] = 0
                 y_pred = denormalize_meters(y_pred, y_max)
+                bin_pred[bin_pred > .5] = 1
+                bin_pred[bin_pred <= 0.5] = 0
 
                 y_test_denorm = denormalize_meters(y_test, y_max)
 
@@ -225,11 +230,8 @@ for app in appliances:
 
             # We will plot the last random seed, which should be the
             # un-shuffled one
-            # Denormalize regression and binarize classification
-            bin_pred[bin_pred > .5] = 1
-            bin_pred[bin_pred <= 0.5] = 0
 
-            # Store plots
+            # Store test plots            
             path_fig = os.path.join(path_subfolder, f"{name_weight}_reg.png")
             plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
                                     savefig=path_fig, threshold=threshold)
@@ -237,6 +239,17 @@ for app in appliances:
             path_fig = os.path.join(path_subfolder, f"{name_weight}_class.png")
             plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
                                     savefig=path_fig)
+            
+            # Store train plot
+            [y_pred, _] = model.predict(x_train)
+            y_pred[y_pred < 0] = 0
+            
+            y_pred = denormalize_meters(y_pred, y_max)
+            y_train_denorm = denormalize_meters(y_train, y_max)
+            
+            path_fig = os.path.join(path_subfolder, f"{name_weight}_reg_train.png")
+            plot_real_vs_prediction(y_train_denorm, y_pred, idx=0,
+                                    savefig=path_fig, threshold=threshold)
 
         # Create dataframe from dictionary
         df = pd.DataFrame.from_dict(scores)

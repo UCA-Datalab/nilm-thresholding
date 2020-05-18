@@ -48,6 +48,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
                                               "equal the amount of appliances"
         
     # CONSTANTS
+    
     k_thresh = constant(thresholds)
     k_sigma = constant(sigma_c)
 
@@ -74,7 +75,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
 
     # Regression output
     # Fully Connected Layers (batch, series_len, num_appliances)
-    regression = Dense(num_appliances, activation='relu',
+    regression = Dense(num_appliances, activation='linear',
                        name='regression')(dense)
 
     # Classification output
@@ -85,20 +86,16 @@ def create_gru_model(series_len, num_appliances, thresholds,
 
     # TRAINING
 
-    # Weights
-    # We scale the weights because BCE grows bigger than MSE
-    class_w = classification_weight# * .003
-    reg_w = regression_weight# * .997
-
     # Optimizer
     opt = Adam(learning_rate=learning_rate)
-
+    
+    # Compile the model
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
     model.compile(loss={"regression": "mean_squared_error",
                         "classification": "binary_crossentropy"},
-                  loss_weights={"regression": reg_w,
-                                "classification": class_w},
+                  loss_weights={"regression": regression_weight,
+                                "classification": classification_weight},
                   optimizer=opt)
 
     return model
