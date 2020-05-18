@@ -4,6 +4,8 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
+
+from keras.backend import constant
 from keras.layers import Lambda
 from keras.layers import Activation
 from keras.activations import sigmoid
@@ -13,7 +15,7 @@ from keras.optimizers import Adam
 
 def create_gru_model(series_len, num_appliances, thresholds,
                      regression_weight=1, classification_weight=1,
-                     learning_rate=0.001, sigma_c=10):
+                     learning_rate=0.001, sigma_c=50):
     """
     Creates a Gated Recurrent Unit model.
     Based on OdysseasKr GRU model:
@@ -32,7 +34,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
         Weight for the classification loss (BCE)
     learning_rate : float, default=0.001
         Starting learning rate for the Adam optimizer.
-    sigma_c : float, default=10
+    sigma_c : float, default=50
         Controls the slope of the sigma function. Being T the threshold and
         C this parameters sigma_c, we define the sigma as:
         f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
@@ -44,6 +46,10 @@ def create_gru_model(series_len, num_appliances, thresholds,
     """
     assert len(thresholds) == num_appliances, "Number of thresholds must " \
                                               "equal the amount of appliances"
+        
+    # CONSTANTS
+    k_thresh = constant(thresholds)
+    k_sigma = constant(sigma_c)
 
     # ARCHITECTURE
 
@@ -73,7 +79,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
 
     # Classification output
     # Apply a sigmoid centered around the threshold value of each appliance
-    subtract = Lambda(lambda x: (x - thresholds) * sigma_c)(regression)
+    subtract = Lambda(lambda x: (x - k_thresh) * k_sigma)(regression)
     # Fully Connected Layers (batch, series_len, num_appliances)
     classification = Activation(sigmoid, name='classification')(subtract)
 
@@ -81,8 +87,8 @@ def create_gru_model(series_len, num_appliances, thresholds,
 
     # Weights
     # We scale the weights because BCE grows bigger than MSE
-    class_w = classification_weight * .003
-    reg_w = regression_weight * .997
+    class_w = classification_weight# * .003
+    reg_w = regression_weight# * .997
 
     # Optimizer
     opt = Adam(learning_rate=learning_rate)

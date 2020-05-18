@@ -23,8 +23,7 @@ Test different classification and regression weights for each of the listed
 appliances in each listed house.
 """
 
-appliances = ['dishwasher',
-              'fridge',
+appliances = ['fridge',
               'microwave',
               'television']
 dict_path_buildings = {
@@ -43,13 +42,15 @@ validation_size = .2
 epochs = 1000
 batch_size = 64
 patience = 100
+learning_rate=1e-4
+sigma_c = 50
 
 # Weights
-class_weights = [0, 0.25, 0.5, 0.75, 1]
+class_weights = [0, 0.5, 1]
 
 # Choose random seeds (-1 = do not shuffle the data)
 # We will train one model per seed, shuffling the data randomly
-seeds = [0, 1, 2, 3, -1]
+seeds = [1, -1]
 
 """
 Begin script
@@ -168,7 +169,9 @@ for app in appliances:
                 model = create_gru_model(series_len, num_appliances,
                                          thresholds,
                                          classification_weight=class_w,
-                                         regression_weight=reg_w)
+                                         regression_weight=reg_w,
+                                         learning_rate=learning_rate,
+                                         sigma_c=sigma_c)
 
                 model = train_with_validation(model,
                                               x_train, [y_train, bin_train],
