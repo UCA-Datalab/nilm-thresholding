@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import sys
 
-from itertools import permutations
+from itertools import product
 from math import ceil
 
 sys.path.insert(0, "../better_nilm")
@@ -71,8 +71,7 @@ for path, ls in dict_path_buildings.items():
         buildings += [(path, build)]
 
 # Combine both list into list of tuples
-params = [list(zip(x, series_lens)) for x in permutations(sample_periods,
-                                                          len(series_lens))]
+list_params = list(product(sample_periods, series_lens))
 
 # Loop through appliances, then through buildings
 for app in appliances:
@@ -95,7 +94,7 @@ for app in appliances:
         # Initialize scores dictionary
         scores = {}
 
-        for (sample_period, series_len) in params:
+        for sample_period, series_len in list_params:
             print("\n------------------------------------------------------\n")
             print(f"Sample period: {sample_period} seconds")
             print(f"Series length: {series_len}\n")
