@@ -53,7 +53,7 @@ reg_w = 1
 
 # Choose random seeds (-1 = do not shuffle the data)
 # We will train one model per seed, shuffling the data randomly
-seeds = [1, -1]
+seeds = [1, 2, -1]
 
 """
 Begin script
@@ -92,7 +92,8 @@ for app in appliances:
         dict_path_building = {tuple_[0]: tuple_[1]}
 
         # Initialize scores dictionary
-        scores = {}
+        dict_scores = {}
+        dict_scores_std = {}
 
         for sample_period, series_len in list_params:
             print("\n------------------------------------------------------\n")
@@ -223,8 +224,12 @@ for app in appliances:
             # Turn list of list to np array and average values
             # We get one value per metric
             scores_values = np.array(scores_values)
-            scores_values = np.mean(scores_values, axis=0)
-            scores_values = np.round(scores_values, 4).tolist()
+
+            scores_mean = np.mean(scores_values, axis=0)
+            scores_mean = np.round(scores_mean, 4).tolist()
+
+            scores_std = np.std(scores_values, axis=0)
+            scores_std = np.round(scores_std, 4).tolist()
 
             # Name this combination
             name = "sample_" + str(int(sample_period)) + "_length_" + \
@@ -232,7 +237,8 @@ for app in appliances:
 
             # Add to scores dictionary
             # {name: {score: value, ...}, ...}
-            scores[name] = dict(zip(all_scores.keys(), scores_values))
+            dict_scores[name] = dict(zip(all_scores.keys(), scores_mean))
+            dict_scores_std[name] = dict(zip(all_scores.keys(), scores_std))
 
             """
             Plot
@@ -261,8 +267,12 @@ for app in appliances:
                                     savefig=path_fig, y_total=x_test_denorm)
 
         # Create dataframe from dictionary
-        df = pd.DataFrame.from_dict(scores)
+        df = pd.DataFrame.from_dict(dict_scores)
         path_df = os.path.join(path_subfolder, "scores.csv")
+        df.to_csv(path_df)
+
+        df = pd.DataFrame.from_dict(dict_scores_std)
+        path_df = os.path.join(path_subfolder, "scores_std.csv")
         df.to_csv(path_df)
 
         print("Done.\n")
