@@ -40,7 +40,8 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     
     if y_total is not None:
         plt_total = y_total[:, :, idx].flatten().copy()
-        assert len(plt_total) == len(plt_test), "All arrays must have the same length."
+        assert len(plt_total) == len(plt_test), "All arrays must have the " \
+                                                "same length. "
         plt.plot(plt_x, plt_total, alpha=.75)
         legend += ["Total load"]
 
