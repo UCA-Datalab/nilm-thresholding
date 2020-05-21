@@ -155,7 +155,7 @@ for app in appliances:
                 x_max = dict_prepro["max_values"]["x"]
                 y_max = dict_prepro["max_values"]["y"]
 
-                appliances = dict_prepro["appliances"]
+                apps = dict_prepro["appliances"]
                 num_appliances = dict_prepro["num_appliances"]
                 thresholds = dict_prepro["thresholds"]
 
@@ -198,9 +198,9 @@ for app in appliances:
                 # Get scores dictionaries, which have the format
                 # {app: {score: value, score: value, ...}}
                 reg_scores = regression_score_dict(y_pred, y_test_denorm,
-                                                   appliances)
+                                                   apps)
                 class_scores = classification_scores_dict(bin_pred, bin_test,
-                                                          appliances)
+                                                          apps)
 
                 # Merge both dicts into a single dict with format
                 # {score: value, ...}
