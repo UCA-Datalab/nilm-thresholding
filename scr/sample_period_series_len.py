@@ -220,45 +220,45 @@ for app in appliances:
                 # [[values_seed_0], [values_seed_1], ...]
                 scores_values += [list(all_scores.values())]
 
-                # Turn list of list to np array and average values
-                # We get one value per metric
-                scores_values = np.array(scores_values)
-                scores_values = np.mean(scores_values, axis=0)
-                scores_values = np.round(scores_values, 4).tolist()
+            # Turn list of list to np array and average values
+            # We get one value per metric
+            scores_values = np.array(scores_values)
+            scores_values = np.mean(scores_values, axis=0)
+            scores_values = np.round(scores_values, 4).tolist()
 
-                # Name this combination
-                name = "sample_" + str(int(sample_period)) + "_length_" + \
-                       str(int(series_len))
+            # Name this combination
+            name = "sample_" + str(int(sample_period)) + "_length_" + \
+                   str(int(series_len))
 
-                # Add to scores dictionary
-                # {name: {score: value, ...}, ...}
-                scores[name] = dict(zip(all_scores.keys(), scores_values))
+            # Add to scores dictionary
+            # {name: {score: value, ...}, ...}
+            scores[name] = dict(zip(all_scores.keys(), scores_values))
 
-                """
-                Plot
-                """
+            """
+            Plot
+            """
 
-                # We will plot the last random seed, which should be the
-                # un-shuffled one
+            # We will plot the last random seed, which should be the
+            # un-shuffled one
 
-                # Store test plots
-                path_fig = os.path.join(path_subfolder, f"{name}_reg.png")
-                plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
-                                        sample_period=sample_period,
-                                        savefig=path_fig, threshold=threshold)
+            # Store test plots
+            path_fig = os.path.join(path_subfolder, f"{name}_reg.png")
+            plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
+                                    sample_period=sample_period,
+                                    savefig=path_fig, threshold=threshold)
 
-                path_fig = os.path.join(path_subfolder, f"{name}_class.png")
-                plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
-                                        sample_period=sample_period,
-                                        savefig=path_fig)
+            path_fig = os.path.join(path_subfolder, f"{name}_class.png")
+            plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
+                                    sample_period=sample_period,
+                                    savefig=path_fig)
 
-                # Store train plot
-                x_test_denorm = denormalize_meters(x_test, x_max)
+            # Store train plot
+            x_test_denorm = denormalize_meters(x_test, x_max)
 
-                path_fig = os.path.join(path_subfolder, f"{name}_reg_total.png")
-                plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
-                                        sample_period=sample_period,
-                                        savefig=path_fig, y_total=x_test_denorm)
+            path_fig = os.path.join(path_subfolder, f"{name}_reg_total.png")
+            plot_real_vs_prediction(y_test_denorm, y_pred, idx=0,
+                                    sample_period=sample_period,
+                                    savefig=path_fig, y_total=x_test_denorm)
 
         # Create dataframe from dictionary
         df = pd.DataFrame.from_dict(scores)
