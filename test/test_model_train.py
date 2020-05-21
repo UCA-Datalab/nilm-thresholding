@@ -14,9 +14,9 @@ from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
 
 # This path is set to work on Zappa
-dict_path_buildings = {"../nilm/data/nilmtk/redd.h5": 1}
+dict_path_buildings = {"../nilm/data/nilmtk/ukdale.h5": 2}
 
-appliances = ["fridge", "microwave"]
+appliances = ["fridge"]
 sample_period = 6
 series_len = 600
 max_series = None
@@ -102,10 +102,13 @@ if not os.path.isdir(path_plots):
 
 for idx, app in enumerate(appliances):
     path_fig = os.path.join(path_plots, f"model_train_{app}.png")
-    plot_real_vs_prediction(y_test, y_pred, idx=idx, savefig=path_fig)
+    plot_real_vs_prediction(y_test, y_pred, idx=idx,
+                            sample_period=sample_period, savefig=path_fig)
 
     path_fig = os.path.join(path_plots, f"model_train_{app}_bin.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, savefig=path_fig)
+    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
+                            sample_period=sample_period, savefig=path_fig)
 
     path_fig = os.path.join(path_plots, f"model_train_{app}_real.png")
-    plot_load_and_state(y_test, bin_test, idx=idx, savefig=path_fig)
+    plot_load_and_state(y_test, bin_test, idx=idx,
+                        sample_period=sample_period, savefig=path_fig)

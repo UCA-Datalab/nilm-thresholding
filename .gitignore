@@ -1,4 +1,9 @@
 plots/
+outputs/
+output/
+
+# Log
+log.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

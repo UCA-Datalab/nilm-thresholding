@@ -21,6 +21,7 @@ def train_test_split(ser, train_size, shuffle=True, random_seed=0):
     shuffle : bool, default=True
         Shuffle the data before splitting it
     random_seed : int, default=0
+    If < 0, data is not shuffled
 
     Returns
     -------
@@ -43,7 +44,7 @@ def train_test_split(ser, train_size, shuffle=True, random_seed=0):
         raise ValueError(f"train_size {train_size} returns the 100% of series")
 
     # Shuffle our time series array
-    if shuffle:
+    if shuffle and random_seed > 0:
         np.random.seed(random_seed)
         np.random.shuffle(ser)
 
