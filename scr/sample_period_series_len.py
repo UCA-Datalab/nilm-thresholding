@@ -27,12 +27,12 @@ appliances in each listed house.
 """
 
 appliances = ['fridge',
-              'microwave',
-              'television']
+              'kettle',
+              'microwave']
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
-path_output = "outputs/tradeoff_classification_regression/"
+path_output = "outputs/sample_period_series_len/"
 
 sample_periods = [6, 30, 60]
 series_lens = [60, 120, 600]
@@ -95,7 +95,7 @@ for app in appliances:
         # Initialize scores dictionary
         scores = {}
 
-        for sample_period, series_len in params:
+        for (sample_period, series_len) in params:
             print("\n------------------------------------------------------\n")
             print(f"Sample period: {sample_period} seconds")
             print(f"Series length: {series_len}\n")
