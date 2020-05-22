@@ -26,20 +26,32 @@ Test different classification and regression weights for each of the listed
 appliances in each listed house.
 """
 
+"""
+PARAMETERS
+Can be modified at will
+"""
+
+# List of appliances
 appliances = ['fridge',
               'kettle',
               'microwave']
+
+# List of buildings
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}
+
+# Output path
 path_output = "outputs/sample_period_series_len/"
 
-sample_periods = [6, 30, 60]
-series_lens = [60, 120, 600]
-seconds = 345600  # 4 days
-skip_first = None
-to_int = True
+# Model parameters
+sample_periods = [6, 30, 60]  # in seconds
+series_lens = [60, 120, 600]  # in number of records
+seconds_total = 345600  # (4 days) total time elapsed in all the series
+skip_first = None  # number of series to skip
+to_int = True  # change load values to integer
 
+# Train parameters
 train_size = .625
 validation_size = .125
 epochs = 1000
@@ -48,15 +60,18 @@ patience = 100
 learning_rate = 1e-3
 sigma_c = 10
 
+# Weights
 class_w = 0
 reg_w = 1
 
 # Choose random seeds (-1 = do not shuffle the data)
 # We will train one model per seed, shuffling the data randomly
-seeds = [1, 2, -1]
+seeds = [1, 2, 3, -1]
 
 """
-Begin script
+SCRIPT
+Do not change anything below this point unless you know pretty well what you 
+are doing
 """
 
 # Create output directory
@@ -70,7 +85,7 @@ for path, ls in dict_path_buildings.items():
     for build in ls:
         buildings += [(path, build)]
 
-# Combine both list into list of tuples
+# Combine both samples_periods and series_lens lists into list of tuples
 list_params = list(product(sample_periods, series_lens))
 
 # Loop through appliances, then through buildings
@@ -81,6 +96,12 @@ for app in appliances:
         dataset = tuple_[0].rsplit("/", 1)[1]
         dataset = dataset.rsplit(".", 1)[0]
         building_name = dataset + str(tuple_[1])
+
+        # Create sub-folder containing appliance + building
+        path_subfolder = os.path.join(path_output,
+                                      app + '_' + building_name)
+        if not os.path.isdir(path_subfolder):
+            os.mkdir(path_subfolder)
 
         print("\n==========================================================\n")
         print(f"Appliance: {app}\nBuilding: {building_name}\n")
@@ -95,13 +116,14 @@ for app in appliances:
         dict_scores = {}
         dict_scores_std = {}
 
+        # Loop through sample_period and series_len
         for sample_period, series_len in list_params:
             print("\n------------------------------------------------------\n")
             print(f"Sample period: {sample_period} seconds")
             print(f"Series length: {series_len}\n")
 
-            # Adapt num_series to seconds
-            num_series = ceil(seconds / (sample_period * series_len))
+            # Adapt num_series to seconds_total
+            num_series = ceil(seconds_total / (sample_period * series_len))
 
             # If the appliance is not in the building, skip it
             try:
@@ -126,12 +148,6 @@ for app in appliances:
                 raise ValueError(f"Series length must be {series_len}\n"
                                  f"Retrieved length is {ser.shape[1]}")
 
-            # Create sub-folder containing appliance + building
-            path_subfolder = os.path.join(path_output,
-                                          app + '_' + building_name)
-            if not os.path.isdir(path_subfolder):
-                os.mkdir(path_subfolder)
-
             # Initialize score list
             scores_values = []
 
@@ -142,13 +158,18 @@ for app in appliances:
                 Preprocessing
                 """
 
-                dict_prepro = preprocessing_pipeline_dict(ser, meters,
-                                                          train_size=
-                                                          train_size,
-                                                          validation_size=
-                                                          validation_size,
-                                                          shuffle=True,
-                                                          random_seed=seed)
+                try:
+                    dict_prepro = preprocessing_pipeline_dict(ser, meters,
+                                                              train_size=
+                                                              train_size,
+                                                              validation_size=
+                                                              validation_size,
+                                                              shuffle=True,
+                                                              random_seed=seed)
+                except ValueError:
+                    print("Couldn't preprocess the data due to a low amount "
+                          "of series.\nSkipped.\n")
+                    continue
 
                 x_train = dict_prepro["train"]["x"]
                 y_train = dict_prepro["train"]["y"]
@@ -168,9 +189,6 @@ for app in appliances:
                 apps = dict_prepro["appliances"]
                 num_appliances = dict_prepro["num_appliances"]
                 thresholds = dict_prepro["thresholds"]
-
-                # Denormalized threshold
-                threshold = int(thresholds[0] * y_max[0])
 
                 """
                 Training
@@ -243,6 +261,9 @@ for app in appliances:
             """
             Plot
             """
+
+            # Denormalize threshold
+            threshold = int(thresholds[0] * y_max[0])
 
             # We will plot the last random seed, which should be the
             # un-shuffled one
