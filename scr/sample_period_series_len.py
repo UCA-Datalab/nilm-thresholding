@@ -47,13 +47,13 @@ path_output = "outputs/sample_period_series_len/"
 # Model parameters
 sample_periods = [6, 30, 60]  # in seconds
 series_lens = [60, 120, 600]  # in number of records
-seconds_total = 345600  # (4 days) total time elapsed in all the series
+seconds_total = 86400 * 30  # (30 days) total time elapsed in all the series
 skip_first = None  # number of series to skip
 to_int = True  # change load values to integer
 
 # Train parameters
-train_size = .625
-validation_size = .125
+train_size = .5
+validation_size = .25
 epochs = 1000
 batch_size = 64
 patience = 100
@@ -66,7 +66,7 @@ reg_w = 1
 
 # Choose random seeds (-1 = do not shuffle the data)
 # We will train one model per seed, shuffling the data randomly
-seeds = [1, 2, 3, -1]
+seeds = [1, 2, -1]
 
 """
 SCRIPT
@@ -238,6 +238,10 @@ for app in appliances:
                 # Add scores' values to list of values only
                 # [[values_seed_0], [values_seed_1], ...]
                 scores_values += [list(all_scores.values())]
+
+            # Ensure that at least one model was trained
+            if len(scores_values) <= 0:
+                continue
 
             # Turn list of list to np array and average values
             # We get one value per metric
