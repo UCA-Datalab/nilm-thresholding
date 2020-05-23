@@ -52,8 +52,8 @@ skip_first = None  # number of series to skip
 to_int = True  # change load values to integer
 
 # Train parameters
-train_size = .5
-validation_size = .25
+train_size = .6
+validation_size = .2
 epochs = 1000
 batch_size = 64
 patience = 100
@@ -234,6 +234,10 @@ for app in appliances:
                 # {score: value, ...}
                 all_scores = reg_scores[app]
                 all_scores.update(class_scores[app])
+
+                # Add total number of seconds used for training
+                all_scores["seconds_train"] = y_train.shape[0] * \
+                                              sample_period * series_len
 
                 # Add scores' values to list of values only
                 # [[values_seed_0], [values_seed_1], ...]
