@@ -306,6 +306,7 @@ def binarize(ser, thresholds):
 
 def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                                 main="_main", shuffle=True, random_seed=0,
+                                thresholds=None,
                                 normalize=True):
     """
     This function serves as a pipeline for preprocessing. It takes the whole
@@ -330,6 +331,8 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
     shuffle : bool, default=True
         Shuffles the data before splitting it
     random_seed : int, default=0
+    thresholds : list, default=None
+        If not provided, they are computed.
     normalize : bool, default=True
         Normalize the data. Please bear in mind that the thresholds stored
         for binarization depend on whether you have applied normalization
@@ -382,7 +385,8 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
         y_max = None
 
     # Get the binary meter status of each Y series
-    thresholds = get_thresholds(y_train)
+    if thresholds is None:
+        thresholds = get_thresholds(y_train)
     bin_train = binarize(y_train, thresholds)
     bin_val = binarize(y_val, thresholds)
     bin_test = binarize(y_test, thresholds)
