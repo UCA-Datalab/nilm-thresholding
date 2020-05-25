@@ -346,7 +346,7 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
         raise ValueError(f"Train size: {train_size} is too low for the given "
                          f"amount of series: {num_series}")
     if floor(num_series * validation_size) <= 0:
-        raise ValueError(f"Validation size: {validation_size} is too low for"
+        raise ValueError(f"Validation size: {validation_size} is too low for "
                          f"the given amount of series: {num_series}")
 
     # Split data intro train and validation+test

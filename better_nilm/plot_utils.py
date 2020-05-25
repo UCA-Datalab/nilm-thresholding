@@ -35,19 +35,19 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     plt.figure(dpi=180)
     plt.plot(plt_x, plt_test)
     plt.plot(plt_x, plt_pred, alpha=.75)
-
-    if threshold is not None:
-        plt.hlines(threshold, plt_x[0], plt_x[-1], colors='g',
-                   linestyles='dashed')
         
     legend = ["Test", "Prediction"]
     
     if y_total is not None:
         plt_total = y_total[:, :, idx].flatten().copy()
-        assert len(plt_total) == len(plt_test), "All arrays must have the same length."
+        assert len(plt_total) == len(plt_test), "All arrays must have the " \
+                                                "same length. "
         plt.plot(plt_x, plt_total, alpha=.75)
         legend += ["Total load"]
-        
+
+    if threshold is not None:
+        plt.hlines(threshold, plt_x[0], plt_x[-1], colors='g',
+                   linestyles='dashed')
     
     plt.ylabel("Load (w)")
     plt.xlabel("Time (s)")
