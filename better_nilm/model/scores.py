@@ -1,6 +1,7 @@
 import numpy as np
 
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import f1_score
@@ -63,8 +64,16 @@ def regression_score_dict(y_pred, y_real, appliances):
         app_mse = mean_squared_error(app_real, app_pred)
         app_rmse = np.sqrt(app_mse)
 
+        # MAE
+        app_mae = mean_absolute_error(app_real, app_pred)
+
+        # SAE (Signal Aggregate Error)
+        app_sae = (np.sum(app_pred) - np.sum(app_real)) / np.sum(app_real)
+
         scores[app] = {"mse": round(app_mse, 2),
-                       "rmse": round(app_rmse, 2)}
+                       "rmse": round(app_rmse, 2),
+                       "mae": round(app_mae, 2),
+                       "sae": round(app_sae, 2)}
 
     return scores
 
