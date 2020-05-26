@@ -1,3 +1,4 @@
+import os
 import sys
 
 sys.path.insert(0, "../better_nilm")
@@ -12,6 +13,13 @@ from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
 from better_nilm.model.scores import classification_scores_dict
+
+from better_nilm.model.preprocessing import feature_target_split
+from better_nilm.model.preprocessing import normalize_meters
+from better_nilm.model.preprocessing import binarize
+
+from better_nilm.plot_utils import plot_real_vs_prediction
+from better_nilm.plot_utils import plot_load_and_state
 
 # This path is set to work on Zappa
 dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
@@ -35,7 +43,7 @@ train_size = .8
 validation_size = .1
 epochs = 1000
 batch_size = 64
-patience = 100
+patience = 300
 learning_rate = 1e-3
 sigma_c = 10
 
@@ -73,6 +81,7 @@ x_val = dict_prepro["validation"]["x"]
 y_val = dict_prepro["validation"]["y"]
 bin_val = dict_prepro["validation"]["bin"]
 
+x_max = dict_prepro["max_values"]["x"]
 y_max = dict_prepro["max_values"]["y"]
 
 appliances = dict_prepro["appliances"]
@@ -96,12 +105,11 @@ model = train_with_validation(model,
                               shuffle=False,
                               patience=patience)
 
-
 """
 Testing
 """
 
-ser, meters = buildings_to_array(dict_path_test,
+ser_test, _ = buildings_to_array(dict_path_test,
                                  appliances=appliances,
                                  sample_period=sample_period,
                                  series_len=series_len,
@@ -109,16 +117,16 @@ ser, meters = buildings_to_array(dict_path_test,
                                  skip_first=skip_first,
                                  to_int=to_int)
 
-dict_prepro = preprocessing_pipeline_dict(ser, meters,
-                                          train_size=train_size,
-                                          validation_size=validation_size,
-                                          thresholds=thresholds,
-                                          shuffle=False)
+x_test, y_test = feature_target_split(ser_test, meters)
 
-x_test = dict_prepro["test"]["x"]
-y_test = dict_prepro["test"]["y"]
-bin_test = dict_prepro["test"]["bin"]
+# Normalize
+x_test, _ = normalize_meters(x_test, max_values=x_max)
+y_test, _ = normalize_meters(y_test, max_values=y_max)
 
+# Binarize
+bin_test = binarize(y_test, thresholds)
+
+# Prediction
 [y_pred, bin_pred] = model.predict(x_test)
 y_pred = denormalize_meters(y_pred, y_max)
 bin_pred[bin_pred > .5] = 1
@@ -135,3 +143,24 @@ print(reg_scores)
 
 class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
 print(class_scores)
+
+"""
+Plot
+"""
+
+path_plots = "test/plots"
+if not os.path.isdir(path_plots):
+    os.mkdir(path_plots)
+
+for idx, app in enumerate(appliances):
+    path_fig = os.path.join(path_plots, f"massidda_regression.png")
+    plot_real_vs_prediction(y_test, y_pred, idx=idx,
+                            sample_period=sample_period, savefig=path_fig)
+
+    path_fig = os.path.join(path_plots, f"massidda_classification.png")
+    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
+                            sample_period=sample_period, savefig=path_fig)
+
+    path_fig = os.path.join(path_plots, f"massidda_binarization.png")
+    plot_load_and_state(y_test, bin_test, idx=idx,
+                        sample_period=sample_period, savefig=path_fig)
