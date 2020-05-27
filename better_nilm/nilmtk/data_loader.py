@@ -129,13 +129,18 @@ def _remove_exceed_records(df, sample_period, series_len):
         # and add the idx to our drop list
         # Otherwise, jump to the next sequence
         if (stamp_end - stamp_start).total_seconds() != expected_delta:
-            drop_idx += [stamp_start]
+            drop_idx += [idx]
             idx += 1
         else:
             idx += series_len
 
     # Drop the indexes from the dataframe
+    # We are using numerical indexes (0, 1, 2...) while our current df as the
+    # dates as indexes. We reset the date index, drop some numerical indexes,
+    # and then set back the date index
+    df.reset_index(inplace=True)
     df.drop(drop_idx, axis=0, inplace=True)
+    df.set_index('index', inplace=True)
 
     assert df.shape[0] % series_len == 0, f"Number of rows in df " \
                                           f"{df.shape[0]}\nis not a multiple" \
