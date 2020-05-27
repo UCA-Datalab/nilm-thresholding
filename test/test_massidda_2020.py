@@ -153,14 +153,14 @@ if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
 for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"massidda_regression.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_regression.png")
     plot_real_vs_prediction(y_test, y_pred, idx=idx,
                             sample_period=sample_period, savefig=path_fig)
 
-    path_fig = os.path.join(path_plots, f"massidda_classification.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_classification.png")
     plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
                             sample_period=sample_period, savefig=path_fig)
 
-    path_fig = os.path.join(path_plots, f"massidda_binarization.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_binarization.png")
     plot_load_and_state(y_test, bin_test, idx=idx,
                         sample_period=sample_period, savefig=path_fig)
