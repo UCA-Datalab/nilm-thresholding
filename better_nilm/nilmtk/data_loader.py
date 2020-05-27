@@ -136,6 +136,10 @@ def _remove_exceed_records(df, sample_period, series_len):
 
     # Drop the indexes from the dataframe
     df.drop(drop_idx, axis=0, inplace=True)
+
+    assert df.shape[0] % series_len == 0, f"Number of rows in df " \
+                                          f"{df.shape[0]}\nis not a multiple" \
+                                          f" of series_len {series_len}"
     return df
 
 
