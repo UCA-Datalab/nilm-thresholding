@@ -10,6 +10,7 @@ from better_nilm.format_utils import to_tuple
 from better_nilm.format_utils import flatten_list
 from better_nilm.str_utils import homogenize_string
 
+from better_nilm.nilmtk.metergroup_utils import APPLIANCE_NAMES
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
 from better_nilm.nilmtk.metergroup_utils import df_from_sections
 
@@ -56,11 +57,19 @@ def metergroup_from_file(path_file, building, appliances=None):
     # appliances names - which may not be the same
     building_appliances = elec.label().split(", ")
     building_appliances = set([app.lower() for app in building_appliances])
-    # Target appliances names are suppossed to be homogenized
-    # We homogenize the building names for the comparisson, but then store
+    # Target appliances names are supposed to be homogenized
+    # We homogenize the building names for the comparison, but then store
     # their original name in order to retrieve their meter later
-    target_appliances = [app for app in building_appliances if
-                         homogenize_string(app) in to_list(appliances)]
+    target_appliances = []
+    not_found_apps = appliances.copy()
+    for app in building_appliances:
+        # Homogenize building app name while maintaining the original
+        app_homo = homogenize_string(app)
+        app_homo = APPLIANCE_NAMES.get(app_homo, app_homo)
+        # If app is both in building and input list, add it to target
+        if app_homo in appliances:
+            target_appliances += [app]
+            not_found_apps.remove(app_homo)
 
     # If there are no target appliances, raise error
     if len(target_appliances) == 0:
@@ -69,6 +78,12 @@ def metergroup_from_file(path_file, building, appliances=None):
                          f"Target appliances: {', '.join(appliances)}\n"
                          "Building appliances: "
                          f"{', '.join(building_appliances)}")
+
+    # List not found appliances
+    if len(not_found_apps) > 0:
+        print("WARNING\nThe following appliances were not found in building"
+              f"{building} of file {path_file}:\n"
+              f"{', '.split(not_found_apps)}\nWe assume they were always OFF")
 
     # Total electric load (aggregated)
     elec_main = to_tuple(elec.mains().instance())
