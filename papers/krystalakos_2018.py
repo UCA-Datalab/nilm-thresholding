@@ -21,11 +21,13 @@ from better_nilm.model.preprocessing import binarize
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
 
-# This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2, 4]}
-dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
+from better_nilm.model.export import store_model_json
 
-appliances = ['fridge']
+# This path is set to work on Zappa
+dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
+dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
+
+appliance = 'washingmachine'
 
 sample_period = 6  # in seconds
 series_len = 50  # in number of records
@@ -37,7 +39,7 @@ train_size = .8
 validation_size = .1
 epochs = 1000
 batch_size = 64
-patience = 300
+patience = 100
 learning_rate = 1e-3
 sigma_c = 10
 
@@ -50,7 +52,7 @@ Load the train data
 """
 
 ser, meters = buildings_to_array(dict_path_train,
-                                 appliances=appliances,
+                                 appliances=appliance,
                                  sample_period=sample_period,
                                  series_len=series_len,
                                  max_series=max_series,
@@ -142,20 +144,33 @@ print(class_scores)
 Plot
 """
 
-path_plots = "test/plots"
+path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"krystalakos_{app}_regression.png")
-    plot_real_vs_prediction(y_test, y_pred, idx=idx,
-                            sample_period=sample_period, savefig=path_fig)
 
-    path_fig = os.path.join(path_plots, "krystalakos"
-                                        f"_{app}_classification.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
-                            sample_period=sample_period, savefig=path_fig)
-
-    path_fig = os.path.join(path_plots, f"krystalakos_{app}_binarization.png")
-    plot_load_and_state(y_test, bin_test, idx=idx,
+path_fig = os.path.join(path_plots, f"krystalakos_{appliance}_regression.png")
+plot_real_vs_prediction(y_test, y_pred, idx=0,
                         sample_period=sample_period, savefig=path_fig)
+
+path_fig = os.path.join(path_plots, "krystalakos"
+                                    f"_{appliance}_classification.png")
+plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
+                        sample_period=sample_period, savefig=path_fig)
+
+path_fig = os.path.join(path_plots,
+                        f"krystalakos_{appliance}_binarization.png")
+plot_load_and_state(y_test, bin_test, idx=0,
+                    sample_period=sample_period, savefig=path_fig)
+
+"""
+Store model
+"""
+
+path_outputs = "papers/outputs"
+if not os.path.isdir(path_outputs):
+    os.mkdir(path_outputs)
+
+path_model = os.path.join(path_outputs, f"krystalakos_{appliance}.json")
+
+store_model_json(model, path_model)

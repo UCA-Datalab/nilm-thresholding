@@ -21,6 +21,8 @@ from better_nilm.model.preprocessing import binarize
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
 
+from better_nilm.model.export import store_model_json
+
 # This path is set to work on Zappa
 dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
 dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
@@ -148,7 +150,7 @@ print(class_scores)
 Plot
 """
 
-path_plots = "test/plots"
+path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
@@ -164,3 +166,15 @@ for idx, app in enumerate(appliances):
     path_fig = os.path.join(path_plots, f"massidda_{app}_binarization.png")
     plot_load_and_state(y_test, bin_test, idx=idx,
                         sample_period=sample_period, savefig=path_fig)
+
+"""
+Store model
+"""
+
+path_outputs = "papers/outputs"
+if not os.path.isdir(path_outputs):
+    os.mkdir(path_outputs)
+
+path_model = os.path.join(path_outputs, f"massidda_unseen.json")
+
+store_model_json(model, path_model)
