@@ -24,7 +24,8 @@ from better_nilm.str_utils import homogenize_string
 APPLIANCE_NAMES = {
     "sitemeter": "_main",
     "freezer": "fridge",
-    "fridgefreezer": "fridge"
+    "fridgefreezer": "fridge",
+    "washerdryer": "washingmachine"
 }
     
 
