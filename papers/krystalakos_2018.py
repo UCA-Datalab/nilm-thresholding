@@ -30,7 +30,7 @@ dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
 appliance = 'washingmachine'
 
 sample_period = 6  # in seconds
-series_len = 50  # in number of records
+series_len = 100  # in number of records
 max_series = None
 skip_first = None
 to_int = True
