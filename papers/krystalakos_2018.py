@@ -8,7 +8,7 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
-from better_nilm.model.gru import create_gru_model
+from better_nilm.model.seq2point import create_seq2point_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
@@ -87,11 +87,11 @@ thresholds = dict_prepro["thresholds"]
 Training
 """
 
-model = create_gru_model(series_len, num_appliances, thresholds,
-                         classification_weight=class_w,
-                         regression_weight=reg_w,
-                         sigma_c=sigma_c,
-                         learning_rate=learning_rate)
+model = create_seq2point_model(series_len, num_appliances, thresholds,
+                               classification_weight=class_w,
+                               regression_weight=reg_w,
+                               sigma_c=sigma_c,
+                               learning_rate=learning_rate)
 
 model = train_with_validation(model,
                               x_train, [y_train, bin_train],
@@ -147,7 +147,6 @@ Plot
 path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
-
 
 path_fig = os.path.join(path_plots, f"krystalakos_{appliance}_regression.png")
 plot_real_vs_prediction(y_test, y_pred, idx=0,
