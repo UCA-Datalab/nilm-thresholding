@@ -42,7 +42,8 @@ ser, meters = buildings_to_array(dict_path_buildings,
                                  series_len=series_len,
                                  max_series=max_series,
                                  skip_first=skip_first,
-                                 to_int=to_int)
+                                 to_int=to_int,
+                                 verbose=True)
 
 """
 Preprocessing

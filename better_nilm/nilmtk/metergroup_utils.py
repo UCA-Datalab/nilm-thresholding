@@ -24,7 +24,8 @@ from better_nilm.str_utils import homogenize_string
 APPLIANCE_NAMES = {
     "sitemeter": "_main",
     "freezer": "fridge",
-    "fridgefreezer": "fridge"
+    "fridgefreezer": "fridge",
+    "washerdryer": "washingmachine"
 }
     
 
@@ -123,6 +124,7 @@ def get_good_sections(metergroup, sample_period, series_len,
                     timedelta = (chunks - 1) * step + series_len
                     timedelta *= sample_period
                     ts_end = ts_start + pd.Timedelta(seconds=timedelta)
+                    # Store the timestamps in dict
                     good_timestamp = {"start": ts_start,
                                       "end": ts_end}
                     good_sections += [good_timestamp.copy()]

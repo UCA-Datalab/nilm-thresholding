@@ -10,6 +10,7 @@ from better_nilm.format_utils import to_tuple
 from better_nilm.format_utils import flatten_list
 from better_nilm.str_utils import homogenize_string
 
+from better_nilm.nilmtk.metergroup_utils import APPLIANCE_NAMES
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
 from better_nilm.nilmtk.metergroup_utils import df_from_sections
 
@@ -56,11 +57,19 @@ def metergroup_from_file(path_file, building, appliances=None):
     # appliances names - which may not be the same
     building_appliances = elec.label().split(", ")
     building_appliances = set([app.lower() for app in building_appliances])
-    # Target appliances names are suppossed to be homogenized
-    # We homogenize the building names for the comparisson, but then store
+    # Target appliances names are supposed to be homogenized
+    # We homogenize the building names for the comparison, but then store
     # their original name in order to retrieve their meter later
-    target_appliances = [app for app in building_appliances if
-                         homogenize_string(app) in to_list(appliances)]
+    target_appliances = []
+    not_found_apps = appliances.copy()
+    for app in building_appliances:
+        # Homogenize building app name while maintaining the original
+        app_homo = homogenize_string(app)
+        app_homo = APPLIANCE_NAMES.get(app_homo, app_homo)
+        # If app is both in building and input list, add it to target
+        if app_homo in appliances:
+            target_appliances += [app]
+            not_found_apps.remove(app_homo)
 
     # If there are no target appliances, raise error
     if len(target_appliances) == 0:
@@ -69,6 +78,12 @@ def metergroup_from_file(path_file, building, appliances=None):
                          f"Target appliances: {', '.join(appliances)}\n"
                          "Building appliances: "
                          f"{', '.join(building_appliances)}")
+
+    # List not found appliances
+    if len(not_found_apps) > 0:
+        print("WARNING\nThe following appliances were not found in building"
+              f"{building} of file {path_file}:\n"
+              f"{', '.split(not_found_apps)}\nWe assume they were always OFF")
 
     # Total electric load (aggregated)
     elec_main = to_tuple(elec.mains().instance())
@@ -88,14 +103,54 @@ def metergroup_from_file(path_file, building, appliances=None):
     return metergroup
 
 
+def _remove_exceed_records(df, sample_period, series_len):
+    """
+    Remove records from the dataframe until its number of rows is a multiple
+    of series_len
+    """
+    # We dont want to work on the original df
+    df = df.copy()
+
+    # Count the number of records we must drop
+    # We will drop records while ensuring each sequence is continuous
+    # That is why we also compute te expected time delta from start to end
+    # in any sequence
+    exceed_records = df.shape[0] % series_len
+    expected_delta = sample_period * (series_len - 1)
+
+    # Initialize idx (to loop through the rows) and the list of dropped records
+    idx = 0
+    drop_idx = []
+
+    while len(drop_idx) < exceed_records:
+        stamp_start = df.index[idx]
+        stamp_end = df.index[idx + series_len - 1]
+        # If the delta in the sequence is not the expected, move it one step
+        # and add the idx to our drop list
+        # Otherwise, jump to the next sequence
+        if (stamp_end - stamp_start).total_seconds() != expected_delta:
+            drop_idx += [idx]
+            idx += 1
+        else:
+            idx += series_len
+
+    # Drop the indexes from the dataframe
+    # We are using numerical indexes (0, 1, 2...) while our current df as the
+    # dates as indexes. We reset the date index, drop some numerical indexes,
+    # and then set back the date index
+    df.reset_index(inplace=True)
+    df.drop(drop_idx, axis=0, inplace=True)
+    df.set_index('index', inplace=True)
+
+    assert df.shape[0] % series_len == 0, f"Number of rows in df " \
+                                          f"{df.shape[0]}\nis not a multiple" \
+                                          f" of series_len {series_len}"
+    return df
+
+
 def _ensure_continuous_series(df, sample_period, series_len):
     """
     Raise an error if any time series is not continuous.
-
-    Params
-    ------
-    df : pandas.DataFrame
-    series_len : int
     """
     if not isinstance(df.index, pd.DatetimeIndex):
         raise TypeError("df index must be dates.\nCurrent type is: "
@@ -117,7 +172,8 @@ def _ensure_continuous_series(df, sample_period, series_len):
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
-                        series_len=600, max_series=None, to_int=True):
+                        series_len=600, max_series=None, to_int=True,
+                        verbose=False):
     """
     Extracts a time series numpy array containing the aggregated load for each
     meter in given nilmtk.metergroup.MeterGroup object.
@@ -142,6 +198,7 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         Maximum number of series to output.
     to_int : bool, default=True
         If True, values are changed to integer. This reduces memory usage.
+    verbose : bool, default=False
 
     Returns
     -------
@@ -161,12 +218,28 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                                            f"Input param is type " \
                                            f"{type(metergroup)}"
 
+    if verbose:
+        print("Getting good sections of data.")
+
     good_sections = get_good_sections(metergroup, sample_period,
                                       series_len, max_series=max_series)
 
+    if verbose:
+        print("Loading dataframe containing good sections.")
+
     df = df_from_sections(metergroup, good_sections, sample_period)
 
+    # The number of rows in the dataframe must be a multiple of series_len
+    # If that is not the case, we have to selectively remove records from the
+    # dataframe, ensuring that the amount of continuous sequences is maximal
+    if df.shape[0] % series_len != 0:
+        if verbose:
+            print("There are too many records in the df. Deleting a few.")
+        df = _remove_exceed_records(df, sample_period, series_len)
+
     # Ensure series are continuous
+    if verbose:
+        print("Ensuring each sequence is continuous.")
     _ensure_continuous_series(df, sample_period, series_len)
 
     # Sum contributions of appliances with the same name
@@ -175,6 +248,9 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     # Change values to integer to reduce memory usage
     if to_int:
         df = df.astype(int)
+
+    if verbose:
+        print("Turning df to numpy array.")
 
     if "_main" not in df.columns:
         raise ValueError("No '_main' meter contained in df columns:\n"
@@ -257,7 +333,8 @@ def _ensure_same_meters(list_ser, list_meters, meters=None):
 
 def buildings_to_array(dict_path_buildings, appliances=None,
                        sample_period=6, series_len=600,
-                       max_series=None, skip_first=None, to_int=True):
+                       max_series=None, skip_first=None, to_int=True,
+                       verbose=False):
     """
     Returns a time series numpy array containing the aggregated load for each
     meter in a subset of buildings defined by dict_path_buildings.
@@ -287,6 +364,7 @@ def buildings_to_array(dict_path_buildings, appliances=None,
         the max_series. The series are skipped in chronological order.
     to_int : bool, default=True
         If True, values are changed to integer. This reduces memory usage.
+    verbose : bool, default=False
 
     Returns
     -------
@@ -331,7 +409,8 @@ def buildings_to_array(dict_path_buildings, appliances=None,
                                               sample_period=sample_period,
                                               series_len=series_len,
                                               max_series=max_series,
-                                              to_int=to_int)
+                                              to_int=to_int,
+                                              verbose=verbose)
             assert "_main" in meters, f"'_main' missing in meters:\n" \
                                       f"{', '.join(meters)}"
 
