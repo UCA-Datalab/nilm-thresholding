@@ -4,6 +4,7 @@ from keras.layers import Dense
 from keras.layers import Conv1D
 from keras.layers import GRU
 from keras.layers import Bidirectional
+from keras.layers import Dropout
 
 from keras.backend import constant
 from keras.layers import Lambda
@@ -15,7 +16,7 @@ from keras.optimizers import Adam
 
 def create_gru_model(series_len, num_appliances, thresholds,
                      regression_weight=1, classification_weight=1,
-                     learning_rate=0.001, sigma_c=50):
+                     learning_rate=0.001, sigma_c=50, dropout=0.5):
     """
     Creates a Gated Recurrent Unit model.
     Based on OdysseasKr GRU model:
@@ -38,6 +39,8 @@ def create_gru_model(series_len, num_appliances, thresholds,
         Controls the slope of the sigma function. Being T the threshold and
         C this parameters sigma_c, we define the sigma as:
         f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
+    dropout : float, default=0.5
+        Dropout between layers.
 
     Returns
     -------
@@ -60,23 +63,29 @@ def create_gru_model(series_len, num_appliances, thresholds,
     # 1D Conv (batch, series_len, 16)
     # filters = 16, kernel_size = 4
     conv1 = Conv1D(16, 4, activation="relu", padding="same", strides=1)(inputs)
+    drop_conv1 = Dropout(dropout)(conv1)
     # 1D Conv (batch, series_len, 8)
-    conv2 = Conv1D(8, 4, activation="relu", padding="same", strides=1)(conv1)
+    conv2 = Conv1D(8, 4, activation="relu", padding="same",
+                   strides=1)(drop_conv1)
+    drop_conv2 = Dropout(dropout)(conv2)
 
     # Bi-directional LSTMs (batch, series_len, 128)
     gru1 = Bidirectional(GRU(64, return_sequences=True, stateful=False),
-                         merge_mode='concat')(conv2)
+                         merge_mode='concat')(drop_conv2)
+    drop_gru1 = Dropout(dropout)(gru1)
     # Bi-directional LSTMs (batch, series_len, 256)
     gru2 = Bidirectional(GRU(128, return_sequences=True, stateful=False),
-                         merge_mode='concat')(gru1)
+                         merge_mode='concat')(drop_gru1)
+    drop_gru2 = Dropout(dropout)(gru2)
 
     # Dense layer (batch, series_len, 64)
-    dense = Dense(64, activation='relu')(gru2)
+    dense = Dense(64, activation='relu')(drop_gru2)
+    drop_dense = Dropout(dropout)(dense)
 
     # Regression output
     # Fully Connected Layers (batch, series_len, num_appliances)
     regression = Dense(num_appliances, activation='linear',
-                       name='regression')(dense)
+                       name='regression')(drop_dense)
 
     # Classification output
     # Apply a sigmoid centered around the threshold value of each appliance

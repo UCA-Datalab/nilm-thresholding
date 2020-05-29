@@ -10,11 +10,11 @@ from keras.layers import Activation
 from keras.activations import sigmoid
 
 from keras.optimizers import Adam
-    
+
 
 def create_seq2point_model(series_len, num_appliances, thresholds,
-                     regression_weight=1, classification_weight=1,
-                     learning_rate=0.001, sigma_c=50):
+                           regression_weight=1, classification_weight=1,
+                           learning_rate=0.001, sigma_c=50, dropout=0.5):
     """
     Creates a Seq2Point model.
     Based on Krystalakos model:
@@ -36,6 +36,8 @@ def create_seq2point_model(series_len, num_appliances, thresholds,
         Controls the slope of the sigma function. Being T the threshold and
         C this parameters sigma_c, we define the sigma as:
         f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
+    dropout : float, default=0.5
+        Dropout between layers.
 
     Returns
     -------
@@ -44,9 +46,9 @@ def create_seq2point_model(series_len, num_appliances, thresholds,
     """
     assert len(thresholds) == num_appliances, "Number of thresholds must " \
                                               "equal the amount of appliances"
-        
+
     # CONSTANTS
-    
+
     k_thresh = constant(thresholds)
     k_sigma = constant(sigma_c)
 
@@ -59,20 +61,23 @@ def create_seq2point_model(series_len, num_appliances, thresholds,
     # filters = 30, kernel_size = 10
     conv1 = Conv1D(30, 10, activation="relu", padding="same", strides=1)(
         inputs)
-    drop1 = Dropout(0.5)(conv1)
+    drop_conv1 = Dropout(dropout)(conv1)
     # 1D Conv (batch, series_len, 30)
-    conv2 = Conv1D(30, 8, activation="relu", padding="same", strides=1)(drop1)
-    drop2 = Dropout(0.5)(conv2)
+    conv2 = Conv1D(30, 8, activation="relu", padding="same",
+                   strides=1)(drop_conv1)
+    drop_conv2 = Dropout(dropout)(conv2)
     # 1D Conv (batch, series_len, 40)
-    conv3 = Conv1D(40, 6, activation="relu", padding="same", strides=1)(drop2)
-    drop3 = Dropout(0.5)(conv3)
+    conv3 = Conv1D(40, 6, activation="relu", padding="same",
+                   strides=1)(drop_conv2)
+    drop_conv3 = Dropout(dropout)(conv3)
     # 1D Conv (batch, series_len, 50)
-    conv4 = Conv1D(50, 5, activation="relu", padding="same", strides=1)(drop3)
-    drop4 = Dropout(0.5)(conv4)
+    conv4 = Conv1D(50, 5, activation="relu", padding="same",
+                   strides=1)(drop_conv3)
+    drop_conv4 = Dropout(dropout)(conv4)
 
     # Dense layer (batch, series_len, 1024)
-    dense = Dense(1024, activation='relu')(drop4)
-    drop_dense = Dropout(0.5)(dense)
+    dense = Dense(1024, activation='relu')(drop_conv4)
+    drop_dense = Dropout(dropout)(dense)
 
     # Regression output
     # Fully Connected Layers (batch, series_len, num_appliances)
@@ -89,7 +94,7 @@ def create_seq2point_model(series_len, num_appliances, thresholds,
 
     # Optimizer
     opt = Adam(learning_rate=learning_rate)
-    
+
     # Compile the model
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
