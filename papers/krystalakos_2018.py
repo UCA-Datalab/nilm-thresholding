@@ -8,7 +8,7 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
-from better_nilm.model.seq2point import create_seq2point_model
+from better_nilm.model.gru import create_gru_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
@@ -24,10 +24,10 @@ from better_nilm.plot_utils import plot_load_and_state
 from better_nilm.model.export import store_model_json
 
 # This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
-dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
+dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2, 4]}
+dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
 
-appliance = 'washingmachine'
+appliance = 'fridge'
 
 sample_period = 6  # in seconds
 series_len = 100  # in number of records
@@ -87,7 +87,7 @@ thresholds = dict_prepro["thresholds"]
 Training
 """
 
-model = create_seq2point_model(series_len, num_appliances, thresholds,
+model = create_gru_model(series_len, num_appliances, thresholds,
                                classification_weight=class_w,
                                regression_weight=reg_w,
                                sigma_c=sigma_c,
