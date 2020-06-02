@@ -12,11 +12,11 @@ from keras.activations import sigmoid
 from keras.optimizers import Adam
 
 
-def create_seq2point_model(series_len, num_appliances, thresholds,
-                           regression_weight=1, classification_weight=1,
-                           learning_rate=0.001, sigma_c=50, dropout=0.5):
+def create_seq2seq_model(series_len, num_appliances, thresholds,
+                         regression_weight=1, classification_weight=1,
+                         learning_rate=0.001, sigma_c=50, dropout=0.5):
     """
-    Creates a Seq2Point model.
+    Creates a Sequence to Sequence model.
     Based on Krystalakos model:
     https://www.researchgate.net/publication/326238920_Sliding_Window_Approach_for_Online_Energy_Disaggregation_Using_Artificial_Neural_Networks
     Parameters

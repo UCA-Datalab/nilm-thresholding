@@ -9,7 +9,7 @@ from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
-from better_nilm.model.seq2point import create_seq2point_model
+from better_nilm.model.seq2seq import create_seq2seq_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
@@ -105,8 +105,8 @@ if model_name =='gru':
                              regression_weight=reg_w,
                              sigma_c=sigma_c,
                              learning_rate=learning_rate)
-elif model_name == 'seq2point':
-    model = create_seq2point_model(series_len, num_appliances, thresholds,
+elif model_name == 'seq2seq':
+    model = create_seq2seq_model(series_len, num_appliances, thresholds,
                                    classification_weight=class_w,
                                    regression_weight=reg_w,
                                    sigma_c=sigma_c,
