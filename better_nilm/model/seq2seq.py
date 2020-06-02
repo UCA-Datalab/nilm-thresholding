@@ -2,8 +2,6 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers import Dense
 from keras.layers import Conv1D
-from keras.layers import GRU
-from keras.layers import Bidirectional
 from keras.layers import Dropout
 
 from keras.backend import constant
@@ -12,16 +10,15 @@ from keras.layers import Activation
 from keras.activations import sigmoid
 
 from keras.optimizers import Adam
-    
 
-def create_gru_model(series_len, num_appliances, thresholds,
-                     regression_weight=1, classification_weight=1,
-                     learning_rate=0.001, sigma_c=50, dropout=0.5):
+
+def create_seq2seq_model(series_len, num_appliances, thresholds,
+                         regression_weight=1, classification_weight=1,
+                         learning_rate=0.001, sigma_c=50, dropout=0.5):
     """
-    Creates a Gated Recurrent Unit model.
-    Based on OdysseasKr GRU model:
-    https://github.com/OdysseasKr/neural-disaggregator/blob/master/GRU
-
+    Creates a Sequence to Sequence model.
+    Based on Krystalakos model:
+    https://www.researchgate.net/publication/326238920_Sliding_Window_Approach_for_Online_Energy_Disaggregation_Using_Artificial_Neural_Networks
     Parameters
     ----------
     series_len : int
@@ -49,9 +46,9 @@ def create_gru_model(series_len, num_appliances, thresholds,
     """
     assert len(thresholds) == num_appliances, "Number of thresholds must " \
                                               "equal the amount of appliances"
-        
+
     # CONSTANTS
-    
+
     k_thresh = constant(thresholds)
     k_sigma = constant(sigma_c)
 
@@ -60,26 +57,26 @@ def create_gru_model(series_len, num_appliances, thresholds,
     # Input layer (batch, series_len, 1)
     inputs = Input(shape=(series_len, 1))
 
-    # 1D Conv (batch, series_len, 16)
-    # filters = 16, kernel_size = 4
-    conv1 = Conv1D(16, 4, activation="relu", padding="same", strides=1)(inputs)
+    # 1D Conv (batch, series_len, 30)
+    # filters = 30, kernel_size = 10
+    conv1 = Conv1D(30, 10, activation="relu", padding="same", strides=1)(
+        inputs)
     drop_conv1 = Dropout(dropout)(conv1)
-    # 1D Conv (batch, series_len, 8)
-    conv2 = Conv1D(8, 4, activation="relu", padding="same",
+    # 1D Conv (batch, series_len, 30)
+    conv2 = Conv1D(30, 8, activation="relu", padding="same",
                    strides=1)(drop_conv1)
     drop_conv2 = Dropout(dropout)(conv2)
+    # 1D Conv (batch, series_len, 40)
+    conv3 = Conv1D(40, 6, activation="relu", padding="same",
+                   strides=1)(drop_conv2)
+    drop_conv3 = Dropout(dropout)(conv3)
+    # 1D Conv (batch, series_len, 50)
+    conv4 = Conv1D(50, 5, activation="relu", padding="same",
+                   strides=1)(drop_conv3)
+    drop_conv4 = Dropout(dropout)(conv4)
 
-    # Bi-directional LSTMs (batch, series_len, 128)
-    gru1 = Bidirectional(GRU(64, return_sequences=True, stateful=False),
-                         merge_mode='concat')(drop_conv2)
-    drop_gru1 = Dropout(dropout)(gru1)
-    # Bi-directional LSTMs (batch, series_len, 256)
-    gru2 = Bidirectional(GRU(128, return_sequences=True, stateful=False),
-                         merge_mode='concat')(drop_gru1)
-    drop_gru2 = Dropout(dropout)(gru2)
-
-    # Dense layer (batch, series_len, 64)
-    dense = Dense(64, activation='relu')(drop_gru2)
+    # Dense layer (batch, series_len, 1024)
+    dense = Dense(1024, activation='relu')(drop_conv4)
     drop_dense = Dropout(dropout)(dense)
 
     # Regression output
@@ -97,7 +94,7 @@ def create_gru_model(series_len, num_appliances, thresholds,
 
     # Optimizer
     opt = Adam(learning_rate=learning_rate)
-    
+
     # Compile the model
     model = Model(inputs=inputs,
                   outputs=[regression, classification])
