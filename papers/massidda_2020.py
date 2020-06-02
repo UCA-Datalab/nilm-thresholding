@@ -100,6 +100,10 @@ y_max = dict_prepro["max_values"]["y"]
 appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 
+# Normalize thresholds
+for idx, y in enumerate(y_max):
+    thresholds[idx] = thresholds[idx] / y
+
 """
 Training
 """
