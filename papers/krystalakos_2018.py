@@ -9,6 +9,7 @@ from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
+from better_nilm.model.seq2point import create_seq2point_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
@@ -28,6 +29,7 @@ dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2, 4]}
 dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
 
 appliance = 'fridge'
+model_name = 'gru'
 
 sample_period = 6  # in seconds
 series_len = 100  # in number of records
@@ -46,6 +48,16 @@ sigma_c = 10
 # Weights
 class_w = 0
 reg_w = 1
+
+"""
+Print info
+"""
+
+# This is handy when outputting the results to a log
+print("Comparing against Krystalakos 2018")
+print(f"Appliance: {appliance}")
+print(f"Model: {model_name}\n")
+print("------------------------------------------------------\n")
 
 """
 Load the train data
@@ -87,11 +99,20 @@ thresholds = dict_prepro["thresholds"]
 Training
 """
 
-model = create_gru_model(series_len, num_appliances, thresholds,
-                               classification_weight=class_w,
-                               regression_weight=reg_w,
-                               sigma_c=sigma_c,
-                               learning_rate=learning_rate)
+if model_name =='gru':
+    model = create_gru_model(series_len, num_appliances, thresholds,
+                             classification_weight=class_w,
+                             regression_weight=reg_w,
+                             sigma_c=sigma_c,
+                             learning_rate=learning_rate)
+elif model_name == 'seq2point':
+    model = create_seq2point_model(series_len, num_appliances, thresholds,
+                                   classification_weight=class_w,
+                                   regression_weight=reg_w,
+                                   sigma_c=sigma_c,
+                                   learning_rate=learning_rate)
+else:
+    raise ValueError(f"{model_name} is not a valid model.")
 
 model = train_with_validation(model,
                               x_train, [y_train, bin_train],
@@ -148,17 +169,18 @@ path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_fig = os.path.join(path_plots, f"krystalakos_{appliance}_regression.png")
+path_fig = os.path.join(path_plots,
+                        f"krystalakos_{appliance}_{model_name}_regression.png")
 plot_real_vs_prediction(y_test, y_pred, idx=0,
                         sample_period=sample_period, savefig=path_fig)
 
 path_fig = os.path.join(path_plots, "krystalakos"
-                                    f"_{appliance}_classification.png")
+                                    f"_{appliance}_{model_name}_classification.png")
 plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
                         sample_period=sample_period, savefig=path_fig)
 
 path_fig = os.path.join(path_plots,
-                        f"krystalakos_{appliance}_binarization.png")
+                        f"krystalakos_{appliance}_{model_name}_binarization.png")
 plot_load_and_state(y_test, bin_test, idx=0,
                     sample_period=sample_period, savefig=path_fig)
 
@@ -170,6 +192,6 @@ path_outputs = "papers/outputs"
 if not os.path.isdir(path_outputs):
     os.mkdir(path_outputs)
 
-path_model = os.path.join(path_outputs, f"krystalakos_{appliance}.json")
+path_model = os.path.join(path_outputs, f"krystalakos_{appliance}_{model_name}.json")
 
 store_model_json(model, path_model)
