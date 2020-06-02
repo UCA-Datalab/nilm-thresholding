@@ -23,7 +23,6 @@ entrypoints==0.3
 ezodf==0.3.2
 future==0.18.2
 gast==0.2.2
-google-auth @ file:///home/conda/feedstock_root/build_artifacts/google-auth_1588876379852/work
 google-auth-oauthlib==0.4.1
 google-pasta==0.2.0
 grpcio==1.27.2
@@ -60,14 +59,9 @@ nbconvert==6.0.0a1
 nbformat==5.0.6
 nest-asyncio==1.3.3
 networkx==2.1
--e git+https://github.com/nilmtk/nilm_metadata/@7ed4bab9062d04cb35c6b6000b451715dc5ab4af#egg=nilm_metadata
-# Editable install with no version control (nilmtk===0.4.0.dev1-git.)
--e /DATA1/SHARED/nilmtk-0.4.0.dev1
 notebook==6.0.3
 numexpr==2.7.1
-numpy @ file:///home/conda/feedstock_root/build_artifacts/numpy_1588605083040/work
 oauthlib==3.0.1
-opt-einsum==0+untagged.56.g2664021.dirty
 packaging==20.3
 pandas==0.24.2
 pandocfilters==1.4.2
@@ -78,14 +72,12 @@ pickleshare==0.7.5
 prometheus-client==0.7.1
 prompt-toolkit==3.0.5
 property-cached==1.6.4
-protobuf==3.11.4
 psycopg2-binary==2.8.5
 ptyprocess==0.6.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.7
 pycparser==2.20
 Pygments==2.6.1
-pygpu==0.7.6
 PyJWT==1.7.1
 pyOpenSSL==19.1.0
 pyparsing==3.0.0a1
@@ -93,7 +85,6 @@ pyrsistent==0.16.0
 PySocks==1.7.1
 python-dateutil==2.8.1
 pytz==2020.1
-PyYAML==5.3.1
 pyzmq==19.0.1
 qtconsole==4.7.3
 QtPy==1.9.0
