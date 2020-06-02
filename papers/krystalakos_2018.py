@@ -25,10 +25,10 @@ from better_nilm.plot_utils import plot_load_and_state
 from better_nilm.model.export import store_model_json
 
 # This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2, 4]}
+dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2]}
 dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
 
-appliance = 'fridge'
+appliance = 'dishwasher'
 model_name = 'gru'
 
 sample_period = 6  # in seconds
@@ -54,7 +54,7 @@ Print info
 """
 
 # This is handy when outputting the results to a log
-print("Comparing against Krystalakos 2018")
+print("\nComparing against Krystalakos 2018")
 print(f"Appliance: {appliance}")
 print(f"Model: {model_name}\n")
 print("------------------------------------------------------\n")
