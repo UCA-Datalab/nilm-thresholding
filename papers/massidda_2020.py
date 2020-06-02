@@ -101,7 +101,7 @@ appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 
 # Normalize thresholds
-for idx, y in enumerate(y_max):
+for idx, y in enumerate(y_max[0][0]):
     thresholds[idx] = thresholds[idx] / y
 
 """
