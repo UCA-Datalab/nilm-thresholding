@@ -6,7 +6,6 @@ from keras.layers import GRU
 from keras.layers import Bidirectional
 from keras.layers import Dropout
 
-from keras.backend import constant
 from keras.layers import Lambda
 from keras.layers import Activation
 from keras.activations import sigmoid
@@ -50,15 +49,6 @@ class GRUModel(KerasModel):
 
         super(KerasModel, self).__init__()
 
-        assert len(thresholds) == num_appliances, "Number of thresholds " \
-                                                  "must equal the amount of " \
-                                                  "appliances"
-
-        # CONSTANTS
-
-        k_thresh = constant(thresholds)
-        k_sigma = constant(sigma_c)
-
         # ARCHITECTURE
 
         # Input layer (batch, series_len, 1)
@@ -94,7 +84,8 @@ class GRUModel(KerasModel):
 
         # Classification output
         # Apply a sigmoid centered around the threshold value of each appliance
-        subtract = Lambda(lambda x: (x - k_thresh) * k_sigma)(regression)
+        subtract = Lambda(lambda x: (x - self.k_thresh) * self.k_sigma)(
+            regression)
         # Fully Connected Layers (batch, series_len, num_appliances)
         classification = Activation(sigmoid, name='classification')(subtract)
 

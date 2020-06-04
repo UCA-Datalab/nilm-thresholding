@@ -60,8 +60,9 @@ class TorchModel:
 
     def _get_dataloader(self, x, y, y_bin):
         tensor_x = torch.Tensor(x)
-        tensor_y = torch.Tensor([y, y_bin])
-        dataset = TensorDataset(tensor_x, tensor_y)
+        tensor_y = torch.Tensor(y)
+        tensor_bin = torch.Tensor(y_bin)
+        dataset = TensorDataset(tensor_x, tensor_y, tensor_bin)
         data_loader = DataLoader(dataset=dataset,
                                  batch_size=self.batch_size,
                                  shuffle=self.shuffle)
