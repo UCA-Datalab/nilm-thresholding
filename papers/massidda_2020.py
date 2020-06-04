@@ -9,6 +9,7 @@ from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.gru import create_gru_model
+from better_nilm.model.seq2seq import create_seq2seq_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
@@ -30,6 +31,7 @@ dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
 appliances = ['dishwasher',
               'fridge',
               'washingmachine']
+model_name = 'gru'
 
 thresholds = [10,  # dishwasher
               50,  # fridge
@@ -52,6 +54,15 @@ sigma_c = 10
 # Weights
 class_w = 0
 reg_w = 1
+
+"""
+Print info
+"""
+
+# This is handy when outputting the results to a log
+print("\nComparing against Massidda 2020")
+print(f"Model: {model_name}\n")
+print("------------------------------------------------------\n")
 
 """
 Load the train data
@@ -89,15 +100,28 @@ y_max = dict_prepro["max_values"]["y"]
 appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 
+# Normalize thresholds
+for idx, y in enumerate(y_max[0][0]):
+    thresholds[idx] = thresholds[idx] / y
+
 """
 Training
 """
 
-model = create_gru_model(series_len, num_appliances, thresholds,
-                         classification_weight=class_w,
-                         regression_weight=reg_w,
-                         sigma_c=sigma_c,
-                         learning_rate=learning_rate)
+if model_name == 'gru':
+    model = create_gru_model(series_len, num_appliances, thresholds,
+                             classification_weight=class_w,
+                             regression_weight=reg_w,
+                             sigma_c=sigma_c,
+                             learning_rate=learning_rate)
+elif model_name == 'seq2seq':
+    model = create_seq2seq_model(series_len, num_appliances, thresholds,
+                                 classification_weight=class_w,
+                                 regression_weight=reg_w,
+                                 sigma_c=sigma_c,
+                                 learning_rate=learning_rate)
+else:
+    raise ValueError(f"{model_name} is not a valid model.")
 
 model = train_with_validation(model,
                               x_train, [y_train, bin_train],
@@ -155,15 +179,18 @@ if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
 for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"massidda_{app}_regression.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_"
+                                        f"{model_name}_regression.png")
     plot_real_vs_prediction(y_test, y_pred, idx=idx,
                             sample_period=sample_period, savefig=path_fig)
 
-    path_fig = os.path.join(path_plots, f"massidda_{app}_classification.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_"
+                                        f"{model_name}_classification.png")
     plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
                             sample_period=sample_period, savefig=path_fig)
 
-    path_fig = os.path.join(path_plots, f"massidda_{app}_binarization.png")
+    path_fig = os.path.join(path_plots, f"massidda_{app}_"
+                                        f"{model_name}_binarization.png")
     plot_load_and_state(y_test, bin_test, idx=idx,
                         sample_period=sample_period, savefig=path_fig)
 
@@ -175,6 +202,6 @@ path_outputs = "papers/outputs"
 if not os.path.isdir(path_outputs):
     os.mkdir(path_outputs)
 
-path_model = os.path.join(path_outputs, f"massidda_unseen.json")
+path_model = os.path.join(path_outputs, f"massidda_{model_name}_unseen.json")
 
 store_model_json(model, path_model)

@@ -99,7 +99,7 @@ thresholds = dict_prepro["thresholds"]
 Training
 """
 
-if model_name =='gru':
+if model_name == 'gru':
     model = create_gru_model(series_len, num_appliances, thresholds,
                              classification_weight=class_w,
                              regression_weight=reg_w,
@@ -107,10 +107,10 @@ if model_name =='gru':
                              learning_rate=learning_rate)
 elif model_name == 'seq2seq':
     model = create_seq2seq_model(series_len, num_appliances, thresholds,
-                                   classification_weight=class_w,
-                                   regression_weight=reg_w,
-                                   sigma_c=sigma_c,
-                                   learning_rate=learning_rate)
+                                 classification_weight=class_w,
+                                 regression_weight=reg_w,
+                                 sigma_c=sigma_c,
+                                 learning_rate=learning_rate)
 else:
     raise ValueError(f"{model_name} is not a valid model.")
 
@@ -192,6 +192,7 @@ path_outputs = "papers/outputs"
 if not os.path.isdir(path_outputs):
     os.mkdir(path_outputs)
 
-path_model = os.path.join(path_outputs, f"krystalakos_{appliance}_{model_name}.json")
+path_model = os.path.join(path_outputs,
+                          f"krystalakos_{appliance}_{model_name}.json")
 
 store_model_json(model, path_model)
