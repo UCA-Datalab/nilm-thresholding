@@ -8,9 +8,8 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
-from better_nilm.model.gru import create_gru_model
-from better_nilm.model.seq2seq import create_seq2seq_model
-from better_nilm.model.train import train_with_validation
+from better_nilm.model.architecture.gru import GRUModel
+from better_nilm.model.architecture.seq2seq import Seq2SeqModel
 
 from better_nilm.model.scores import regression_score_dict
 from better_nilm.model.scores import classification_scores_dict
@@ -21,8 +20,6 @@ from better_nilm.model.preprocessing import binarize
 
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
-
-from better_nilm.model.export import store_model_json
 
 # This path is set to work on Zappa
 dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2]}
@@ -100,27 +97,26 @@ Training
 """
 
 if model_name == 'gru':
-    model = create_gru_model(series_len, num_appliances, thresholds,
-                             classification_weight=class_w,
-                             regression_weight=reg_w,
-                             sigma_c=sigma_c,
-                             learning_rate=learning_rate)
+    model = GRUModel(series_len, num_appliances, thresholds,
+                     classification_weight=class_w,
+                     regression_weight=reg_w,
+                     sigma_c=sigma_c,
+                     learning_rate=learning_rate)
 elif model_name == 'seq2seq':
-    model = create_seq2seq_model(series_len, num_appliances, thresholds,
-                                 classification_weight=class_w,
-                                 regression_weight=reg_w,
-                                 sigma_c=sigma_c,
-                                 learning_rate=learning_rate)
+    model = Seq2SeqModel(series_len, num_appliances, thresholds,
+                         classification_weight=class_w,
+                         regression_weight=reg_w,
+                         sigma_c=sigma_c,
+                         learning_rate=learning_rate)
 else:
     raise ValueError(f"{model_name} is not a valid model.")
 
-model = train_with_validation(model,
-                              x_train, [y_train, bin_train],
-                              x_val, [y_val, bin_val],
-                              epochs=epochs,
-                              batch_size=batch_size,
-                              shuffle=False,
-                              patience=patience)
+model.train_with_validation(x_train, y_train, bin_train,
+                            x_val, y_val, bin_val,
+                            epochs=epochs,
+                            batch_size=batch_size,
+                            shuffle=False,
+                            patience=patience)
 
 """
 Testing
@@ -195,4 +191,4 @@ if not os.path.isdir(path_outputs):
 path_model = os.path.join(path_outputs,
                           f"krystalakos_{appliance}_{model_name}.json")
 
-store_model_json(model, path_model)
+model.store_json(path_model)

@@ -8,7 +8,7 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
-from better_nilm.model.gru import create_gru_model
+from better_nilm.model.architecture.gru import create_gru_model
 
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state

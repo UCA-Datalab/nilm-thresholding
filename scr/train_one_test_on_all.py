@@ -13,7 +13,7 @@ from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import binarize
 
-from better_nilm.model.gru import create_gru_model
+from better_nilm.model.architecture.gru import create_gru_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.export import store_model_json
