@@ -1,4 +1,3 @@
-import os
 import sys
 
 sys.path.insert(0, "../better_nilm")
@@ -8,7 +7,7 @@ from better_nilm.nilmtk.data_loader import buildings_to_array
 from better_nilm.model.preprocessing import preprocessing_pipeline_dict
 from better_nilm.model.preprocessing import denormalize_meters
 
-from better_nilm.model.gru import create_gru_model
+from better_nilm.model.architecture.gru import create_gru_model
 
 from better_nilm.model.scores import regression_score_dict
 from better_nilm.model.scores import classification_scores_dict

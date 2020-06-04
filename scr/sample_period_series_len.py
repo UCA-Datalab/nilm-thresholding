@@ -15,7 +15,7 @@ from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.plot_utils import plot_real_vs_prediction
 
-from better_nilm.model.gru import create_gru_model
+from better_nilm.model.architecture.gru import create_gru_model
 from better_nilm.model.train import train_with_validation
 
 from better_nilm.model.scores import regression_score_dict
