@@ -13,10 +13,10 @@ from keras.activations import sigmoid
 
 from keras.optimizers import Adam
 
-from better_nilm.model.architecture._base import BaseModel
+from better_nilm.model.architecture._base import KerasModel
 
 
-class GRUModel(BaseModel):
+class GRUModel(KerasModel):
     def __init__(self, series_len, num_appliances, thresholds,
                  regression_weight=1, classification_weight=1,
                  learning_rate=0.001, sigma_c=50, dropout=0.5):
@@ -48,7 +48,7 @@ class GRUModel(BaseModel):
 
         """
 
-        super(BaseModel, self).__init__()
+        super(KerasModel, self).__init__()
 
         assert len(thresholds) == num_appliances, "Number of thresholds " \
                                                   "must equal the amount of " \
