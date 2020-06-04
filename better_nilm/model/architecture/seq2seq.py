@@ -43,6 +43,9 @@ class Seq2SeqModel(BaseModel):
             Dropout between layers.
 
         """
+
+        super(BaseModel, self).__init__()
+
         assert len(thresholds) == num_appliances, "Number of thresholds " \
                                                   "must equal the amount of " \
                                                   "appliances"
