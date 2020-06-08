@@ -75,7 +75,7 @@ class TorchModel:
 
         self.batch_size = batch_size
         self.shuffle = shuffle
-
+        
         train_loader = self._get_dataloader(x_train, y_train, bin_train)
         valid_loader = self._get_dataloader(x_val, y_val, bin_val)
 
@@ -99,7 +99,7 @@ class TorchModel:
             self.model.train()  # prep model for training
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
-                data = data.unsqueeze(1).cuda()
+                data = data.permute(0, 2, 1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
 
@@ -123,7 +123,7 @@ class TorchModel:
             ######################
             self.model.eval()  # prep model for evaluation
             for data, target_power, target_status in valid_loader:
-                data = data.unsqueeze(1).cuda()
+                data = data.permute(0, 2, 1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
 
@@ -165,5 +165,6 @@ class TorchModel:
 
     def predict(self, x_test):
         tensor_x = torch.Tensor(x_test)
+        tensor_x = tensor_x.permute(0, 2, 1).cuda()
         output_status = self.model(tensor_x).permute(0, 2, 1)
         return output_status

@@ -5,6 +5,14 @@ import torch.optim as optim
 
 from better_nilm.model.architecture._base import TorchModel
 
+"""
+Source: https://github.com/lmssdd/TPNILM
+Check the paper
+Non-Intrusive Load Disaggregation by Convolutional
+Neural Network and Multilabel Classification
+by Luca Massidda, Marino Marrocu and Simone Manca
+"""
+
 
 class _Encoder(nn.Module):
     def __init__(self, in_features=3, out_features=1, kernel_size=3, padding=1,
@@ -111,7 +119,7 @@ class PTPNetModel(TorchModel):
 
         self.model = _PTPNet(in_channels=in_channels,
                              out_channels=out_channels,
-                             init_features=init_features)
+                             init_features=init_features).cuda()
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = nn.BCEWithLogitsLoss()

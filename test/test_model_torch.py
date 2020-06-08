@@ -27,17 +27,20 @@ dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
 appliance = 'dishwasher'
 
 sample_period = 6  # in seconds
-series_len = 100  # in number of records
+series_len = 510  # in number of records
+s = 30
+series_len = 16 * s + 30
+
 max_series = None
 skip_first = None
 to_int = True
 
 train_size = .8
 validation_size = .1
-epochs = 10
+epochs = 1000
 batch_size = 64
-patience = 5
-learning_rate = 1e-3
+patience = 300
+learning_rate = 1e-4
 sigma_c = 10
 
 # Weights
@@ -88,11 +91,17 @@ appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
 thresholds = dict_prepro["thresholds"]
 
+y_train = y_train[:, 15:-15, :]
+bin_train = bin_train[:, 15:-15, :]
+y_val = y_val[:, 15:-15, :]
+bin_val = bin_val[:, 15:-15, :]
+
 """
 Training
 """
 
 model = PTPNetModel(in_channels=1, out_channels=num_appliances,
+                    init_features=32,
                     learning_rate=learning_rate)
 
 model.train_with_validation(x_train, y_train, bin_train,
@@ -115,6 +124,7 @@ ser_test, _ = buildings_to_array(dict_path_test,
                                  to_int=to_int)
 
 x_test, y_test = feature_target_split(ser_test, meters)
+y_test = y_test[:, 15:-15, :]
 
 # Normalize
 x_test, _ = normalize_meters(x_test, max_values=x_max)
@@ -124,19 +134,22 @@ y_test, _ = normalize_meters(y_test, max_values=y_max)
 bin_test = binarize(y_test, thresholds)
 
 # Prediction
-[y_pred, bin_pred] = model.predict(x_test)
-y_pred = denormalize_meters(y_pred, y_max)
+bin_pred = model.predict(x_test)
+#y_pred = denormalize_meters(y_pred, y_max)
 bin_pred[bin_pred > .5] = 1
 bin_pred[bin_pred <= 0.5] = 0
 
-y_test = denormalize_meters(y_test, y_max)
+#y_test = denormalize_meters(y_test, y_max)
+
+# Convert torch tensors to numpy arrays
+bin_pred = bin_pred.cpu().detach().numpy()
 
 """
 Scores
 """
 
-reg_scores = regression_score_dict(y_pred, y_test, appliances)
-print(reg_scores)
+#reg_scores = regression_score_dict(y_pred, y_test, appliances)
+#print(reg_scores)
 
 class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
 print(class_scores)
@@ -149,10 +162,10 @@ path_plots = "test/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_fig = os.path.join(path_plots,
-                        f"ptpnilm_{appliance}_regression.png")
-plot_real_vs_prediction(y_test, y_pred, idx=0,
-                        sample_period=sample_period, savefig=path_fig)
+#path_fig = os.path.join(path_plots,
+#                        f"ptpnilm_{appliance}_regression.png")
+#plot_real_vs_prediction(y_test, y_pred, idx=0,
+#                        sample_period=sample_period, savefig=path_fig)
 
 path_fig = os.path.join(path_plots, "ptpnilm"
                                     f"_{appliance}_classification.png")
