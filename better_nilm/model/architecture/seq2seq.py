@@ -22,6 +22,7 @@ class Seq2SeqModel(KerasModel):
         Initializes a Sequence to Sequence model.
         Based on Krystalakos model:
         https://www.researchgate.net/publication/326238920_Sliding_Window_Approach_for_Online_Energy_Disaggregation_Using_Artificial_Neural_Networks
+
         Parameters
         ----------
         series_len : int
@@ -36,8 +37,8 @@ class Seq2SeqModel(KerasModel):
         learning_rate : float, default=0.001
             Starting learning rate for the Adam optimizer.
         sigma_c : float, default=50
-            Controls the slope of the sigma function. Being T the threshold and
-            C this parameters sigma_c, we define the sigma as:
+            Controls the slope of the sigma function. Being T the threshold
+            and C this parameters sigma_c, we define the sigma as:
             f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
         dropout : float, default=0.5
             Dropout between layers.
