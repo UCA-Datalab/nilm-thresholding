@@ -28,8 +28,6 @@ appliance = 'dishwasher'
 
 sample_period = 6  # in seconds
 series_len = 510  # in number of records
-s = 30
-series_len = 16 * s + 30
 
 max_series = None
 skip_first = None
@@ -37,9 +35,9 @@ to_int = True
 
 train_size = .8
 validation_size = .1
-epochs = 1000
-batch_size = 64
-patience = 300
+epochs = 10
+batch_size = 32
+patience = 3
 learning_rate = 1e-4
 sigma_c = 10
 
@@ -100,7 +98,7 @@ bin_val = bin_val[:, 15:-15, :]
 Training
 """
 
-model = PTPNetModel(in_channels=1, out_channels=num_appliances,
+model = PTPNetModel(series_len=series_len, out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate)
 

@@ -43,9 +43,9 @@ class _TemporalPooling(nn.Module):
         x = self.pool(x)
         x = self.conv(x)
         x = self.bn(F.relu(x))
-        return self.drop(
-            F.interpolate(x, scale_factor=self.kernel_size, mode='linear',
-                          align_corners=True))
+        x = self.drop(F.interpolate(x, scale_factor=self.kernel_size,
+                                    mode='linear', align_corners=True))
+        return x
 
 
 class _Decoder(nn.Module):
@@ -62,31 +62,42 @@ class _Decoder(nn.Module):
 
 class _PTPNet(nn.Module):
 
-    def __init__(self, in_channels=3, out_channels=1, init_features=32):
+    def __init__(self, series_len=510, out_channels=1, init_features=32):
         super(_PTPNet, self).__init__()
         p = 2
         k = 1
         features = init_features
-        self.encoder1 = _Encoder(in_channels, features, kernel_size=3,
+        self.encoder1 = _Encoder(1, features, kernel_size=3,
                                  padding=0)
+        # (batch, series_len - 2, 32)
         self.pool1 = nn.MaxPool1d(kernel_size=p, stride=p)
+
         self.encoder2 = _Encoder(features * 1 ** k, features * 2 ** k,
                                  kernel_size=3, padding=0)
+        # (batch, [series_len - 6] / 2, 64)
         self.pool2 = nn.MaxPool1d(kernel_size=p, stride=p)
+
         self.encoder3 = _Encoder(features * 2 ** k, features * 4 ** k,
                                  kernel_size=3, padding=0)
+        # (batch, [series_len - 12] / 4, 128)
         self.pool3 = nn.MaxPool1d(kernel_size=p, stride=p)
+
         self.encoder4 = _Encoder(features * 4 ** k, features * 8 ** k,
                                  kernel_size=3, padding=0)
+        # (batch, [series_len - 30] / 8, 256)
+
+        # Compute the output size of the encoder4 layer
+        # (batch, S, 256)
+        s = (series_len - 30) / 8
 
         self.tpool1 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=5)
+                                       kernel_size=int(s/12))
         self.tpool2 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=10)
+                                       kernel_size=int(s/6))
         self.tpool3 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=20)
+                                       kernel_size=int(s/3))
         self.tpool4 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=30)
+                                       kernel_size=int(s/2))
 
         self.decoder = _Decoder(2 * features * 8 ** k, features * 1 ** k,
                                 kernel_size=p ** 3, stride=p ** 3)
@@ -113,11 +124,22 @@ class _PTPNet(nn.Module):
 
 class PTPNetModel(TorchModel):
 
-    def __init__(self, in_channels=3, out_channels=1, init_features=32,
+    def __init__(self, series_len=510, out_channels=1, init_features=32,
                  learning_rate=0.001):
         super(TorchModel, self).__init__()
 
-        self.model = _PTPNet(in_channels=in_channels,
+        # The time series will undergo four convolutions + poolings
+        # This will give a series of size (batch, S, 256)
+        # Where S = (series_len - 30) / 8
+        # That series will them pass by four different filters
+        # The output of the four filters must have the same size
+        # For this reason, S must be a multiple of 12
+        if (series_len - 30) % 96 != 0:
+            s = round((series_len - 30) / 96)
+            raise ValueError(f"series_len {series_len} is not valid.\nClosest"
+                             f" valid value is {96 * s + 30}")
+
+        self.model = _PTPNet(series_len=series_len,
                              out_channels=out_channels,
                              init_features=init_features).cuda()
 
