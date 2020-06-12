@@ -102,7 +102,7 @@ def feature_target_split(ser, meters, main="_main"):
     return x, y
 
 
-def normalize_meters(ser, max_values=None):
+def normalize_meters(ser, max_values=None, subtract_mean=False):
     """
     Normalize the meters values for the ser data array.
 
@@ -117,6 +117,8 @@ def normalize_meters(ser, max_values=None):
         shape = (num_meters, )
         Maximum value expected for each meter. If None is supplied, the array
         is created based on the given ser array.
+    subtract_mean : bool, default=False
+        If True, subtract the mean of each sequence, to center it around 0.
 
     Returns
     -------
@@ -144,6 +146,9 @@ def normalize_meters(ser, max_values=None):
 
     # Fill NaNs in case one max value is 0
     ser = np.nan_to_num(ser)
+
+    if subtract_mean:
+        ser -= ser.mean(axis=0)
 
     return ser, max_values
 
@@ -269,7 +274,7 @@ def get_thresholds(ser):
     return threshold
 
 
-def binarize(ser, thresholds):
+def get_status(ser, thresholds):
     """
 
     Parameters
@@ -387,9 +392,9 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
     # Get the binary meter status of each Y series
     if thresholds is None:
         thresholds = get_thresholds(y_train)
-    bin_train = binarize(y_train, thresholds)
-    bin_val = binarize(y_val, thresholds)
-    bin_test = binarize(y_test, thresholds)
+    bin_train = get_status(y_train, thresholds)
+    bin_val = get_status(y_val, thresholds)
+    bin_test = get_status(y_test, thresholds)
 
     # Appliance info
     appliances = meters.copy()
@@ -413,3 +418,105 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                    "num_appliances": num_appliances}
 
     return dict_prepro
+
+
+def _get_app_status_by_duration(y, threshold, min_off, min_on):
+    """
+
+    Parameters
+    ----------
+    y : numpy.array
+        shape = (num_series, series_len)
+        - num_series : Amount of time series.
+        - series_len : Length of each time series.
+    threshold : float
+    min_off : int
+    min_on : int
+
+    Returns
+    -------
+    s : numpy.array
+        shape = (num_series, series_len)
+        With binary values indicating ON (1) and OFF (0) states.
+    """
+    shape_original = y.shape
+    y = y.flatten().copy()
+
+    condition = y > threshold
+    # Find the indicies of changes in "condition"
+    d = np.diff(condition)
+    idx = d.nonzero()[0]
+
+    # We need to start things after the change in "condition". Therefore,
+    # we'll shift the index by 1 to the right.
+    idx += 1
+
+    if condition[0]:
+        # If the start of condition is True prepend a 0
+        idx = np.r_[0, idx]
+
+    if condition[-1]:
+        # If the end of condition is True, append the length of the array
+        idx = np.r_[idx, condition.size]  # Edit
+
+    # Reshape the result into two columns
+    idx.shape = (-1, 2)
+    on_events = idx[:, 0].copy()
+    off_events = idx[:, 1].copy()
+    assert len(on_events) == len(off_events)
+
+    if len(on_events) > 0:
+        off_duration = on_events[1:] - off_events[:-1]
+        off_duration = np.insert(off_duration, 0, 1000.)
+        on_events = on_events[off_duration > min_off]
+        off_events = off_events[np.roll(off_duration, -1) > min_off]
+        assert len(on_events) == len(off_events)
+
+        on_duration = off_events - on_events
+        on_events = on_events[on_duration > min_on]
+        off_events = off_events[on_duration > min_on]
+
+    s = y.copy()
+    s[:] = 0.
+
+    for on, off in zip(on_events, off_events):
+        s[on:off] = 1.
+
+    s = np.reshape(s, shape_original)
+
+    return s
+
+
+def get_status_by_duration(ser, thresholds, min_off, min_on):
+    """
+
+    Parameters
+    ----------
+    ser : numpy.array
+        shape = (num_series, series_len, num_meters)
+        - num_series : Amount of time series.
+        - series_len : Length of each time series.
+        - num_meters : Meters contained in the array.
+    thresholds : numpy.array
+        shape = (num_meters,)
+    min_off : numpy.array
+        shape = (num_meters,)
+    min_on : numpy.array
+        shape = (num_meters,)
+
+    Returns
+    -------
+    ser_bin : numpy.array
+        shape = (num_series, series_len, num_meters)
+        With binary values indicating ON (1) and OFF (0) states.
+    """
+    num_apps = ser.shape[2]
+    ser_bin = ser.copy()
+
+    for idx in range(num_apps):
+        y = ser[:, :, idx]
+        ser_bin[:, :, idx] = _get_app_status_by_duration(y, thresholds[idx],
+                                                         min_off[idx],
+                                                         min_on[idx])
+
+    return ser_bin

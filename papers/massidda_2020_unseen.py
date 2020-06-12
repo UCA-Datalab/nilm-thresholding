@@ -13,6 +13,7 @@ from better_nilm.model.scores import classification_scores_dict
 
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
+from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.preprocessing import get_status_by_duration
 
 from better_nilm.plot_utils import plot_real_vs_prediction
@@ -36,7 +37,7 @@ thresholds = [10,  # dishwasher
               50,  # fridge
               20]  # washingmachine
 
-x_max = [2000]  # maximum load
+x_max = [10000]  # maximum load
 y_max = [2500,  # dishwasher
          300,  # fridge
          2500]  # washingmachine
@@ -57,7 +58,6 @@ to_int = True
 subtract_mean = False
 
 train_size = .8
-validation_size = .1
 epochs = 100
 patience = 100
 batch_size = 32
@@ -87,6 +87,10 @@ Preprocessing train
 ser_train, ser_val = train_test_split(ser, train_size,
                                       random_seed=random_seed,
                                       shuffle=shuffle)
+# Use half the validation (10% of the total data)
+ser_val, _ = train_test_split(ser, .5,
+                              random_seed=random_seed,
+                              shuffle=shuffle)
 
 # Split data into X and Y
 x_train, y_train = feature_target_split(ser_train, meters)
@@ -164,23 +168,28 @@ Scores
 """
 
 class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
-print(class_scores)
+for app, scores in class_scores.items():
+    print(app, "\n", scores)
 
 """
 Plot
 """
+
+# Denormalize meters, if able
+if not subtract_mean:
+    y_test = denormalize_meters(y_test, y_max)
 
 path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
 for idx, app in enumerate(appliances):
-
-    path_fig = os.path.join(path_plots, f"massidda_{app}_classification.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, num_series=4,
+    path_fig = os.path.join(path_plots,
+                            f"massidda_unseen_{app}_classification.png")
+    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, num_series=2,
                             sample_period=sample_period, savefig=path_fig)
 
     path_fig = os.path.join(path_plots,
-                            f"massidda_{app}_binarization.png")
-    plot_load_and_state(y_test, bin_test, idx=idx, num_series=4,
+                            f"massidda_unseen_{app}_binarization.png")
+    plot_load_and_state(y_test, bin_test, idx=idx, num_series=2,
                         sample_period=sample_period, savefig=path_fig)

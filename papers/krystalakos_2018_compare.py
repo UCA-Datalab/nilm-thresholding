@@ -16,7 +16,7 @@ from better_nilm.model.scores import classification_scores_dict
 
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
-from better_nilm.model.preprocessing import binarize
+from better_nilm.model.preprocessing import get_status
 
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
@@ -137,7 +137,7 @@ x_test, _ = normalize_meters(x_test, max_values=x_max)
 y_test, _ = normalize_meters(y_test, max_values=y_max)
 
 # Binarize
-bin_test = binarize(y_test, thresholds)
+bin_test = get_status(y_test, thresholds)
 
 # Prediction
 [y_pred, bin_pred] = model.predict(x_test)

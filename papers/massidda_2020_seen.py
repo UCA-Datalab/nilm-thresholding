@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import sys
 
@@ -13,6 +14,7 @@ from better_nilm.model.scores import classification_scores_dict
 
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
+from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.preprocessing import get_status_by_duration
 
 from better_nilm.plot_utils import plot_real_vs_prediction
@@ -25,8 +27,8 @@ Multilabel Classification
 """
 
 # This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
-dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
+path_data = "../nilm/data/nilmtk/ukdale.h5"
+buildings = [1, 2, 5]
 
 appliances = ['dishwasher',
               'fridge',
@@ -36,7 +38,7 @@ thresholds = [10,  # dishwasher
               50,  # fridge
               20]  # washingmachine
 
-x_max = [2000]  # maximum load
+x_max = [10000]  # maximum load
 y_max = [2500,  # dishwasher
          300,  # fridge
          2500]  # washingmachine
@@ -57,9 +59,8 @@ to_int = True
 subtract_mean = False
 
 train_size = .8
-validation_size = .1
-epochs = 100
-patience = 100
+epochs = 300
+patience = 300
 batch_size = 32
 learning_rate = 1e-4
 
@@ -71,22 +72,37 @@ num_appliances = len(appliances)
 Load the train data
 """
 
-ser, meters = buildings_to_array(dict_path_train,
-                                 appliances=appliances,
-                                 sample_period=sample_period,
-                                 series_len=series_len,
-                                 max_series=max_series,
-                                 skip_first=skip_first,
-                                 to_int=to_int)
+ser_train = []
+
+for house in buildings:
+    ser, meters = buildings_to_array({path_data: house},
+                                     appliances=appliances,
+                                     sample_period=sample_period,
+                                     series_len=series_len,
+                                     max_series=max_series,
+                                     skip_first=skip_first,
+                                     to_int=to_int)
+
+    s_train, s_val = train_test_split(ser, train_size,
+                                      random_seed=random_seed,
+                                      shuffle=shuffle)
+    ser_train += [s_train]
+
+    # Only the first house is used for validation and test
+    if house == 1:
+        ser_val, ser_test = train_test_split(s_val, .5,
+                                             random_seed=random_seed,
+                                             shuffle=shuffle)
+
+# Free memory
+del s_train, s_val
+
+# Concatenate training list
+ser_train = np.concatenate(ser_train)
 
 """
 Preprocessing train
 """
-
-# Split data intro train and validation
-ser_train, ser_val = train_test_split(ser, train_size,
-                                      random_seed=random_seed,
-                                      shuffle=shuffle)
 
 # Split data into X and Y
 x_train, y_train = feature_target_split(ser_train, meters)
@@ -131,14 +147,6 @@ model.train_with_validation(x_train, y_train, bin_train,
 Testing
 """
 
-ser_test, _ = buildings_to_array(dict_path_test,
-                                 appliances=appliances,
-                                 sample_period=sample_period,
-                                 series_len=series_len,
-                                 max_series=max_series,
-                                 skip_first=skip_first,
-                                 to_int=to_int)
-
 x_test, y_test = feature_target_split(ser_test, meters)
 y_test = y_test[:, 15:-15, :]
 
@@ -164,23 +172,28 @@ Scores
 """
 
 class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
-print(class_scores)
+for app, scores in class_scores.items():
+    print(app, "\n", scores)
 
 """
 Plot
 """
+
+# Denormalize meters, if able
+if not subtract_mean:
+    y_test = denormalize_meters(y_test, y_max)
 
 path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
 for idx, app in enumerate(appliances):
-
-    path_fig = os.path.join(path_plots, f"massidda_{app}_classification.png")
+    path_fig = os.path.join(path_plots,
+                            f"massidda_seen_{app}_classification.png")
     plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, num_series=4,
                             sample_period=sample_period, savefig=path_fig)
 
     path_fig = os.path.join(path_plots,
-                            f"massidda_{app}_binarization.png")
+                            f"massidda_seen_{app}_binarization.png")
     plot_load_and_state(y_test, bin_test, idx=idx, num_series=4,
                         sample_period=sample_period, savefig=path_fig)

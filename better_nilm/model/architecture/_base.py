@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from copy import deepcopy
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -90,6 +91,7 @@ class TorchModel:
 
         min_loss = np.inf
         loss_up = 0
+        best_model = None
 
         for epoch in range(1, epochs + 1):
 
@@ -155,13 +157,19 @@ class TorchModel:
             train_losses = []
             valid_losses = []
 
+            # Check if validation loss has decreased
+            # If so, store the model as the best model
             if valid_loss < min_loss:
                 min_loss = valid_loss
+                best_model = deepcopy(self.model)
             else:
                 loss_up += 1
 
             if loss_up >= patience:
                 break
+
+        # Take best model
+        self.model = best_model
 
     def predict(self, x_test):
         tensor_x = torch.Tensor(x_test)
