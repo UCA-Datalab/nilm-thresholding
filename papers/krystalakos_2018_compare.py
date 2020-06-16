@@ -16,26 +16,20 @@ from better_nilm.model.scores import classification_scores_dict
 
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
-from better_nilm.model.preprocessing import binarize
+from better_nilm.model.preprocessing import get_status
 
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
 
 # This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
-dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
+dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 2]}
+dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 5}
 
-appliances = ['dishwasher',
-              'fridge',
-              'washingmachine']
+appliance = 'dishwasher'
 model_name = 'gru'
 
-thresholds = [10,  # dishwasher
-              50,  # fridge
-              20]  # washingmachine
-
-sample_period = 60  # in seconds
-series_len = 510  # in number of records
+sample_period = 6  # in seconds
+series_len = 100  # in number of records
 max_series = None
 skip_first = None
 to_int = True
@@ -44,7 +38,7 @@ train_size = .8
 validation_size = .1
 epochs = 1000
 batch_size = 64
-patience = 300
+patience = 100
 learning_rate = 1e-3
 sigma_c = 10
 
@@ -57,7 +51,8 @@ Print info
 """
 
 # This is handy when outputting the results to a log
-print("\nComparing against Massidda 2020")
+print("\nComparing against Krystalakos 2018")
+print(f"Appliance: {appliance}")
 print(f"Model: {model_name}\n")
 print("------------------------------------------------------\n")
 
@@ -66,7 +61,7 @@ Load the train data
 """
 
 ser, meters = buildings_to_array(dict_path_train,
-                                 appliances=appliances,
+                                 appliances=appliance,
                                  sample_period=sample_period,
                                  series_len=series_len,
                                  max_series=max_series,
@@ -80,7 +75,6 @@ Preprocessing train
 dict_prepro = preprocessing_pipeline_dict(ser, meters,
                                           train_size=train_size,
                                           validation_size=validation_size,
-                                          thresholds=thresholds,
                                           shuffle=False)
 
 x_train = dict_prepro["train"]["x"]
@@ -96,10 +90,7 @@ y_max = dict_prepro["max_values"]["y"]
 
 appliances = dict_prepro["appliances"]
 num_appliances = dict_prepro["num_appliances"]
-
-# Normalize thresholds
-for idx, y in enumerate(y_max[0][0]):
-    thresholds[idx] = thresholds[idx] / y
+thresholds = dict_prepro["thresholds"]
 
 """
 Training
@@ -146,7 +137,7 @@ x_test, _ = normalize_meters(x_test, max_values=x_max)
 y_test, _ = normalize_meters(y_test, max_values=y_max)
 
 # Binarize
-bin_test = binarize(y_test, thresholds)
+bin_test = get_status(y_test, thresholds)
 
 # Prediction
 [y_pred, bin_pred] = model.predict(x_test)
@@ -174,21 +165,20 @@ path_plots = "papers/plots"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots, f"massidda_{app}_"
-                                        f"{model_name}_regression.png")
-    plot_real_vs_prediction(y_test, y_pred, idx=idx,
-                            sample_period=sample_period, savefig=path_fig)
-
-    path_fig = os.path.join(path_plots, f"massidda_{app}_"
-                                        f"{model_name}_classification.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx,
-                            sample_period=sample_period, savefig=path_fig)
-
-    path_fig = os.path.join(path_plots, f"massidda_{app}_"
-                                        f"{model_name}_binarization.png")
-    plot_load_and_state(y_test, bin_test, idx=idx,
+path_fig = os.path.join(path_plots,
+                        f"krystalakos_{appliance}_{model_name}_regression.png")
+plot_real_vs_prediction(y_test, y_pred, idx=0,
                         sample_period=sample_period, savefig=path_fig)
+
+path_fig = os.path.join(path_plots, "krystalakos"
+                                    f"_{appliance}_{model_name}_classification.png")
+plot_real_vs_prediction(bin_test, -bin_pred, idx=0,
+                        sample_period=sample_period, savefig=path_fig)
+
+path_fig = os.path.join(path_plots,
+                        f"krystalakos_{appliance}_{model_name}_binarization.png")
+plot_load_and_state(y_test, bin_test, idx=0,
+                    sample_period=sample_period, savefig=path_fig)
 
 """
 Store model
@@ -198,6 +188,7 @@ path_outputs = "papers/outputs"
 if not os.path.isdir(path_outputs):
     os.mkdir(path_outputs)
 
-path_model = os.path.join(path_outputs, f"massidda_{model_name}_unseen.json")
+path_model = os.path.join(path_outputs,
+                          f"krystalakos_{appliance}_{model_name}.json")
 
 model.store_json(path_model)

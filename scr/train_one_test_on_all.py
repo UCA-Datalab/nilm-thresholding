@@ -11,7 +11,7 @@ from better_nilm.model.preprocessing import normalize_meters
 from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import get_thresholds
-from better_nilm.model.preprocessing import binarize
+from better_nilm.model.preprocessing import get_status
 
 from better_nilm.model.architecture.gru import create_gru_model
 from better_nilm.model.train import train_with_validation
@@ -202,7 +202,7 @@ for app in appliances:
 
             # Get the binary meter status of each Y series
             thresholds = get_thresholds(y_test)
-            bin_test = binarize(y_test, thresholds)
+            bin_test = get_status(y_test, thresholds)
 
             # Propagate X data through the model to get the predictions
             [y_pred, bin_pred] = model.predict(x_test)

@@ -11,10 +11,10 @@ from keras.activations import sigmoid
 
 from keras.optimizers import Adam
 
-from better_nilm.model.architecture._base import BaseModel
+from better_nilm.model.architecture._base import KerasModel
 
 
-class Seq2SeqModel(BaseModel):
+class Seq2SeqModel(KerasModel):
     def __init__(self, series_len, num_appliances, thresholds,
                  regression_weight=1, classification_weight=1,
                  learning_rate=0.001, sigma_c=50, dropout=0.5):
@@ -22,6 +22,7 @@ class Seq2SeqModel(BaseModel):
         Initializes a Sequence to Sequence model.
         Based on Krystalakos model:
         https://www.researchgate.net/publication/326238920_Sliding_Window_Approach_for_Online_Energy_Disaggregation_Using_Artificial_Neural_Networks
+
         Parameters
         ----------
         series_len : int
@@ -36,15 +37,15 @@ class Seq2SeqModel(BaseModel):
         learning_rate : float, default=0.001
             Starting learning rate for the Adam optimizer.
         sigma_c : float, default=50
-            Controls the slope of the sigma function. Being T the threshold and
-            C this parameters sigma_c, we define the sigma as:
+            Controls the slope of the sigma function. Being T the threshold
+            and C this parameters sigma_c, we define the sigma as:
             f(x) = ( 1 + exp( -C * (x - T) ) ) ^ (-1)
         dropout : float, default=0.5
             Dropout between layers.
 
         """
 
-        super(BaseModel, self).__init__()
+        super(KerasModel, self).__init__()
 
         assert len(thresholds) == num_appliances, "Number of thresholds " \
                                                   "must equal the amount of " \

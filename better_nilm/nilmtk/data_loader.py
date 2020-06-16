@@ -171,6 +171,106 @@ def _ensure_continuous_series(df, sample_period, series_len):
                              f"seconds.\nGot {delta} seconds instead.")
 
 
+def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
+                            series_len=600, max_series=None, to_int=True,
+                            verbose=False):
+    """
+    Extracts a pandas Data Frame containing the aggregated load for each
+    meter in given nilmtk.metergroup.MeterGroup object.
+
+    Params
+    ------
+    metergroup : nilmtk.metergroup.Metergroup
+        List of electric meters, including the main meters of the house
+    appliances : list, default=None
+        List of appliances to include in the array. They don't need
+        to be in the metergroup - in those cases, we assume that the
+        missing appliances are always turned off (load = 0).
+        If None, take all the appliances in the metergroup.
+    sample_period : int, default=6
+        Time between consecutive electric load records, in seconds.
+        By default we take 6 seconds.
+    series_len : int, default=600
+        Number of consecutive records to take at once. By default is 600,
+        which implies that a default time series comprehends one hour
+        worth of records (600 records x 6 seconds between each).
+    max_series : int, default=None
+        Maximum number of series to output.
+    to_int : bool, default=True
+        If True, values are changed to integer. This reduces memory usage.
+    verbose : bool, default=False
+
+    Returns
+    -------
+    df : pandas.DataFrame
+    """
+    assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
+                                           f"nilmtk.metergroup.MeterGroup\n" \
+                                           f"Input param is type " \
+                                           f"{type(metergroup)}"
+
+    if verbose:
+        print("Getting good sections of data.")
+
+    good_sections = get_good_sections(metergroup, sample_period,
+                                      series_len, max_series=max_series)
+
+    if verbose:
+        print("Loading dataframe containing good sections.")
+
+    df = df_from_sections(metergroup, good_sections, sample_period)
+
+    if df.shape[0] == 0:
+        raise ValueError("Data frame is empty")
+
+    # The number of rows in the dataframe must be a multiple of series_len
+    # If that is not the case, we have to selectively remove records from the
+    # dataframe, ensuring that the amount of continuous sequences is maximal
+    if df.shape[0] % series_len != 0:
+        if verbose:
+            print("There are too many records in the df. Deleting a few.")
+        df = _remove_exceed_records(df, sample_period, series_len)
+
+    # Ensure series are continuous
+    if verbose:
+        print("Ensuring each sequence is continuous.")
+    _ensure_continuous_series(df, sample_period, series_len)
+
+    # Sum contributions of appliances with the same name
+    df = df.groupby(df.columns, axis=1).sum()
+
+    # Change values to integer to reduce memory usage
+    if to_int:
+        df = df.astype(int)
+
+    if "_main" not in df.columns:
+        raise ValueError("No '_main' meter contained in df columns:\n"
+                         f"{', '.join(df.columns.tolist())}")
+
+    # Initialize meter list with the main meter
+    meters = ["_main"]
+
+    # Add the appliances to the meter list
+    if appliances is not None:
+        meters += list(appliances)
+        meters = sorted(set(meters))
+        drop_apps = [app for app in df.columns if app not in meters]
+        df.drop(drop_apps, axis=1, inplace=True)
+    else:
+        meters += df.columns.tolist()
+        meters = sorted(set(meters))
+
+    # Ensure every appliance is in the dataframe
+    for meter in meters:
+        if meter not in df.columns:
+            df[meter] = 0
+
+    # Sort columns by name
+    df = df.reindex(sorted(df.columns), axis=1)
+
+    return df
+
+
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                         series_len=600, max_series=None, to_int=True,
                         verbose=False):
@@ -213,69 +313,21 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     meters : list
         List of the meters in the time series, properly sorted.
     """
+
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
                                            f"Input param is type " \
                                            f"{type(metergroup)}"
 
-    if verbose:
-        print("Getting good sections of data.")
-
-    good_sections = get_good_sections(metergroup, sample_period,
-                                      series_len, max_series=max_series)
-
-    if verbose:
-        print("Loading dataframe containing good sections.")
-
-    df = df_from_sections(metergroup, good_sections, sample_period)
-
-    # The number of rows in the dataframe must be a multiple of series_len
-    # If that is not the case, we have to selectively remove records from the
-    # dataframe, ensuring that the amount of continuous sequences is maximal
-    if df.shape[0] % series_len != 0:
-        if verbose:
-            print("There are too many records in the df. Deleting a few.")
-        df = _remove_exceed_records(df, sample_period, series_len)
-
-    # Ensure series are continuous
-    if verbose:
-        print("Ensuring each sequence is continuous.")
-    _ensure_continuous_series(df, sample_period, series_len)
-
-    # Sum contributions of appliances with the same name
-    df = df.groupby(df.columns, axis=1).sum()
-
-    # Change values to integer to reduce memory usage
-    if to_int:
-        df = df.astype(int)
-
+    df = metergroup_to_dataframe(metergroup, appliances=appliances,
+                                 sample_period=sample_period,
+                                 series_len=series_len, max_series=max_series,
+                                 to_int=to_int,
+                                 verbose=verbose)
+    
     if verbose:
         print("Turning df to numpy array.")
-
-    if "_main" not in df.columns:
-        raise ValueError("No '_main' meter contained in df columns:\n"
-                         f"{', '.join(df.columns.tolist())}")
-
-    # Initialize meter list with the main meter
-    meters = ["_main"]
-
-    # Add the appliances to the meter list
-    if appliances is not None:
-        meters += list(appliances)
-        meters = sorted(set(meters))
-        drop_apps = [app for app in df.columns if app not in meters]
-        df.drop(drop_apps, axis=1, inplace=True)
-    else:
-        meters += df.columns.tolist()
-        meters = sorted(set(meters))
-
-    # Ensure every appliance is in the dataframe
-    for meter in meters:
-        if meter not in df.columns:
-            df[meter] = 0
-
-    # Sort columns by name
-    df = df.reindex(sorted(df.columns), axis=1)
+    meters = sorted(df.columns)
 
     # Turn df into numpy array
     ser = df.values
