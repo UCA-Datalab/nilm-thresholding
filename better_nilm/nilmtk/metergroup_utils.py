@@ -146,6 +146,33 @@ def get_good_sections(metergroup, sample_period, series_len,
     return good_sections
 
 
+def _df_preprocessing(df, metergroup):
+    # Rename the columns according to their meter label
+    columns = []
+    for col in df.columns:
+        if type(col) is ElecMeterID or type(col) is tuple:
+            # If the meter is on its own, its current column name is:
+            # col = ElecMeterID(instance, building, dataset)
+            instance = col[0]
+        elif type(col) is MeterGroupID:
+            # If the meter is grouped with others, its current column name is:
+            # MeterGroup(meters=(ElecMeterID(instance, building, dataset)))
+            instance = col[0][0][0]
+        else:
+            raise ValueError(f"Unexpected type of meter ID for'{col}' "
+                             f"column:\n {type(col)}")
+        # We use its instance to get the appliance label
+        with HiddenPrints():
+            labels = metergroup.get_labels([instance])
+        label = homogenize_string(labels[0])
+        columns += [APPLIANCE_NAMES.get(label, label)]
+
+    # Rename columns
+    df.columns = columns
+
+    return df
+
+
 def df_from_sections(metergroup, sections, sample_period):
     """
     Extracts a dataframe from the metergroup, containing only the chosen time
@@ -177,29 +204,8 @@ def df_from_sections(metergroup, sections, sample_period):
                                             ac_type="best",
                                             physical_quantity="power")
 
-    # Rename the columns according to their meter label
-    columns = []
-    for col in df.columns:
-        if type(col) is ElecMeterID or type(col) is tuple:
-            # If the meter is on its own, its current column name is:
-            # col = ElecMeterID(instance, building, dataset)
-            instance = col[0]
-        elif type(col) is MeterGroupID:
-            # If the meter is grouped with others, its current column name is:
-            # MeterGroup(meters=(ElecMeterID(instance, building, dataset)))
-            instance = col[0][0][0]
-        else:
-            raise ValueError(f"Unexpected type of meter ID for'{col}' "
-                             f"column:\n {type(col)}")
-        # We use its instance to get the appliance label
-        with HiddenPrints():
-            labels = metergroup.get_labels([instance])
-        label = homogenize_string(labels[0])
-        columns += [APPLIANCE_NAMES.get(label, label)]
+    df = _df_preprocessing(df, metergroup)
 
-    # Rename columns
-    df.columns = columns
-    
     # Ensure sections are followed strictly
     for section in sections:
         ts_start = section.start
@@ -217,4 +223,46 @@ def df_from_sections(metergroup, sections, sample_period):
             raise ValueError(f"End timestamp {ts_end} missing.\n"
                              f"Nearest is {ts_nearest}")
     
+    return df
+
+
+def df_whole(metergroup, sample_period, ffill=0):
+    """
+    Extracts a dataframe from the metergroup, containing only the chosen time
+    sections, with the given sample period.
+
+    Params
+    ------
+    metergroup : nilmtk.metergroup.Metergroup
+        List of electric meters, including the main meters of the house
+    sections : list
+        List of timeframes
+    sample_period : int, default=6
+        Time between consecutive electric load records, in seconds.
+        By default we take 6 seconds.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        Aggregated load values of each meter within the given sections.
+    """
+
+    # Load dataframe
+    with HiddenPrints():
+        df = metergroup.dataframe_of_meters(sample_period=sample_period,
+                                            ac_type="best",
+                                            physical_quantity="power")
+
+    df = _df_preprocessing(df, metergroup)
+
+    # Forward fill
+    i = 0
+
+    while (i < ffill) and (df.isna().sum() > 0):
+        df.fillna(method='ffill', inplace=True)
+        i += 1
+
+    # Fill the rest of elements
+    df.fillna(0, inplace=True)
+
     return df

@@ -13,6 +13,7 @@ from better_nilm.str_utils import homogenize_string
 from better_nilm.nilmtk.metergroup_utils import APPLIANCE_NAMES
 from better_nilm.nilmtk.metergroup_utils import get_good_sections
 from better_nilm.nilmtk.metergroup_utils import df_from_sections
+from better_nilm.nilmtk.metergroup_utils import df_whole
 
 
 def metergroup_from_file(path_file, building, appliances=None):
@@ -173,6 +174,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
 
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
+                            only_good_sections=True, ffill=0,
                             verbose=False):
     """
     Extracts a pandas Data Frame containing the aggregated load for each
@@ -212,13 +214,16 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     if verbose:
         print("Getting good sections of data.")
 
-    good_sections = get_good_sections(metergroup, sample_period,
-                                      series_len, max_series=max_series)
+    if only_good_sections:
+        good_sections = get_good_sections(metergroup, sample_period,
+                                          series_len, max_series=max_series)
 
-    if verbose:
-        print("Loading dataframe containing good sections.")
+        if verbose:
+            print("Loading dataframe containing good sections.")
 
-    df = df_from_sections(metergroup, good_sections, sample_period)
+        df = df_from_sections(metergroup, good_sections, sample_period)
+    else:
+        df = df_whole(metergroup, sample_period, ffill=ffill)
 
     if df.shape[0] == 0:
         raise ValueError("Data frame is empty")
