@@ -220,6 +220,9 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
 
     df = df_from_sections(metergroup, good_sections, sample_period)
 
+    if df.shape[0] == 0:
+        raise ValueError("Data frame is empty")
+
     # The number of rows in the dataframe must be a multiple of series_len
     # If that is not the case, we have to selectively remove records from the
     # dataframe, ensuring that the amount of continuous sequences is maximal
@@ -239,9 +242,6 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     # Change values to integer to reduce memory usage
     if to_int:
         df = df.astype(int)
-
-    if verbose:
-        print("Turning df to numpy array.")
 
     if "_main" not in df.columns:
         raise ValueError("No '_main' meter contained in df columns:\n"
@@ -324,6 +324,9 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                                  series_len=series_len, max_series=max_series,
                                  to_int=to_int,
                                  verbose=verbose)
+    
+    if verbose:
+        print("Turning df to numpy array.")
     meters = sorted(df.columns)
 
     # Turn df into numpy array
