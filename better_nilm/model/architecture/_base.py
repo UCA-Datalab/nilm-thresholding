@@ -54,9 +54,9 @@ class KerasModel:
 
 
 class TorchModel:
-    def __init__(self):
+    def __init__(self, batch_size=32):
         self.model = None
-        self.batch_size = 64
+        self.batch_size = batch_size
         self.shuffle = True
 
     def _get_dataloader(self, x, y, y_bin):
@@ -71,7 +71,7 @@ class TorchModel:
 
     def train_with_validation(self, x_train, y_train, bin_train,
                               x_val, y_val, bin_val,
-                              epochs=1000, batch_size=64,
+                              epochs=1000, batch_size=32,
                               shuffle=False, patience=300):
 
         self.batch_size = batch_size
@@ -101,6 +101,7 @@ class TorchModel:
             self.model.train()  # prep model for training
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
+
                 data = data.permute(0, 2, 1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
@@ -160,6 +161,8 @@ class TorchModel:
             # Check if validation loss has decreased
             # If so, store the model as the best model
             if valid_loss < min_loss:
+                print(f'Validation loss decreased ({min_loss:.6f} -->'
+                      f' {valid_loss:.6f}).  Saving model ...')
                 min_loss = valid_loss
                 best_model = deepcopy(self.model)
             else:
@@ -172,6 +175,7 @@ class TorchModel:
         self.model = best_model
 
     def predict(self, x_test):
+        self.model.eval()
         tensor_x = torch.Tensor(x_test)
         tensor_x = tensor_x.permute(0, 2, 1).cuda()
         output_status = self.model(tensor_x).permute(0, 2, 1)

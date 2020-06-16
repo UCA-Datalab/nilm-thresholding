@@ -171,11 +171,11 @@ def _ensure_continuous_series(df, sample_period, series_len):
                              f"seconds.\nGot {delta} seconds instead.")
 
 
-def metergroup_to_array(metergroup, appliances=None, sample_period=6,
-                        series_len=600, max_series=None, to_int=True,
-                        verbose=False):
+def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
+                            series_len=600, max_series=None, to_int=True,
+                            verbose=False):
     """
-    Extracts a time series numpy array containing the aggregated load for each
+    Extracts a pandas Data Frame containing the aggregated load for each
     meter in given nilmtk.metergroup.MeterGroup object.
 
     Params
@@ -202,16 +202,7 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     Returns
     -------
-    ser : numpy.array
-        shape = (num_series, series_len, num_meters)
-        - num_series : The amount of series that could be extracted from the
-            metergroup.
-        - series_len : see Params.
-        - num_meters : The number of meters (appliances + main meter).
-            They are sorted alphabetically by appliance name, excluding
-            the main meter, which always comes first.
-    meters : list
-        List of the meters in the time series, properly sorted.
+    df : pandas.DataFrame
     """
     assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
                                            f"nilmtk.metergroup.MeterGroup\n" \
@@ -276,6 +267,64 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
 
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
+
+    return df
+
+
+def metergroup_to_array(metergroup, appliances=None, sample_period=6,
+                        series_len=600, max_series=None, to_int=True,
+                        verbose=False):
+    """
+    Extracts a time series numpy array containing the aggregated load for each
+    meter in given nilmtk.metergroup.MeterGroup object.
+
+    Params
+    ------
+    metergroup : nilmtk.metergroup.Metergroup
+        List of electric meters, including the main meters of the house
+    appliances : list, default=None
+        List of appliances to include in the array. They don't need
+        to be in the metergroup - in those cases, we assume that the
+        missing appliances are always turned off (load = 0).
+        If None, take all the appliances in the metergroup.
+    sample_period : int, default=6
+        Time between consecutive electric load records, in seconds.
+        By default we take 6 seconds.
+    series_len : int, default=600
+        Number of consecutive records to take at once. By default is 600,
+        which implies that a default time series comprehends one hour
+        worth of records (600 records x 6 seconds between each).
+    max_series : int, default=None
+        Maximum number of series to output.
+    to_int : bool, default=True
+        If True, values are changed to integer. This reduces memory usage.
+    verbose : bool, default=False
+
+    Returns
+    -------
+    ser : numpy.array
+        shape = (num_series, series_len, num_meters)
+        - num_series : The amount of series that could be extracted from the
+            metergroup.
+        - series_len : see Params.
+        - num_meters : The number of meters (appliances + main meter).
+            They are sorted alphabetically by appliance name, excluding
+            the main meter, which always comes first.
+    meters : list
+        List of the meters in the time series, properly sorted.
+    """
+
+    assert type(metergroup) is MeterGroup, f"metergroup param must be type " \
+                                           f"nilmtk.metergroup.MeterGroup\n" \
+                                           f"Input param is type " \
+                                           f"{type(metergroup)}"
+
+    df = metergroup_to_dataframe(metergroup, appliances=appliances,
+                                 sample_period=sample_period,
+                                 series_len=series_len, max_series=max_series,
+                                 to_int=to_int,
+                                 verbose=verbose)
+    meters = sorted(df.columns)
 
     # Turn df into numpy array
     ser = df.values

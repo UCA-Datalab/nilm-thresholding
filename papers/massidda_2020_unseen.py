@@ -19,6 +19,9 @@ from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.plot_utils import plot_real_vs_prediction
 from better_nilm.plot_utils import plot_load_and_state
 
+from better_nilm.exploration_utils import print_basic_statistics
+from better_nilm.exploration_utils import print_appliance_statistics
+
 """
 This script tries to reproduce the results of Luca Massidda in his paper
 Non-Intrusive Load Disaggregation by Convolutional Neural Network and 
@@ -37,34 +40,36 @@ thresholds = [10,  # dishwasher
               50,  # fridge
               20]  # washingmachine
 
-x_max = [10000]  # maximum load
+x_max = [2000]  # maximum load
 y_max = [2500,  # dishwasher
          300,  # fridge
          2500]  # washingmachine
 
-min_off = [3,  # dishwasher
-           0,  # fridge
-           30]  # washingmachine
+min_off = [30,  # dishwasher
+           1,  # fridge
+           3]  # washingmachine
 min_on = [30,  # dishwasher
           1,  # fridge
           30]  # washingmachine
 
 sample_period = 60  # in seconds
-series_len = 510  # in number of records
+series_len = 512  # in number of records
+border = 16  # borders lost after convolutions
 
-max_series = None
+max_series = 1800
 skip_first = None
-to_int = True
-subtract_mean = False
+to_int = False
+subtract_mean = True
 
 train_size = .8
 epochs = 100
 patience = 100
 batch_size = 32
-learning_rate = 1e-4
+learning_rate = 1.E-4
+dropout = 0.1
 
 random_seed = 0
-shuffle = False
+shuffle = True
 num_appliances = len(appliances)
 
 """
@@ -110,11 +115,17 @@ x_val, _ = normalize_meters(x_val, max_values=x_max,
                             subtract_mean=subtract_mean)
 y_val, _ = normalize_meters(y_val, max_values=y_max)
 
-# Skip first and last 15 records of Y
-y_train = y_train[:, 15:-15, :]
-bin_train = bin_train[:, 15:-15, :]
-y_val = y_val[:, 15:-15, :]
-bin_val = bin_val[:, 15:-15, :]
+# Skip first and last border records of Y
+y_train = y_train[:, border:-border, :]
+bin_train = bin_train[:, border:-border, :]
+y_val = y_val[:, border:-border, :]
+bin_val = bin_val[:, border:-border, :]
+
+"""
+Statistics
+"""
+print_basic_statistics(x_train, "Train X")
+print_appliance_statistics(bin_train, "Train", appliances)
 
 """
 Training
@@ -122,7 +133,7 @@ Training
 
 model = PTPNetModel(series_len=series_len, out_channels=num_appliances,
                     init_features=32,
-                    learning_rate=learning_rate)
+                    learning_rate=learning_rate, dropout=dropout)
 
 model.train_with_validation(x_train, y_train, bin_train,
                             x_val, y_val, bin_val,
@@ -144,7 +155,7 @@ ser_test, _ = buildings_to_array(dict_path_test,
                                  to_int=to_int)
 
 x_test, y_test = feature_target_split(ser_test, meters)
-y_test = y_test[:, 15:-15, :]
+y_test = y_test[:, border:-border, :]
 
 # Binarize
 bin_test = get_status_by_duration(y_test, thresholds, min_off, min_on)
@@ -162,6 +173,12 @@ bin_pred = bin_pred.cpu().detach().numpy()
 
 # Binarize prediction
 bin_pred = get_status_by_duration(bin_pred, [.5] * 3, min_off, min_on)
+
+"""
+Statistics
+"""
+print_basic_statistics(x_test, "Test X")
+print_appliance_statistics(bin_test, "Test", appliances)
 
 """
 Scores
