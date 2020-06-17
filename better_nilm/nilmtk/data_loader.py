@@ -183,7 +183,6 @@ def _ensure_continuous_series(df, sample_period, series_len):
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
                             only_good_sections=True, ffill=0,
-                            start_date=None,
                             verbose=False):
     """
     Extracts a pandas Data Frame containing the aggregated load for each
@@ -213,8 +212,6 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         Use only the overlapping good sections of all the meters.
     ffill : int, default=0
         Number of records to forward fill in case of NA
-    start_date : str or tuple, default=None
-        Start date of recording, in 'YYYY-MM-DD' format or (Y, M, D)
     verbose : bool, default=False
 
     Returns
@@ -288,26 +285,12 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
 
-    # Choose start date
-    if start_date is not None:
-        if type(start_date) == str:
-            y, m, d = start_date.split("-")
-            datetime = pd.datetime(y, m, d)
-        elif (type(start_date) == tuple) and (len(start_date) == 3):
-            y, m, d = start_date
-            datetime = pd.datetime(y, m, d)
-        else:
-            raise ValueError(f"Unexpected start date format: {start_date}")
-        mask_date = df.index >= datetime
-        df = df[mask_date]
-
     return df
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                         series_len=600, max_series=None, to_int=True,
-                        start_date=None, only_good_sections=True,
-                        ffill=0,
+                        only_good_sections=True, ffill=0,
                         verbose=False):
     """
     Extracts a time series numpy array containing the aggregated load for each
@@ -337,8 +320,6 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         Use only the overlapping good sections of all the meters.
     ffill : int, default=0
         Number of records to forward fill in case of NA
-    start_date : str or tuple, default=None
-        Start date of recording, in 'YYYY-MM-DD' format or (Y, M, D)
     verbose : bool, default=False
 
     Returns
@@ -366,7 +347,6 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                                  to_int=to_int,
                                  only_good_sections=only_good_sections,
                                  ffill=ffill,
-                                 start_date=start_date,
                                  verbose=verbose)
     
     if verbose:
