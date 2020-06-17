@@ -498,7 +498,7 @@ def buildings_to_array(dict_path_buildings, appliances=None,
                                         f"skipped ones, skip_first " \
                                         f"={skip_first}"
 
-    for idx, path_file, buildings in enumerate(dict_path_buildings.items()):
+    for path_file, buildings in dict_path_buildings.items():
         assert os.path.isfile(path_file), f"Key '{path_file}' is not" \
                                           "a valid path."
         buildings = to_list(buildings)
