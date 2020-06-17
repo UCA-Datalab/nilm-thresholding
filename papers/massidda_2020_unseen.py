@@ -72,8 +72,8 @@ only_good_sections = False
 ffill = 5
 
 train_size = .8
-epochs = 300
-patience = 300
+epochs = 100
+patience = 100
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
