@@ -36,7 +36,7 @@ buildings = [1, 2, 5]
 timestamps = [(pd.to_datetime('2013-04-12').tz_localize('US/Eastern'),
                pd.to_datetime('2014-12-15').tz_localize('US/Eastern')),
               (pd.to_datetime('2013-05-22').tz_localize('US/Eastern'),
-               pd.to_datetime('2013-10-03').tz_localize('US/Eastern')),
+               pd.to_datetime('2013-10-03 06:16').tz_localize('US/Eastern')),
               (pd.to_datetime('2014-06-29').tz_localize('US/Eastern'),
                pd.to_datetime('2014-09-01').tz_localize('US/Eastern'))]
 
