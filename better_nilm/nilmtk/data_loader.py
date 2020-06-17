@@ -123,9 +123,17 @@ def _remove_exceed_records(df, sample_period, series_len):
     idx = 0
     drop_idx = []
 
-    while len(drop_idx) < exceed_records:
+    while (len(drop_idx) < exceed_records) and (idx < df.shape[0]):
+        # If the current index is less than series_len positions from the
+        # end of the df, add all the remaining indexes to the drop list
+        idx_end = idx + series_len - 1
+        if idx_end >= df.shape[0]:
+            drop_idx += [idx]
+            idx += 1
+            continue
+        # Else, compute start and end timestamp
         stamp_start = df.index[idx]
-        stamp_end = df.index[idx + series_len - 1]
+        stamp_end = df.index[idx_end]
         # If the delta in the sequence is not the expected, move it one step
         # and add the idx to our drop list
         # Otherwise, jump to the next sequence
