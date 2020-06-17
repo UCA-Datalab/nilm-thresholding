@@ -258,7 +258,7 @@ def df_whole(metergroup, sample_period, ffill=0):
     # Forward fill
     i = 0
 
-    while (i < ffill) and (df.isna().sum() > 0):
+    while (i < ffill) and (df.isna().sum().sum() > 0):
         df.fillna(method='ffill', inplace=True)
         i += 1
 
