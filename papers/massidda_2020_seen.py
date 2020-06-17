@@ -1,12 +1,13 @@
 import numpy as np
+import pandas as pd
 import os
 import sys
 
 sys.path.insert(0, "../better_nilm")
 
-from better_nilm.nilmtk.data_loader import buildings_to_array
-
-from better_nilm.model.preprocessing import train_test_split
+from better_nilm.nilmtk.data_loader import metergroup_from_file
+from better_nilm.nilmtk.data_loader import metergroup_to_dataframe
+from better_nilm.nilmtk.data_loader import dataframe_to_array
 
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
@@ -32,6 +33,9 @@ Multilabel Classification
 # This path is set to work on Zappa
 path_data = "../nilm/data/nilmtk/ukdale.h5"
 buildings = [1, 2, 5]
+timestamps = [(pd.datetime(2013, 4, 12), pd.datetime(2014, 12, 15)),
+              (pd.datetime(2013, 5, 22), pd.datetime(2013, 10, 3, 6, 16)),
+              (pd.datetime(2014, 6, 29), pd.datetime(2014, 9, 1))]
 
 appliances = ['dishwasher',
               'fridge',
@@ -61,6 +65,8 @@ max_series = 1800
 skip_first = None
 to_int = False
 subtract_mean = True
+only_good_sections = False
+ffill = 5
 
 train_size = .8
 epochs = 300
@@ -79,30 +85,28 @@ Load the train data
 
 ser_train = []
 
-for house in buildings:
-    ser, meters = buildings_to_array({path_data: house},
-                                     appliances=appliances,
-                                     sample_period=sample_period,
-                                     series_len=series_len,
-                                     max_series=max_series,
-                                     skip_first=skip_first,
-                                     only_good_sections=False,
-                                     ffill=5,
-                                     to_int=to_int)
+for idx, building in enumerate(buildings):
+    metergroup = metergroup_from_file(path_data, building,
+                                      appliances=appliances)
+    df = metergroup_to_dataframe(metergroup, appliances=appliances,
+                                 sample_period=sample_period,
+                                 series_len=series_len, max_series=max_series,
+                                 to_int=to_int,
+                                 only_good_sections=only_good_sections,
+                                 ffill=ffill,
+                                 verbose=False)
 
-    s_train, s_val = train_test_split(ser, train_size,
-                                      random_seed=random_seed,
-                                      shuffle=shuffle)
+    time_start, time_end = timestamps[idx]
+    s_train, meters = dataframe_to_array(df[time_start:time_end], series_len)
     ser_train += [s_train]
 
     # Only the first house is used for validation and test
-    if house == 1:
-        ser_val, ser_test = train_test_split(s_val, .5,
-                                             random_seed=random_seed,
-                                             shuffle=shuffle)
+    if building == 1:
+        ser_val = dataframe_to_array(df, series_len)
+        ser_test = dataframe_to_array(df, series_len)
 
 # Free memory
-del s_train, s_val
+del s_train
 
 # Concatenate training list
 ser_train = np.concatenate(ser_train)

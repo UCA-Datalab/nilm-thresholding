@@ -288,6 +288,46 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     return df
 
 
+def dataframe_to_array(df, series_len):
+    """
+    Turns a dataframe output by metergroup_to_dataframe into an array
+    Parameters
+    ----------
+    df : pandas.DataFrame
+    series_len : int
+
+    Returns
+    -------
+    ser : numpy.array
+        shape = (num_series, series_len, num_meters)
+        - num_series : The amount of series that could be extracted from the
+            metergroup.
+        - series_len : see Params.
+        - num_meters : The number of meters (appliances + main meter).
+            They are sorted alphabetically by appliance name, excluding
+            the main meter, which always comes first.
+    meters : list
+        List of the meters in the time series, properly sorted.
+
+    """
+    meters = sorted(df.columns)
+
+    # Turn df into numpy array
+    ser = df.values
+
+    # Shape appropriately
+    num_series = int(df.shape[0] / series_len)
+    ser = np.reshape(ser, (num_series, series_len, len(meters)))
+
+    # Ensure the reshape has been done correctly
+    df_ser_diff = (ser[0, :, 0] - df.iloc[:series_len, 0])
+    df_ser_diff = (df_ser_diff != 0).sum()
+    assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
+                             "output the expected tensor."
+
+    return ser, meters
+
+
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                         series_len=600, max_series=None, to_int=True,
                         only_good_sections=True, ffill=0,
@@ -351,20 +391,8 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
     
     if verbose:
         print("Turning df to numpy array.")
-    meters = sorted(df.columns)
 
-    # Turn df into numpy array
-    ser = df.values
-
-    # Shape appropriately
-    num_series = int(df.shape[0] / series_len)
-    ser = np.reshape(ser, (num_series, series_len, len(meters)))
-
-    # Ensure the reshape has been done correctly
-    df_ser_diff = (ser[0, :, 0] - df.iloc[:series_len, 0])
-    df_ser_diff = (df_ser_diff != 0).sum()
-    assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
-                             "output the expected tensor."
+    ser, meters = dataframe_to_array(df, series_len)
 
     return ser, meters
 
