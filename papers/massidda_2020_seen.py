@@ -33,12 +33,12 @@ Multilabel Classification
 # This path is set to work on Zappa
 path_data = "../nilm/data/nilmtk/ukdale.h5"
 buildings = [1, 2, 5]
-timestamps = [(pd.datetime(2013, 4, 12),
-               pd.datetime(2014, 12, 15)),
-              (pd.datetime(2013, 5, 22),
-               pd.datetime(2013, 10, 3, 6, 16)),
-              (pd.datetime(2014, 6, 29),
-               pd.datetime(2014, 9, 1))]
+timestamps = [(pd.to_datetime('2013-04-12').tz_localize('US/Eastern'),
+               pd.to_datetime('2014-12-15').tz_localize('US/Eastern')),
+              (pd.to_datetime('2013-05-22').tz_localize('US/Eastern'),
+               pd.to_datetime('2013-10-03').tz_localize('US/Eastern')),
+              (pd.to_datetime('2014-06-29').tz_localize('US/Eastern'),
+               pd.to_datetime('2014-09-01').tz_localize('US/Eastern'))]
 
 appliances = ['dishwasher',
               'fridge',
