@@ -183,6 +183,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
                             only_good_sections=True, ffill=0,
+                            start_date=None,
                             verbose=False):
     """
     Extracts a pandas Data Frame containing the aggregated load for each
@@ -208,6 +209,12 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         Maximum number of series to output.
     to_int : bool, default=True
         If True, values are changed to integer. This reduces memory usage.
+    only_good_sections : bool, default=True
+        Use only the overlapping good sections of all the meters.
+    ffill : int, default=0
+        Number of records to forward fill in case of NA
+    start_date : str or tuple, default=None
+        Start date of recording, in 'YYYY-MM-DD' format or (Y, M, D)
     verbose : bool, default=False
 
     Returns
@@ -281,11 +288,26 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
 
+    # Choose start date
+    if start_date is not None:
+        if type(start_date) == str:
+            y, m, d = start_date.split("-")
+            datetime = pd.datetime(y, m, d)
+        elif (type(start_date) == tuple) and (len(start_date) == 3):
+            y, m, d = start_date
+            datetime = pd.datetime(y, m, d)
+        else:
+            raise ValueError(f"Unexpected start date format: {start_date}")
+        mask_date = df.index >= datetime
+        df = df[mask_date]
+
     return df
 
 
 def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                         series_len=600, max_series=None, to_int=True,
+                        start_date=None, only_good_sections=True,
+                        ffill=0,
                         verbose=False):
     """
     Extracts a time series numpy array containing the aggregated load for each
@@ -311,6 +333,12 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
         Maximum number of series to output.
     to_int : bool, default=True
         If True, values are changed to integer. This reduces memory usage.
+    only_good_sections : bool, default=True
+        Use only the overlapping good sections of all the meters.
+    ffill : int, default=0
+        Number of records to forward fill in case of NA
+    start_date : str or tuple, default=None
+        Start date of recording, in 'YYYY-MM-DD' format or (Y, M, D)
     verbose : bool, default=False
 
     Returns
@@ -336,6 +364,9 @@ def metergroup_to_array(metergroup, appliances=None, sample_period=6,
                                  sample_period=sample_period,
                                  series_len=series_len, max_series=max_series,
                                  to_int=to_int,
+                                 only_good_sections=only_good_sections,
+                                 ffill=ffill,
+                                 start_date=start_date,
                                  verbose=verbose)
     
     if verbose:
@@ -399,6 +430,7 @@ def _ensure_same_meters(list_ser, list_meters, meters=None):
 def buildings_to_array(dict_path_buildings, appliances=None,
                        sample_period=6, series_len=600,
                        max_series=None, skip_first=None, to_int=True,
+                       only_good_sections=True, ffill=0,
                        verbose=False):
     """
     Returns a time series numpy array containing the aggregated load for each
@@ -429,6 +461,10 @@ def buildings_to_array(dict_path_buildings, appliances=None,
         the max_series. The series are skipped in chronological order.
     to_int : bool, default=True
         If True, values are changed to integer. This reduces memory usage.
+    only_good_sections : bool, default=True
+        Use only the overlapping good sections of all the meters.
+    ffill : int, default=0
+        Number of records to forward fill in case of NA
     verbose : bool, default=False
 
     Returns
@@ -462,7 +498,7 @@ def buildings_to_array(dict_path_buildings, appliances=None,
                                         f"skipped ones, skip_first " \
                                         f"={skip_first}"
 
-    for path_file, buildings in dict_path_buildings.items():
+    for idx, path_file, buildings in enumerate(dict_path_buildings.items()):
         assert os.path.isfile(path_file), f"Key '{path_file}' is not" \
                                           "a valid path."
         buildings = to_list(buildings)
@@ -475,6 +511,9 @@ def buildings_to_array(dict_path_buildings, appliances=None,
                                               series_len=series_len,
                                               max_series=max_series,
                                               to_int=to_int,
+                                              only_good_sections=
+                                              only_good_sections,
+                                              ffill=ffill,
                                               verbose=verbose)
             assert "_main" in meters, f"'_main' missing in meters:\n" \
                                       f"{', '.join(meters)}"
