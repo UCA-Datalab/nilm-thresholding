@@ -82,6 +82,8 @@ ser, meters = buildings_to_array(dict_path_train,
                                  series_len=series_len,
                                  max_series=max_series,
                                  skip_first=skip_first,
+                                 only_good_sections=False,
+                                 ffill=5,
                                  to_int=to_int)
 
 """
