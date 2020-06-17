@@ -1,11 +1,13 @@
+import numpy as np
+import pandas as pd
 import os
 import sys
 
 sys.path.insert(0, "../better_nilm")
 
-from better_nilm.nilmtk.data_loader import buildings_to_array
-
-from better_nilm.model.preprocessing import train_test_split
+from better_nilm.nilmtk.data_loader import metergroup_from_file
+from better_nilm.nilmtk.data_loader import metergroup_to_dataframe
+from better_nilm.nilmtk.data_loader import dataframe_to_array
 
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
@@ -29,8 +31,14 @@ Multilabel Classification
 """
 
 # This path is set to work on Zappa
-dict_path_train = {"../nilm/data/nilmtk/ukdale.h5": [1, 5]}
-dict_path_test = {"../nilm/data/nilmtk/ukdale.h5": 2}
+path_data = "../nilm/data/nilmtk/ukdale.h5"
+buildings = [1, 2, 5]
+timestamps = [(pd.datetime(2013, 4, 12).tz_localize('US/Eastern'),
+               pd.datetime(2014, 12, 15)).tz_localize('US/Eastern'),
+              (pd.datetime(2013, 5, 22).tz_localize('US/Eastern'),
+               pd.datetime(2013, 10, 3, 6, 16)).tz_localize('US/Eastern'),
+              (pd.datetime(2014, 6, 29).tz_localize('US/Eastern'),
+               pd.datetime(2014, 9, 1)).tz_localize('US/Eastern')]
 
 appliances = ['dishwasher',
               'fridge',
@@ -60,10 +68,12 @@ max_series = 1800
 skip_first = None
 to_int = False
 subtract_mean = True
+only_good_sections = False
+ffill = 5
 
 train_size = .8
-epochs = 100
-patience = 100
+epochs = 300
+patience = 300
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
@@ -76,28 +86,57 @@ num_appliances = len(appliances)
 Load the train data
 """
 
-ser, meters = buildings_to_array(dict_path_train,
-                                 appliances=appliances,
+ser_train = []
+ser_val = []
+
+for idx, building in enumerate(buildings):
+    metergroup = metergroup_from_file(path_data, building,
+                                      appliances=appliances)
+    df = metergroup_to_dataframe(metergroup, appliances=appliances,
                                  sample_period=sample_period,
-                                 series_len=series_len,
-                                 max_series=max_series,
-                                 skip_first=skip_first,
-                                 only_good_sections=False,
-                                 ffill=5,
-                                 to_int=to_int)
+                                 series_len=series_len, max_series=max_series,
+                                 to_int=to_int,
+                                 only_good_sections=only_good_sections,
+                                 ffill=ffill,
+                                 verbose=False)
+
+    time_start, time_end = timestamps[idx]
+    df_split = df[time_start:time_end]
+    # Ensure the number of rows is a multiple of series_len
+    cutoff = (df_split.shape[0] // series_len) * series_len
+    df_split = df_split.iloc[:cutoff, :]
+
+    # Only the second house is used for test
+    if building == 2:
+        cutoff_test = cutoff * (2 - train_size)
+        cutoff_test = int((cutoff_test // series_len) * series_len)
+
+        df_split = df.iloc[:cutoff_test, :]
+        ser_test, _ = dataframe_to_array(df_split, series_len)
+    # First and fifth houses are used for train and validation
+    else:
+        s_train, meters = dataframe_to_array(df_split, series_len)
+        ser_train += [s_train]
+
+        # Compute validation split
+        cutoff_val = cutoff * (1.5 - train_size / 2)
+        cutoff_val = int((cutoff_val // series_len) * series_len)
+
+        df_split = df.iloc[cutoff:cutoff_val, :]
+        s_val, _ = dataframe_to_array(df_split, series_len)
+
+        ser_val += [s_val]
+
+# Free memory
+del s_train, s_val
+
+# Concatenate training and validation lists
+ser_train = np.concatenate(ser_train)
+ser_val = np.concatenate(ser_val)
 
 """
 Preprocessing train
 """
-
-# Split data intro train and validation
-ser_train, ser_val = train_test_split(ser, train_size,
-                                      random_seed=random_seed,
-                                      shuffle=shuffle)
-# Use half the validation (10% of the total data)
-ser_val, _ = train_test_split(ser, .5,
-                              random_seed=random_seed,
-                              shuffle=shuffle)
 
 # Split data into X and Y
 x_train, y_train = feature_target_split(ser_train, meters)
@@ -147,14 +186,6 @@ model.train_with_validation(x_train, y_train, bin_train,
 """
 Testing
 """
-
-ser_test, _ = buildings_to_array(dict_path_test,
-                                 appliances=appliances,
-                                 sample_period=sample_period,
-                                 series_len=series_len,
-                                 max_series=max_series,
-                                 skip_first=skip_first,
-                                 to_int=to_int)
 
 x_test, y_test = feature_target_split(ser_test, meters)
 y_test = y_test[:, border:-border, :]

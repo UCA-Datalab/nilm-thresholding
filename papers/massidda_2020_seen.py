@@ -33,9 +33,12 @@ Multilabel Classification
 # This path is set to work on Zappa
 path_data = "../nilm/data/nilmtk/ukdale.h5"
 buildings = [1, 2, 5]
-timestamps = [(pd.datetime(2013, 4, 12), pd.datetime(2014, 12, 15)),
-              (pd.datetime(2013, 5, 22), pd.datetime(2013, 10, 3, 6, 16)),
-              (pd.datetime(2014, 6, 29), pd.datetime(2014, 9, 1))]
+timestamps = [(pd.datetime(2013, 4, 12).tz_localize('US/Eastern'),
+               pd.datetime(2014, 12, 15)).tz_localize('US/Eastern'),
+              (pd.datetime(2013, 5, 22).tz_localize('US/Eastern'),
+               pd.datetime(2013, 10, 3, 6, 16)).tz_localize('US/Eastern'),
+              (pd.datetime(2014, 6, 29).tz_localize('US/Eastern'),
+               pd.datetime(2014, 9, 1)).tz_localize('US/Eastern')]
 
 appliances = ['dishwasher',
               'fridge',
@@ -97,13 +100,28 @@ for idx, building in enumerate(buildings):
                                  verbose=False)
 
     time_start, time_end = timestamps[idx]
-    s_train, meters = dataframe_to_array(df[time_start:time_end], series_len)
+    df_split = df[time_start:time_end]
+    # Ensure the number of rows is a multiple of series_len
+    cutoff = (df_split.shape[0] // series_len) * series_len
+    df_split = df_split.iloc[:cutoff, :]
+
+    s_train, meters = dataframe_to_array(df_split, series_len)
     ser_train += [s_train]
 
     # Only the first house is used for validation and test
     if building == 1:
-        ser_val = dataframe_to_array(df, series_len)
-        ser_test = dataframe_to_array(df, series_len)
+        # Compute validation and test splits
+        cutoff_val = cutoff * (1.5 - train_size / 2)
+        cutoff_val = int((cutoff_val // series_len) * series_len)
+
+        df_split = df.iloc[cutoff:cutoff_val, :]
+        ser_val, _ = dataframe_to_array(df_split, series_len)
+
+        cutoff_test = cutoff * (2 - train_size)
+        cutoff_test = int((cutoff_test // series_len) * series_len)
+
+        df_split = df.iloc[cutoff_val:cutoff_test, :]
+        ser_test, _ = dataframe_to_array(df_split, series_len)
 
 # Free memory
 del s_train
