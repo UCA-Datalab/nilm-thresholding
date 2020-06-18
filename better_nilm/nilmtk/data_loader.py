@@ -183,6 +183,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
                             only_good_sections=True, ffill=0,
+                            ensure_aggregate=True,
                             verbose=False):
     """
     Extracts a pandas Data Frame containing the aggregated load for each
@@ -212,6 +213,9 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         Use only the overlapping good sections of all the meters.
     ffill : int, default=0
         Number of records to forward fill in case of NA
+    ensure_aggregate : bool, default=True
+        If True, ensure that the load of the main meter never falls
+        behind the aggregate load of the appliances monitored
     verbose : bool, default=False
 
     Returns
@@ -284,6 +288,13 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
 
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
+
+    # The main load should never be lower than
+    # the appliances monitored
+    if ensure_aggregate:
+        df_agg = df.drop('_main', axis=1).sum(axis=1)
+        mask_agg = df['_main'] < df_agg
+        df.loc[mask_agg, '_main'] = df_agg[mask_agg]
 
     return df
 
