@@ -268,6 +268,13 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         raise ValueError("No '_main' meter contained in df columns:\n"
                          f"{', '.join(df.columns.tolist())}")
 
+    # The main load should never be lower than
+    # the appliances monitored
+    if ensure_aggregate:
+        df_agg = df.drop('_main', axis=1).sum(axis=1)
+        mask_agg = df['_main'] < df_agg
+        df.loc[mask_agg, '_main'] = df_agg[mask_agg]
+
     # Initialize meter list with the main meter
     meters = ["_main"]
 
@@ -288,13 +295,6 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
 
     # Sort columns by name
     df = df.reindex(sorted(df.columns), axis=1)
-
-    # The main load should never be lower than
-    # the appliances monitored
-    if ensure_aggregate:
-        df_agg = df.drop('_main', axis=1).sum(axis=1)
-        mask_agg = df['_main'] < df_agg
-        df.loc[mask_agg, '_main'] = df_agg[mask_agg]
 
     return df
 
@@ -511,6 +511,13 @@ def buildings_to_array(dict_path_buildings, appliances=None,
     list_ser = []
     list_meters = []
 
+    # If we are going to use all the sections, we better load all the
+    # appliances to ensure the main load is always higher than the aggregation
+    if not only_good_sections:
+        metergroup_apps = None
+    else:
+        metergroup_apps = appliances
+
     if (skip_first is not None) and (max_series is not None):
         assert max_series > skip_first, f"Number of max_series={max_series} " \
                                         f"must be greater than the number of" \
@@ -523,7 +530,7 @@ def buildings_to_array(dict_path_buildings, appliances=None,
         buildings = to_list(buildings)
         for building in buildings:
             metergroup = metergroup_from_file(path_file, building,
-                                              appliances=appliances)
+                                              appliances=metergroup_apps)
             ser, meters = metergroup_to_array(metergroup,
                                               appliances=appliances,
                                               sample_period=sample_period,
