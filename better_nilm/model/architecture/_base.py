@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from copy import deepcopy
+import os
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -164,7 +164,7 @@ class TorchModel:
                 print(f'Validation loss decreased ({min_loss:.6f} -->'
                       f' {valid_loss:.6f}).  Saving model ...')
                 min_loss = valid_loss
-                best_model = deepcopy(self.model)
+                torch.save(self.model.state_dict(), 'model.pth')
             else:
                 loss_up += 1
 
@@ -172,7 +172,9 @@ class TorchModel:
                 break
 
         # Take best model
-        self.model = best_model
+        # load the last checkpoint with the best model
+        self.model.load_state_dict(torch.load('model.pth'))
+        os.remove('model.pth')
 
     def predict(self, x_test):
         self.model.eval()

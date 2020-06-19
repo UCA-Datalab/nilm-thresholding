@@ -64,12 +64,13 @@ sample_period = 60  # in seconds
 series_len = 512  # in number of records
 border = 16  # borders lost after convolutions
 
-max_series = 1800
+max_series = None
 skip_first = None
 to_int = False
 subtract_mean = True
 only_good_sections = False
 ffill = 5
+ensure_aggregate = True
 
 train_size = .8
 epochs = 300
@@ -90,14 +91,15 @@ ser_train = []
 
 for idx, building in enumerate(buildings):
     metergroup = metergroup_from_file(path_data, building,
-                                      appliances=appliances)
+                                      appliances=None)
     df = metergroup_to_dataframe(metergroup, appliances=appliances,
                                  sample_period=sample_period,
                                  series_len=series_len, max_series=max_series,
                                  to_int=to_int,
                                  only_good_sections=only_good_sections,
                                  ffill=ffill,
-                                 verbose=False)
+                                 use_aggregate=ensure_aggregate,
+                                 verbose=True)
 
     time_start, time_end = timestamps[idx]
     df_split = df[time_start:time_end]
@@ -231,7 +233,7 @@ if not os.path.isdir(path_plots):
 for idx, app in enumerate(appliances):
     path_fig = os.path.join(path_plots,
                             f"massidda_seen_{app}_classification.png")
-    plot_real_vs_prediction(bin_test, -bin_pred, idx=idx, num_series=4,
+    plot_real_vs_prediction(bin_test, bin_pred, idx=idx, num_series=4,
                             sample_period=sample_period, savefig=path_fig)
 
     path_fig = os.path.join(path_plots,

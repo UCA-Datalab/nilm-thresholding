@@ -183,7 +183,7 @@ def _ensure_continuous_series(df, sample_period, series_len):
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
                             only_good_sections=True, ffill=0,
-                            ensure_aggregate=True,
+                            use_aggregate=True,
                             verbose=False):
     """
     Extracts a pandas Data Frame containing the aggregated load for each
@@ -213,9 +213,9 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         Use only the overlapping good sections of all the meters.
     ffill : int, default=0
         Number of records to forward fill in case of NA
-    ensure_aggregate : bool, default=True
-        If True, ensure that the load of the main meter never falls
-        behind the aggregate load of the appliances monitored
+    use_aggregate : bool, default=True
+        If True, replace the records from the main meter using the
+        aggregated load of all the appliances from the metergroup
     verbose : bool, default=False
 
     Returns
@@ -268,12 +268,13 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         raise ValueError("No '_main' meter contained in df columns:\n"
                          f"{', '.join(df.columns.tolist())}")
 
-    # The main load should never be lower than
-    # the appliances monitored
-    if ensure_aggregate:
+    # Change the main meter recordings to the aggregate load
+    if use_aggregate:
         df_agg = df.drop('_main', axis=1).sum(axis=1)
-        mask_agg = df['_main'] < df_agg
-        df.loc[mask_agg, '_main'] = df_agg[mask_agg]
+        df['_main'] = df_agg
+        if verbose:
+            print("Load aggregated from the following appliances:\n"
+                  f"{df.drop('_main', axis=1).columns.tolist()}")
 
     # Initialize meter list with the main meter
     meters = ["_main"]
