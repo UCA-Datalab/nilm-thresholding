@@ -299,13 +299,15 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
     return df
 
 
-def dataframe_to_array(df, series_len):
+def dataframe_to_array(df, series_len, drop_constant=True):
     """
     Turns a dataframe output by metergroup_to_dataframe into an array
     Parameters
     ----------
     df : pandas.DataFrame
     series_len : int
+    drop_constant : bool, default=True
+        Drop constant sequences
 
     Returns
     -------
@@ -335,6 +337,15 @@ def dataframe_to_array(df, series_len):
     df_ser_diff = (df_ser_diff != 0).sum()
     assert df_ser_diff == 0, "The reshape from df to ser tensor doesn't " \
                              "output the expected tensor."
+
+    # Drop constant sequences: they add no relevant information
+    if drop_constant:
+        drop_idx = []
+        for idx in range(ser.shape[0]):
+            is_constant = np.all(ser[idx, :, :] == ser[idx, 0, :], axis=(0, 1))
+            if is_constant:
+                drop_idx += [idx]
+        ser = np.delete(ser, drop_idx, 0)
 
     return ser, meters
 
