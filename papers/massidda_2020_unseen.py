@@ -70,7 +70,7 @@ to_int = False
 subtract_mean = True
 only_good_sections = False
 ffill = 5
-ensure_aggregate = True
+use_aggregate = False
 
 train_size = .8
 epochs = 100
@@ -92,14 +92,14 @@ ser_val = []
 
 for idx, building in enumerate(buildings):
     metergroup = metergroup_from_file(path_data, building,
-                                      appliances=None)
+                                      appliances=appliances)
     df = metergroup_to_dataframe(metergroup, appliances=appliances,
                                  sample_period=sample_period,
                                  series_len=series_len, max_series=max_series,
                                  to_int=to_int,
                                  only_good_sections=only_good_sections,
                                  ffill=ffill,
-                                 use_aggregate=ensure_aggregate,
+                                 use_aggregate=use_aggregate,
                                  verbose=True)
 
     time_start, time_end = timestamps[idx]

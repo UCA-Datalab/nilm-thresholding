@@ -146,7 +146,7 @@ def get_good_sections(metergroup, sample_period, series_len,
     return good_sections
 
 
-def _df_preprocessing(df, metergroup):
+def _df_preprocessing(df, metergroup, ffill):
     # Rename the columns according to their meter label
     columns = []
     for col in df.columns:
@@ -170,10 +170,18 @@ def _df_preprocessing(df, metergroup):
     # Rename columns
     df.columns = columns
 
+    # Forward fill
+    if ffill > 0:
+        df.fillna(method='ffill', limit=ffill, inplace=True)
+
+    # Fill the rest of elements
+    df.fillna(0, inplace=True)
+
     return df
 
 
-def df_from_sections(metergroup, sections, sample_period):
+def df_from_sections(metergroup, sections, sample_period,
+                     ffill=0):
     """
     Extracts a dataframe from the metergroup, containing only the chosen time
     sections, with the given sample period.
@@ -204,7 +212,7 @@ def df_from_sections(metergroup, sections, sample_period):
                                             ac_type="best",
                                             physical_quantity="power")
 
-    df = _df_preprocessing(df, metergroup)
+    df = _df_preprocessing(df, metergroup, ffill)
 
     # Ensure sections are followed strictly
     for section in sections:
@@ -253,13 +261,6 @@ def df_whole(metergroup, sample_period, ffill=0):
                                             ac_type="best",
                                             physical_quantity="power")
 
-    df = _df_preprocessing(df, metergroup)
-
-    # Forward fill
-    if ffill > 0:
-        df.fillna(method='ffill', limit=ffill, inplace=True)
-
-    # Fill the rest of elements
-    df.fillna(0, inplace=True)
+    df = _df_preprocessing(df, metergroup, ffill)
 
     return df

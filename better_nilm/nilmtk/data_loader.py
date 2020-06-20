@@ -227,18 +227,18 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                                            f"Input param is type " \
                                            f"{type(metergroup)}"
 
-    if verbose:
-        print("Getting good sections of data.")
-
     if only_good_sections:
+        if verbose:
+            print("Getting good sections of data.")
         good_sections = get_good_sections(metergroup, sample_period,
                                           series_len, max_series=max_series)
-
         if verbose:
             print("Loading dataframe containing good sections.")
 
         df = df_from_sections(metergroup, good_sections, sample_period)
     else:
+        if verbose:
+            print("Loading the whole dataframe.")
         df = df_whole(metergroup, sample_period, ffill=ffill)
 
     if df.shape[0] == 0:
