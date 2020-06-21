@@ -148,7 +148,11 @@ def normalize_meters(ser, max_values=None, subtract_mean=False):
     ser = np.nan_to_num(ser)
 
     if subtract_mean:
-        ser -= ser.mean(axis=0)
+        # Make every sequence have mean 0
+        ser_mean = ser.mean(axis=1)
+        ser -= np.repeat(ser_mean[:, :, np.newaxis], ser.shape[1], axis=1)
+        assert (ser.mean(axis=1).round(3)).sum() == 0, "Mean of sequences is" \
+                                                       "not 0"
 
     return ser, max_values
 
