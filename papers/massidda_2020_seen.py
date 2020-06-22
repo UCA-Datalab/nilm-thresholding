@@ -122,11 +122,11 @@ for idx, building in enumerate(buildings):
         ser_val, ser_test = train_test_split(s_val, 0.5, shuffle=False,
                                              random_seed=0)
 
-# Free memory
-del metergroup, df, ser, s_train, s_val
-
 # Concatenate training list
 ser_train = np.concatenate(ser_train)
+
+# Free memory
+del metergroup, df, ser, s_train, s_val
 
 """
 Preprocessing train

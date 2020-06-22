@@ -30,8 +30,8 @@ def print_appliance_statistics(y, name, appliances):
 
     """
     print("------------------------------------------------------------------")
-    y_mean = y.mean(axis=0).mean(axis=0)
-    y_max = y.max(axis=0).max(axis=0)
+    y_mean = y.mean(axis=(0, 1))
+    y_max = y.max(axis=(0, 1))
 
     for idx, app in enumerate(appliances):
         print(f"{name} {app} mean:", y_mean[idx])
