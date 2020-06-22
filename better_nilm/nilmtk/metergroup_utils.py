@@ -29,6 +29,17 @@ APPLIANCE_NAMES = {
 }
     
 
+def list_of_timeframes_from_list_of_tuples(sections):
+    sections_new = []
+    for s in sections:
+        d = {'start': s[0],
+             'end': s[1]}
+        sections_new.append(d)
+
+    sections_new = list_of_timeframes_from_list_of_dicts(sections_new)
+    return sections_new
+
+
 def get_good_sections(metergroup, sample_period, series_len,
                       max_series=None, step=None):
     """
@@ -181,7 +192,7 @@ def _df_preprocessing(df, metergroup, ffill):
 
 
 def df_from_sections(metergroup, sections, sample_period,
-                     ffill=0):
+                     ffill=0, strict_sections=True):
     """
     Extracts a dataframe from the metergroup, containing only the chosen time
     sections, with the given sample period.
@@ -195,6 +206,8 @@ def df_from_sections(metergroup, sections, sample_period,
     sample_period : int, default=6
         Time between consecutive electric load records, in seconds.
         By default we take 6 seconds.
+    strict_sections : bool, default=True
+        Ensure the given sections are followed strictly.
 
     Returns
     -------
@@ -213,6 +226,9 @@ def df_from_sections(metergroup, sections, sample_period,
                                             physical_quantity="power")
 
     df = _df_preprocessing(df, metergroup, ffill)
+
+    if not strict_sections:
+        return df
 
     # Ensure sections are followed strictly
     for section in sections:

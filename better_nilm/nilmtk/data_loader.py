@@ -182,7 +182,8 @@ def _ensure_continuous_series(df, sample_period, series_len):
 
 def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                             series_len=600, max_series=None, to_int=True,
-                            only_good_sections=True, ffill=0,
+                            only_good_sections=True, sections=None,
+                            ffill=0,
                             use_aggregate=True,
                             verbose=False):
     """
@@ -211,6 +212,8 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
         If True, values are changed to integer. This reduces memory usage.
     only_good_sections : bool, default=True
         Use only the overlapping good sections of all the meters.
+    sections : list, default=None
+        List of timeframes. If None, take good sections or whole dataframe.
     ffill : int, default=0
         Number of records to forward fill in case of NA
     use_aggregate : bool, default=True
@@ -227,7 +230,7 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
                                            f"Input param is type " \
                                            f"{type(metergroup)}"
 
-    if only_good_sections:
+    if only_good_sections and (sections is None):
         if verbose:
             print("Getting good sections of data.")
         good_sections = get_good_sections(metergroup, sample_period,
@@ -237,9 +240,15 @@ def metergroup_to_dataframe(metergroup, appliances=None, sample_period=6,
 
         df = df_from_sections(metergroup, good_sections, sample_period)
     else:
-        if verbose:
-            print("Loading the whole dataframe.")
-        df = df_whole(metergroup, sample_period, ffill=ffill)
+        if sections is not None:
+            if verbose:
+                print("Loading dataframe containing the specified sections.")
+            df = df_from_sections(metergroup, sections, sample_period,
+                                  strict_sections=False)
+        else:
+            if verbose:
+                print("Loading the whole dataframe.")
+            df = df_whole(metergroup, sample_period, ffill=ffill)
 
     if df.shape[0] == 0:
         raise ValueError("Data frame is empty")

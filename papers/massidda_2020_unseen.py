@@ -9,10 +9,14 @@ from better_nilm.nilmtk.data_loader import metergroup_from_file
 from better_nilm.nilmtk.data_loader import metergroup_to_dataframe
 from better_nilm.nilmtk.data_loader import dataframe_to_array
 
+from better_nilm.nilmtk.metergroup_utils import \
+    list_of_timeframes_from_list_of_tuples
+
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
 from better_nilm.model.scores import classification_scores_dict
 
+from better_nilm.model.preprocessing import train_test_split
 from better_nilm.model.preprocessing import feature_target_split
 from better_nilm.model.preprocessing import normalize_meters
 from better_nilm.model.preprocessing import denormalize_meters
@@ -34,11 +38,14 @@ Multilabel Classification
 path_data = "../nilm/data/nilmtk/ukdale.h5"
 buildings = [1, 2, 5]
 timestamps = [(pd.to_datetime('2013-04-12').tz_localize('US/Eastern'),
-               pd.to_datetime('2014-12-15').tz_localize('US/Eastern')),
+               pd.to_datetime('2015-05-17').tz_localize('US/Eastern')),
+              # pd.to_datetime('2014-12-15').tz_localize('US/Eastern')),
               (pd.to_datetime('2013-05-22').tz_localize('US/Eastern'),
-               pd.to_datetime('2013-10-03 06:16').tz_localize('US/Eastern')),
+               pd.to_datetime('2013-11-05 18:50').tz_localize('US/Eastern')),
+              # pd.to_datetime('2013-10-03 06:16').tz_localize('US/Eastern')),
               (pd.to_datetime('2014-06-29').tz_localize('US/Eastern'),
-               pd.to_datetime('2014-09-01').tz_localize('US/Eastern'))]
+               pd.to_datetime('2014-09-17').tz_localize('US/Eastern'))]
+# pd.to_datetime('2014-09-01').tz_localize('US/Eastern'))]
 
 appliances = ['dishwasher',
               'fridge',
@@ -91,6 +98,9 @@ ser_train = []
 ser_val = []
 
 for idx, building in enumerate(buildings):
+    sections = [(timestamps[idx])]
+    sections = list_of_timeframes_from_list_of_tuples(sections)
+
     metergroup = metergroup_from_file(path_data, building,
                                       appliances=appliances)
     df = metergroup_to_dataframe(metergroup, appliances=appliances,
@@ -98,41 +108,25 @@ for idx, building in enumerate(buildings):
                                  series_len=series_len, max_series=max_series,
                                  to_int=to_int,
                                  only_good_sections=only_good_sections,
+                                 sections=sections,
                                  ffill=ffill,
                                  use_aggregate=use_aggregate,
                                  verbose=True)
+    ser, meters = dataframe_to_array(df, series_len)
 
-    time_start, time_end = timestamps[idx]
-    df_split = df[time_start:time_end]
-    # Ensure the number of rows is a multiple of series_len
-    cutoff = (df_split.shape[0] // series_len) * series_len
-    df_split = df_split.iloc[:cutoff, :]
-
-    # Only the second house is used for test
     if building == 2:
-        cutoff_test = cutoff * (2 - train_size)
-        cutoff_test = int((cutoff_test // series_len) * series_len)
-
-        df_split = df.iloc[:cutoff_test, :]
-        ser_test, _ = dataframe_to_array(df_split, series_len)
-    # First and fifth houses are used for train and validation
+        ser_test = ser.copy()
     else:
-        s_train, meters = dataframe_to_array(df_split, series_len)
+        s_train, s_val = train_test_split(ser, train_size, shuffle=False,
+                                          random_seed=0)
         ser_train += [s_train]
-
-        # Compute validation split
-        cutoff_val = cutoff * (1.5 - train_size / 2)
-        cutoff_val = int((cutoff_val // series_len) * series_len)
-
-        df_split = df.iloc[cutoff:cutoff_val, :]
-        s_val, _ = dataframe_to_array(df_split, series_len)
-
+        s_val, _ = train_test_split(s_val, 0.5, shuffle=False, random_seed=0)
         ser_val += [s_val]
 
 # Free memory
-del s_train, s_val
+del metergroup, df, ser, s_train, s_val
 
-# Concatenate training and validation lists
+# Concatenate training list
 ser_train = np.concatenate(ser_train)
 ser_val = np.concatenate(ser_val)
 
