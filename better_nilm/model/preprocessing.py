@@ -227,16 +227,16 @@ def _get_cluster_centroids(ser):
     # Initialize mean and std arrays
     mean = np.zeros((num_meters, 2))
     std = np.zeros((num_meters, 2))
-    
+
     for idx in range(num_meters):
         # Take one meter record
         meter = ser[:, :, idx].flatten()
         meter = meter.reshape((len(meter), -1))
         kmeans = KMeans(n_clusters=2).fit(meter)
-        
+
         # The mean of a cluster is the cluster centroid
         mean[idx, :] = kmeans.cluster_centers_.reshape(2)
-        
+
         # Compute the standard deviation of the points in
         # each cluster
         labels = kmeans.labels_
@@ -244,7 +244,7 @@ def _get_cluster_centroids(ser):
         lab1 = meter[labels == 1]
         std[idx, 0] = lab0.std()
         std[idx, 1] = lab1.std()
-    
+
     return mean, std
 
 
@@ -514,13 +514,21 @@ def get_status_by_duration(ser, thresholds, min_off, min_on):
         shape = (num_series, series_len, num_meters)
         With binary values indicating ON (1) and OFF (0) states.
     """
-    num_apps = ser.shape[2]
+    num_apps = ser.shape[-1]
     ser_bin = ser.copy()
 
     for idx in range(num_apps):
-        y = ser[:, :, idx]
-        ser_bin[:, :, idx] = _get_app_status_by_duration(y, thresholds[idx],
-                                                         min_off[idx],
-                                                         min_on[idx])
+        if ser.ndim == 3:
+            y = ser[:, :, idx]
+            ser_bin[:, :, idx] = _get_app_status_by_duration(y,
+                                                             thresholds[idx],
+                                                             min_off[idx],
+                                                             min_on[idx])
+        elif ser.ndim == 2:
+            y = ser[:, idx]
+            ser_bin[:, idx] = _get_app_status_by_duration(y,
+                                                          thresholds[idx],
+                                                          min_off[idx],
+                                                          min_on[idx])
 
     return ser_bin

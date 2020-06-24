@@ -199,7 +199,12 @@ bin_pred = model.predict(x_test)
 bin_pred = bin_pred.cpu().detach().numpy()
 
 # Binarize prediction
+# To do so we flatten the sequences into one - we can do this because
+# they were not shuffled - and after getting the status we get back
+# the individual sequences
+bin_pred = bin_pred.reshape(-1, num_appliances)
 bin_pred = get_status_by_duration(bin_pred, [.5] * 3, min_off, min_on)
+bin_pred = bin_pred.reshape(bin_test.shape)
 
 """
 Statistics
