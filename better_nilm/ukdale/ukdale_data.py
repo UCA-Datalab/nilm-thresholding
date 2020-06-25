@@ -29,7 +29,7 @@ def resample_ukdale_meter(datastore, building=1, meter=1, period='1min',
     return s
 
 
-def get_ukdale_series(datastore, house, label, cutoff, path_data,
+def get_ukdale_series(path_data, datastore, house, label, cutoff,
                       verbose=True):
     assert os.path.isdir(path_data), "Input path is not a directory:" \
                                      f"\n{path_data}"
