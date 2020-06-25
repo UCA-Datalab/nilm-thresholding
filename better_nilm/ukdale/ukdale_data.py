@@ -5,7 +5,8 @@ from pandas.io.pytables import HDFStore
 
 
 def load_ukdale_datastore(path_data):
-    assert os.path.isfile(path_data), f"Input path is not a file:\n{path_data}"
+    assert os.path.isfile(path_data), f"Input path does not lead to file:" \
+                                      f"\n{path_data}"
     assert path_data.endswith('.h5'), "Path must lead to a h5 file.\n" \
                                       f"Input is {path_data}"
     datastore = pd.HDFStore(path_data)
@@ -47,5 +48,6 @@ def get_ukdale_series(datastore, house, label, cutoff, path_data,
             s = resample_ukdale_meter(datastore, house, i, '1min', cutoff)
 
     s.index.name = 'datetime'
+    s.name = label
 
     return s
