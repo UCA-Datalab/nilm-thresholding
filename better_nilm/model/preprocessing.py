@@ -248,7 +248,7 @@ def _get_cluster_centroids(ser):
     return mean, std
 
 
-def get_thresholds(ser):
+def get_thresholds(ser, use_std=True):
     """
     Returns the estimated thresholds that splits ON and OFF appliances states.
 
@@ -259,6 +259,10 @@ def get_thresholds(ser):
         - num_series : Amount of time series.
         - series_len : Length of each time series.
         - num_meters : Meters contained in the array.
+    use_std : bool, default=True
+        Consider the standard deviation of each cluster when computing the
+        threshold. If not, the threshold is set in the middle point between
+        cluster centroids.
 
     Returns
     -------
@@ -270,8 +274,11 @@ def get_thresholds(ser):
 
     # Sigma is a value between 0 and 1
     # sigma = the distance from OFF to ON at which we set the threshold
-    sigma = std[:, 0] / (std.sum(axis=1))
-    sigma = np.nan_to_num(sigma)
+    if use_std:
+        sigma = std[:, 0] / (std.sum(axis=1))
+        sigma = np.nan_to_num(sigma)
+    else:
+        sigma = np.ones(mean.shape[0]) * .5
 
     # Add threshold
     threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
