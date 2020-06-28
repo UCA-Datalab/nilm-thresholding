@@ -248,7 +248,7 @@ def _get_cluster_centroids(ser):
     return mean, std
 
 
-def get_thresholds(ser, use_std=True):
+def get_thresholds(ser, use_std=True, return_mean=False):
     """
     Returns the estimated thresholds that splits ON and OFF appliances states.
 
@@ -263,11 +263,16 @@ def get_thresholds(ser, use_std=True):
         Consider the standard deviation of each cluster when computing the
         threshold. If not, the threshold is set in the middle point between
         cluster centroids.
+    return_mean : bool, default=False
+        If True, return the means as second parameter.
 
     Returns
     -------
     threshold : numpy.array
         shape = (num_meters,)
+    mean : numpy.array
+        shape = (num_meters,)
+        Only returned when return_mean is True (default False)
 
     """
     mean, std = _get_cluster_centroids(ser)
@@ -282,7 +287,11 @@ def get_thresholds(ser, use_std=True):
 
     # Add threshold
     threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
-    return threshold
+
+    if return_mean:
+        return threshold, mean
+    else:
+        return threshold
 
 
 def get_status(ser, thresholds):
