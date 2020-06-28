@@ -1,9 +1,20 @@
+import numpy as np
 import os
 import pandas as pd
 
 from pandas.io.pytables import HDFStore
 
+from better_nilm.str_utils import homogenize_string
 from better_nilm.model.preprocessing import get_thresholds
+from better_nilm.model.preprocessing import get_status
+
+
+APPLIANCE_NAMES = {
+    "dish_washer": "dishwasher",
+    "freezer": "fridge",
+    "fridge_freezer": "fridge",
+    "washerdryer": "washingmachine"
+}
 
 
 def load_ukdale_datastore(path_data):
@@ -43,19 +54,29 @@ def ukdale_datastore_to_series(path_data, datastore, house, label, cutoff,
 
     labels = pd.read_csv(filename, delimiter=' ',
                          header=None, index_col=0).to_dict()[1]
+    
+    s = None
+    label = homogenize_string(label)
+    label = APPLIANCE_NAMES.get(label, label)
 
     for i in labels:
-        if labels[i] == label:
+        lab = homogenize_string(labels[i])
+        lab = APPLIANCE_NAMES.get(lab, lab)
+        if lab == label:
             print(i, labels[i])
             s = resample_ukdale_meter(datastore, house, i, '1min', cutoff)
-
+    
+    if s is None:
+        raise ValueError(f"Label {label} not found on house {house}\n"
+                        f"Valid labels are: {list(labels.values())}")
+    
     s.index.name = 'datetime'
     s.name = label
 
     return s
 
 
-def load_ukdale_series(path_h5, path_data, buildings, appliances):
+def load_ukdale_series(path_h5, path_data, buildings, list_appliances):
     datastore = load_ukdale_datastore(path_h5)
 
     ds_meter = []
@@ -66,19 +87,21 @@ def load_ukdale_series(path_h5, path_data, buildings, appliances):
         # Aggregate load
         meter = ukdale_datastore_to_series(path_data, datastore, house,
                                            'aggregate', 10000.)
-        apps = []
-        for app in appliances:
+        appliances = []
+        for app in list_appliances:
             a = ukdale_datastore_to_series(path_data, datastore, house, app,
                                            10000.)
-            apps += [a]
+            appliances += [a]
 
-        apps = pd.concat(apps, axis=1)
-        apps.fillna(method='pad', inplace=True)
-
-        status = pd.DataFrame()
-        for app in appliances:
-            status = pd.concat([status,
-                                get_thresholds(apps[app])], axis=1)
+        appliances = pd.concat(appliances, axis=1)
+        appliances.fillna(method='pad', inplace=True)
+        
+        apps = np.expand_dims(appliances.values, axis=2)
+        
+        thresholds = get_thresholds(apps)
+        status = get_status(apps, thresholds)
+        status = status.reshape(status.shape[0], len(list_appliances))
+        status = pd.DataFrame(status, columns=list_appliances)
 
         ds_meter.append(meter)
         ds_appliance.append(apps)
