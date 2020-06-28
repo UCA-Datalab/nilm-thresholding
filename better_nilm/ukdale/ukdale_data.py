@@ -55,8 +55,8 @@ def ukdale_datastore_to_series(path_data, datastore, house, label, cutoff,
     return s
 
 
-def load_ukdale_series(path_data, buildings, appliances):
-    datastore = load_ukdale_datastore(path_data)
+def load_ukdale_series(path_h5, path_data, buildings, appliances):
+    datastore = load_ukdale_datastore(path_h5)
 
     ds_meter = []
     ds_appliance = []
