@@ -289,7 +289,7 @@ def get_thresholds(ser, use_std=True, return_mean=False):
     threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
 
     if return_mean:
-        return threshold, mean
+        return threshold, np.sort(mean)
     else:
         return threshold
 
