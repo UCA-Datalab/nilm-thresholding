@@ -3,6 +3,8 @@ import pandas as pd
 
 from pandas.io.pytables import HDFStore
 
+from better_nilm.model.preprocessing import get_thresholds
+
 
 def load_ukdale_datastore(path_data):
     assert os.path.isfile(path_data), f"Input path does not lead to file:" \
@@ -29,8 +31,8 @@ def resample_ukdale_meter(datastore, building=1, meter=1, period='1min',
     return s
 
 
-def get_ukdale_series(path_data, datastore, house, label, cutoff,
-                      verbose=True):
+def ukdale_datastore_to_series(path_data, datastore, house, label, cutoff,
+                               verbose=True):
     assert os.path.isdir(path_data), "Input path is not a directory:" \
                                      f"\n{path_data}"
     filename = f"{path_data}/house_%1d/labels.dat" % house
@@ -38,7 +40,7 @@ def get_ukdale_series(path_data, datastore, house, label, cutoff,
 
     if verbose:
         print(filename)
-    
+
     labels = pd.read_csv(filename, delimiter=' ',
                          header=None, index_col=0).to_dict()[1]
 
@@ -51,3 +53,35 @@ def get_ukdale_series(path_data, datastore, house, label, cutoff,
     s.name = label
 
     return s
+
+
+def load_ukdale_series(path_data, buildings, appliances):
+    datastore = load_ukdale_datastore(path_data)
+
+    ds_meter = []
+    ds_appliance = []
+    ds_status = []
+
+    for house in buildings:
+        # Aggregate load
+        meter = ukdale_datastore_to_series(path_data, datastore, house,
+                                           'aggregate', 10000.)
+        apps = []
+        for app in appliances:
+            a = ukdale_datastore_to_series(path_data, datastore, house, app,
+                                           10000.)
+            apps += [a]
+
+        apps = pd.concat(apps, axis=1)
+        apps.fillna(method='pad', inplace=True)
+
+        status = pd.DataFrame()
+        for app in appliances:
+            status = pd.concat([status,
+                                get_thresholds(apps[app])], axis=1)
+
+        ds_meter.append(meter)
+        ds_appliance.append(apps)
+        ds_status.append(status)
+
+    return ds_meter, ds_appliance, ds_status
