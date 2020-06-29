@@ -63,9 +63,11 @@ class _Decoder(nn.Module):
 
 class _PTPNet(nn.Module):
 
-    def __init__(self, series_len=512, out_channels=1, init_features=32,
+    def __init__(self, seq_len=480, border=16, out_channels=1, init_features=32,
                  dropout=0.1):
         super(_PTPNet, self).__init__()
+        
+        series_len = seq_len + 2 * border
         p = 2
         k = 1
         features = init_features
@@ -126,10 +128,11 @@ class _PTPNet(nn.Module):
 
 class PTPNetModel(TorchModel):
 
-    def __init__(self, series_len=512, out_channels=1, init_features=32,
+    def __init__(self, seq_len=480, border=16, out_channels=1, init_features=32,
                  learning_rate=0.001, dropout=0.1):
         super(TorchModel, self).__init__()
-
+    
+        series_len = seq_len + 2 * border
         # The time series will undergo four convolutions + poolings
         # This will give a series of size (batch, S, 256)
         # Where S = (series_len - 30) / 8
@@ -141,7 +144,10 @@ class PTPNetModel(TorchModel):
             raise ValueError(f"series_len {series_len} is not valid.\nClosest"
                              f" valid value is {96 * s + 32}")
 
-        self.model = _PTPNet(series_len=series_len,
+        self.border = border
+        
+        self.model = _PTPNet(seq_len=seq_len,
+                             border=border,
                              out_channels=out_channels,
                              init_features=init_features,
                              dropout=dropout).cuda()

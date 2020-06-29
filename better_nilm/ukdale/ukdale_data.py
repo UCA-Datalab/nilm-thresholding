@@ -10,9 +10,8 @@ from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 
 APPLIANCE_NAMES = {
-    "dish_washer": "dishwasher",
     "freezer": "fridge",
-    "fridge_freezer": "fridge",
+    "fridgefreezer": "fridge",
     "washerdryer": "washingmachine"
 }
 
@@ -173,14 +172,18 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances):
         # Aggregate load
         meter = ukdale_datastore_to_series(path_labels, datastore, house,
                                            'aggregate', cutoff=10000.)
-        appliances = []
+        meters = [meter]
         for app in list_appliances:
             a = ukdale_datastore_to_series(path_labels, datastore, house, app,
                                            cutoff=10000.)
-            appliances += [a]
+            meters += [a]
 
-        appliances = pd.concat(appliances, axis=1)
-        appliances.fillna(method='pad', inplace=True)
+        meters = pd.concat(meters, axis=1)
+        meters.fillna(method='pad', inplace=True)
+        meters.fillna(0., inplace=True)
+        
+        meter = meters['aggregate'].copy()
+        appliances = meters.drop('aggregate', axis=1).copy()
 
         apps = np.expand_dims(appliances.values, axis=2)
 
@@ -188,9 +191,9 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances):
         status = get_status(apps, thresholds)
         status = status.reshape(status.shape[0], len(list_appliances))
         status = pd.DataFrame(status, columns=list_appliances)
-
+        
         ds_meter.append(meter)
-        ds_appliance.append(apps)
+        ds_appliance.append(appliances)
         ds_status.append(status)
 
     return ds_meter, ds_appliance, ds_status

@@ -83,7 +83,6 @@ class TorchModel:
 
         min_loss = np.inf
         loss_up = 0
-        best_model = None
 
         for epoch in range(1, epochs + 1):
 
@@ -93,8 +92,7 @@ class TorchModel:
             self.model.train()  # prep model for training
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
-
-                data = data.permute(0, 2, 1).cuda()
+                data = data.unsqueeze(1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
 
@@ -118,7 +116,7 @@ class TorchModel:
             ######################
             self.model.eval()  # prep model for evaluation
             for data, target_power, target_status in valid_loader:
-                data = data.permute(0, 2, 1).cuda()
+                data = data.unsqueeze(1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
 
@@ -188,3 +186,34 @@ class TorchModel:
         tensor_x = tensor_x.permute(0, 2, 1).cuda()
         output_status = self.model(tensor_x).permute(0, 2, 1)
         return output_status
+    
+    
+    def predict_loader(self, loader):
+        x_true = []
+        s_true = []
+        p_true = []
+        s_hat = []
+
+        self.model.eval()
+
+        with torch.no_grad():
+            for x, power, status in loader:
+                x = x.unsqueeze(1).cuda()
+                
+                sh = self.model(x)
+                sh = torch.sigmoid(sh)
+                
+                sh = sh.permute(0,2,1)
+                sh = sh.detach().cpu().numpy()
+                s_hat.append(sh.reshape(-1, sh.shape[-1]))
+
+                x_true.append(x[:,:,self.border:-self.border].detach().cpu().numpy().flatten())
+                s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+                p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+        
+        x_true = np.hstack(x_true)
+        s_true = np.concatenate(s_true, axis=0)
+        p_true = np.concatenate(p_true, axis=0)
+        s_hat = np.concatenate(s_hat, axis=0)
+
+        return x_true, p_true, s_true, s_hat
