@@ -13,6 +13,10 @@ path_data = "../nilm/data/ukdale"
 buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
+dates = {1:('2013-04-12', '2014-12-15'),
+        2: ('2013-05-22', '2013-10-03 6:16'),
+        5: ('2014-04-29', '2014-09-01')}
+
 train_buildings = [1, 5]
 valid_buildings = [1]
 test_buildings = [2]
@@ -38,7 +42,10 @@ Load data
 dl_train, \
 dl_valid, \
 dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
-                           train_buildings, valid_buildings, test_buildings,
+                           train_buildings=train_buildings,
+                           valid_buildings=valid_buildings,
+                           test_buildings=test_buildings,
+                           dates=dates,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
                            border=border, max_power=max_power)

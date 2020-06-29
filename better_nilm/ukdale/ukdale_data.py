@@ -133,7 +133,8 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
     return s
 
 
-def load_ukdale_series(path_h5, path_labels, buildings, list_appliances):
+def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
+                      dates=None):
     """
     
     Parameters
@@ -180,20 +181,28 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances):
 
         meters = pd.concat(meters, axis=1)
         meters.fillna(method='pad', inplace=True)
-        meters.fillna(0., inplace=True)
         
-        meter = meters['aggregate'].copy()
-        appliances = meters.drop('aggregate', axis=1).copy()
+        if (type(dates) == dict) and (house in dates.keys()):
+            date_start = dates[house][0]
+            date_start = pd.to_datetime(date_start).tz_localize('US/Eastern')
+            date_end = dates[house][1]
+            date_end = pd.to_datetime(date_end).tz_localize('US/Eastern')
+            meters = meters[date_start:date_end]
+        
+        meter = meters['aggregate']
+        appliances = meters.drop('aggregate', axis=1)
 
-        apps = np.expand_dims(appliances.values, axis=2)
+        apps = np.expand_dims(appliances.values, axis=1)
 
         thresholds = get_thresholds(apps)
+        assert len(thresholds) == len(list_appliances), "Number of thresholds doesn't match number of appliances"
         status = get_status(apps, thresholds)
         status = status.reshape(status.shape[0], len(list_appliances))
-        status = pd.DataFrame(status, columns=list_appliances)
+        status = pd.DataFrame(status, columns=list_appliances,
+                              index=appliances.index)
         
         ds_meter.append(meter)
         ds_appliance.append(appliances)
         ds_status.append(status)
-
+    
     return ds_meter, ds_appliance, ds_status

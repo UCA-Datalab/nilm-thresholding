@@ -137,6 +137,7 @@ def _buildings_to_idx(buildings, train_buildings, valid_buildings,
 
 
 def load_dataloaders(path_h5, path_data, buildings, appliances,
+                     dates=None,
                      train_buildings=None, valid_buildings=None,
                      test_buildings=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
@@ -149,7 +150,8 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
     # Load the different datastores
     ds_meter, ds_appliance, ds_status = load_ukdale_series(path_h5, path_data,
                                                            buildings,
-                                                           appliances)
+                                                           appliances,
+                                                          dates=dates)
     num_buildings = len(buildings)
 
     # Load the data loaders
