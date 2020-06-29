@@ -124,7 +124,7 @@ def _buildings_to_idx(buildings, train_buildings, valid_buildings,
         if (valid_buildings is not None) and (building in valid_buildings):
             vl_buildings += [idx]
         if (test_buildings is not None) and (building in test_buildings):
-            ts_buildings += idx
+            ts_buildings += [idx]
 
     assert len(tr_buildings) > 0, f"No ID in train_buildings matches the " \
                                   f"ones of buildings."
