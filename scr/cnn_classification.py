@@ -49,6 +49,6 @@ model = PTPNetModel(series_len=seq_len, out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout)
 
-model.train_with_data(dl_train, dl_valid,
-                      epochs=epochs,
-                      patience=patience)
+model.train_with_dataloader(dl_train, dl_valid,
+                            epochs=epochs,
+                            patience=patience)
