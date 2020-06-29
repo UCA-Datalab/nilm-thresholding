@@ -5,6 +5,8 @@ sys.path.insert(0, '../better_nilm')
 from better_nilm.ukdale.ukdale_preprocessing import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
+from better_nilm.model.scores import classification_scores_dict
+
 path_h5 = "data/ukdale.h5"
 path_data = "../nilm/data/ukdale"
 
@@ -23,11 +25,11 @@ border = 16
 max_power = 10000.
 num_appliances = len(appliances)
 
-batch_size = 64
+batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
-epochs = 1
-patience = 1
+epochs = 100
+patience = 100
 
 """
 Load data
@@ -57,6 +59,13 @@ model.train_with_dataloader(dl_train, dl_valid,
 """
 Test
 """
+
 x_true, p_true, s_true, s_hat = model.predict_loader(dl_test)
+s_hat[s_hat >= .5] = 1
+s_hat[s_hat < 0.5] = 0
+
+class_scores = classification_scores_dict(s_hat, s_true, appliances)
+for app, scores in class_scores.items():
+    print(app, "\n", scores)
 
 import ipdb; ipdb.set_trace()

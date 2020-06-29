@@ -14,10 +14,9 @@ def _assert_shape(y_pred, y_real, appliances):
         raise ValueError("Array shape mismatch.\n"
                          f"y_pred shape: {y_pred.shape}\n"
                          f"y_real_shape: {y_real.shape}")
-
-    if y_pred.shape[2] != len(appliances):
+    if y_pred.shape[-1] != len(appliances):
         raise ValueError("Number of appliances mismatch.\n"
-                         f"Appliances in y_pred array: {y_pred.shape[2]}\n"
+                         f"Appliances in y_pred array: {y_pred.shape[-1]}\n"
                          f"Appliances in appliances list: {len(appliances)}")
 
 
@@ -57,8 +56,12 @@ def regression_score_dict(y_pred, y_real, appliances):
     scores = {}
 
     for idx, app in enumerate(appliances):
-        app_pred = y_pred[:, :, idx].flatten()
-        app_real = y_real[:, :, idx].flatten()
+        if len(y_pred.shape) == 3:
+            app_pred = y_pred[:, :, idx].flatten()
+            app_real = y_real[:, :, idx].flatten()
+        else:
+            app_pred = y_pred[:, idx].flatten()
+            app_real = y_real[:, idx].flatten()
 
         # MSE and RMSE
         app_mse = mean_squared_error(app_real, app_pred)
@@ -127,8 +130,12 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
     scores = {}
 
     for idx, app in enumerate(appliances):
-        app_pred = bin_pred[:, :, idx].flatten()
-        app_real = bin_real[:, :, idx].flatten()
+        if len(y_pred.shape) == 3:
+            app_pred = bin_pred[:, :, idx].flatten()
+            app_real = bin_real[:, :, idx].flatten()
+        else:
+            app_pred = bin_pred[:, idx].flatten()
+            app_real = bin_real[:, idx].flatten()
 
         # Precision
         app_accuracy = accuracy_score(app_real, app_pred)
