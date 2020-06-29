@@ -172,11 +172,11 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances):
     for house in buildings:
         # Aggregate load
         meter = ukdale_datastore_to_series(path_labels, datastore, house,
-                                           'aggregate', 10000.)
+                                           'aggregate', cutoff=10000.)
         appliances = []
         for app in list_appliances:
             a = ukdale_datastore_to_series(path_labels, datastore, house, app,
-                                           10000.)
+                                           cutoff=10000.)
             appliances += [a]
 
         appliances = pd.concat(appliances, axis=1)
