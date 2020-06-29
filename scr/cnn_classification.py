@@ -3,6 +3,7 @@ import sys
 sys.path.insert(0, '../better_nilm')
 
 from better_nilm.ukdale.ukdale_preprocessing import load_dataloaders
+from better_nilm.model.architecture.tpnilm import PTPNetModel
 
 path_h5 = "data/ukdale.h5"
 path_data = "../nilm/data/ukdale"
@@ -17,10 +18,20 @@ test_buildings = [2, 5]
 train_size = 0.8
 valid_size = 0.1
 
-batch_size = 64
 seq_len = 512
 border = 16
-max_power = 100000.
+max_power = 10000.
+num_appliances = len(appliances)
+
+batch_size = 64
+learning_rate = 1.E-4
+dropout = 0.1
+epochs = 100
+patience = 100
+
+"""
+Load data
+"""
 
 dl_train, \
 dl_valid, \
@@ -30,4 +41,14 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            batch_size=batch_size, seq_len=seq_len,
                            border=border, max_power=max_power)
 
-print(dl_train)
+"""
+Training
+"""
+
+model = PTPNetModel(series_len=seq_len, out_channels=num_appliances,
+                    init_features=32,
+                    learning_rate=learning_rate, dropout=dropout)
+
+model.train_with_data(dl_train, dl_valid,
+                      epochs=epochs,
+                      patience=patience)

@@ -170,12 +170,12 @@ model = PTPNetModel(series_len=series_len, out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout)
 
-model.train_with_validation(x_train, y_train, bin_train,
-                            x_val, y_val, bin_val,
-                            epochs=epochs,
-                            batch_size=batch_size,
-                            shuffle=shuffle,
-                            patience=patience)
+model.train_with_data(x_train, y_train, bin_train,
+                      x_val, y_val, bin_val,
+                      epochs=epochs,
+                      batch_size=batch_size,
+                      shuffle=shuffle,
+                      patience=patience)
 
 """
 Testing

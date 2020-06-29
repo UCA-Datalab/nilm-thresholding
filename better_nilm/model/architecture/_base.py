@@ -69,16 +69,8 @@ class TorchModel:
                                  shuffle=self.shuffle)
         return data_loader
 
-    def train_with_validation(self, x_train, y_train, bin_train,
-                              x_val, y_val, bin_val,
-                              epochs=1000, batch_size=32,
-                              shuffle=False, patience=300):
-
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        
-        train_loader = self._get_dataloader(x_train, y_train, bin_train)
-        valid_loader = self._get_dataloader(x_val, y_val, bin_val)
+    def train_with_dataloader(self, train_loader, valid_loader,
+                              epochs=1000, patience=300):
 
         # to track the training loss as the model trains
         train_losses = []
@@ -175,6 +167,20 @@ class TorchModel:
         # load the last checkpoint with the best model
         self.model.load_state_dict(torch.load('model.pth'))
         os.remove('model.pth')
+
+    def train_with_data(self, x_train, y_train, bin_train,
+                        x_val, y_val, bin_val,
+                        epochs=1000, batch_size=32,
+                        shuffle=False, patience=300):
+
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+
+        train_loader = self._get_dataloader(x_train, y_train, bin_train)
+        valid_loader = self._get_dataloader(x_val, y_val, bin_val)
+
+        self.train_with_dataloader(train_loader, valid_loader,
+                                   epochs=epochs, patience=patience)
 
     def predict(self, x_test):
         self.model.eval()
