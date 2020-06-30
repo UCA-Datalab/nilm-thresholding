@@ -197,7 +197,6 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         if (type(dates) == dict) and (house in dates.keys()):
             date_start = dates[house][0]
             date_start = pd.to_datetime(date_start).tz_localize('Etc/UCT')
-            print(date_start)
             date_end = dates[house][1]
             date_end = pd.to_datetime(date_end).tz_localize('Etc/UCT')
             assert date_end > date_start, f"Start date is {start_date}\nEnd date is {end_date}\nEnd date must be after start date!"
@@ -206,7 +205,6 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
         meter = meters['aggregate']
         appliances = meters.drop('aggregate', axis=1)
-        print(meters)
         
         arr_apps = np.expand_dims(appliances.values, axis=1)
         thresholds = get_thresholds(arr_apps)
