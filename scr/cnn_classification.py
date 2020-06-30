@@ -13,9 +13,9 @@ path_data = "../nilm/data/ukdale"
 buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-dates = {1:('2013-04-12', '2014-12-15'),
-        2: ('2013-05-22', '2013-10-03 6:16'),
-        5: ('2014-04-29', '2014-09-01')}
+dates = {1: ('2013-04-12', '2014-12-15'),
+         2: ('2013-05-22', '2013-10-03 6:16'),
+         5: ('2014-04-29', '2014-09-01')}
 
 build_id_train = [1, 5]
 build_id_valid = [1]
@@ -74,5 +74,3 @@ s_hat[s_hat < 0.5] = 0
 class_scores = classification_scores_dict(s_hat, s_true, appliances)
 for app, scores in class_scores.items():
     print(app, "\n", scores)
-
-import ipdb; ipdb.set_trace()

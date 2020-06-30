@@ -533,6 +533,18 @@ def get_status_by_duration(ser, thresholds, min_off, min_on):
     num_apps = ser.shape[-1]
     ser_bin = ser.copy()
 
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and number of appliances ({num_apps}) doesn't match\n"
+    assert len(thresholds) ==num_apps, msg
+
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and min_on ({len(min_on)}) doesn't match\n"
+    assert len(thresholds) == len(min_on), msg
+
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and min_off ({len(min_off)}) doesn't match\n"
+    assert len(thresholds) == len(min_off), msg
+
     for idx in range(num_apps):
         if ser.ndim == 3:
             y = ser[:, :, idx]

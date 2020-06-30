@@ -12,6 +12,7 @@ from better_nilm.format_utils import to_list
 from better_nilm.str_utils import homogenize_string
 from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
+from better_nilm.model.preprocessing import get_status_by_duration
 
 APPLIANCE_NAMES = {
     "freezer": "fridge",
@@ -130,8 +131,9 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
     if s is None:
         raise ValueError(f"Label {label} not found on house {house}\n"
                          f"Valid labels are: {list(labels.values())}")
-    
-    assert type(s) is Series, f"load_ukdale_meter() should output {Series}\nReceived {type(s)} instead"
+
+    assert type(
+        s) is Series, f"load_ukdale_meter() should output {Series}\nReceived {type(s)} instead"
 
     s.index.name = 'datetime'
     s.name = label
@@ -140,7 +142,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
 
 
 def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
-                       dates=None):
+                       dates=None, thresholds=None, min_off=None, min_on=None):
     """
     
     Parameters
@@ -154,8 +156,14 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     list_appliances : list
         List of appliances labels. List of strings.
     dates : dict, default=None
-    {building_id : (date_start, date_end)}
-    Both dates are strings with format: 'YY-MM-DD'
+        {building_id : (date_start, date_end)}
+        Both dates are strings with format: 'YY-MM-DD'
+    thresholds : numpy.array, default=None
+        shape = (num_meters,)
+    min_off : numpy.array, default=None
+        shape = (num_meters,)
+    min_on : numpy.array, default=None
+        shape = (num_meters,)
 
     Returns
     -------
@@ -168,7 +176,9 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     """
     # Load datastore
     datastore = load_ukdale_datastore(path_h5)
-    assert type(datastore) is HDFStore, "load_ukdale_datastore() should output {HDFStore}\nReceived {type(datastore)} instead"
+    msg = f"load_ukdale_datastore() should output {HDFStore}\n" \
+          f"Received {type(datastore)} instead"
+    assert type(datastore) is HDFStore, msg
 
     # Ensure both parameters are lists
     buildings = to_list(buildings)
@@ -185,13 +195,15 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     for house in buildings:
         meters = []
         for m in list_meters:
-            series_meter = ukdale_datastore_to_series(path_labels, datastore, house,
-                                               m, cutoff=10000.)
+            series_meter = ukdale_datastore_to_series(path_labels, datastore,
+                                                      house, m, cutoff=10000.)
             meters += [series_meter]
 
         meters = pd.concat(meters, axis=1)
         meters.fillna(method='pad', inplace=True)
-        assert meters.shape[1] == len(list_meters), f"meters dataframe must have {len(list_meters)} columns\nIt currently has {meters.shape[1]}"
+        msg = f"meters dataframe must have {len(list_meters)} columns\n" \
+              f"It currently has {meters.shape[1]} "
+        assert meters.shape[1] == len(list_meters), msg
 
         # Pick range of dates
         if (type(dates) == dict) and (house in dates.keys()):
@@ -199,23 +211,38 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
             date_start = pd.to_datetime(date_start).tz_localize('Etc/UCT')
             date_end = dates[house][1]
             date_end = pd.to_datetime(date_end).tz_localize('Etc/UCT')
-            assert date_end > date_start, f"Start date is {start_date}\nEnd date is {end_date}\nEnd date must be after start date!"
+
+            msg = f"Start date is {date_start}\nEnd date is {date_end}\n" \
+                  "End date must be after start date!"
+            assert date_end > date_start, msg
+
             meters = meters[date_start:date_end]
-            assert meters.shape[0] > 0, f"meters dataframe was left empy after applying dates\nStart date is {start_date}\nEnd date is {end_date}"
+
+            msg = "meters dataframe was left empy after applying dates\n" \
+                  f"Start date is {date_start}\nEnd date is {date_end}"
+            assert meters.shape[0] > 0, msg
 
         meter = meters['aggregate']
         appliances = meters.drop('aggregate', axis=1)
-        
+
         arr_apps = np.expand_dims(appliances.values, axis=1)
-        thresholds = get_thresholds(arr_apps)
-        assert len(thresholds) == len(
-            list_appliances), "Number of thresholds doesn't match number of " \
-                              "appliances "
-        status = get_status(arr_apps, thresholds)
+        if (thresholds is None) or (min_on is None) or (min_off is None):
+            thresholds = get_thresholds(arr_apps)
+
+            msg = "Number of thresholds doesn't match number of appliances"
+            assert len(thresholds) == len(list_appliances), msg
+
+            status = get_status(arr_apps, thresholds)
+        else:
+            status = get_status_by_duration(arr_apps, thresholds,
+                                            min_off, min_on)
         status = status.reshape(status.shape[0], len(list_appliances))
         status = pd.DataFrame(status, columns=list_appliances,
                               index=appliances.index)
-        assert status.shape[0] == appliances.shape[0], "Number of records between appliance status and load doesn't match"
+
+        msg = "Number of records between appliance status and load doesn't " \
+              "match"
+        assert status.shape[0] == appliances.shape[0], msg
 
         list_df_meter.append(meter)
         list_df_appliance.append(appliances)
@@ -257,7 +284,8 @@ class Power(data.Dataset):
         return self.epochs
 
 
-def _train_valid_test(list_df_meter, list_df_appliance, list_df_status, num_buildings,
+def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
+                      num_buildings,
                       train_size=0.8, valid_size=0.1,
                       seq_len=512, border=16, max_power=10000.):
     """
@@ -295,15 +323,17 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status, num_buil
                   (train_size + valid_size) * df_len[i])],
               list_df_status[i][int(train_size * df_len[i]):int(
                   (train_size + valid_size) * df_len[i])],
-              seq_len, border, max_power, train=False) for i in range(num_buildings)]
+              seq_len, border, max_power, train=False) for i in
+        range(num_buildings)]
 
     ds_test = [
         Power(list_df_meter[i][int((train_size + valid_size) * df_len[i]):],
-              list_df_appliance[i][int((train_size + valid_size) * df_len[i]):],
+              list_df_appliance[i][
+              int((train_size + valid_size) * df_len[i]):],
               list_df_status[i][int((train_size + valid_size) * df_len[i]):],
               seq_len, border, max_power, train=False) for i in
         range(num_buildings)]
-    
+
     return ds_train, ds_valid, ds_test
 
 
@@ -331,7 +361,8 @@ def _datastore_to_dataloader(list_ds, build_idx, batch_size, shuffle):
     return dl
 
 
-def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status, num_buildings,
+def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
+                              num_buildings,
                               build_id_train, build_id_valid, build_id_test,
                               train_size=0.8, valid_size=0.1, batch_size=64,
                               seq_len=512, border=16, max_power=10000.):
@@ -437,7 +468,8 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
                      build_id_train=None, build_id_valid=None,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
-                     seq_len=512, border=16, max_power=10000.):
+                     seq_len=512, border=16, max_power=10000.,
+                     thresholds=None, min_off=None, min_on=None):
     """
     Load the UKDALE dataloaders from the raw data.
     
@@ -457,6 +489,12 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
     seq_len
     border
     max_power
+    thresholds : numpy.array
+        shape = (num_meters,)
+    min_off : numpy.array
+        shape = (num_meters,)
+    min_on : numpy.array
+        shape = (num_meters,)
 
     Returns
     -------
@@ -471,16 +509,19 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
                                        build_id_valid, build_id_test)
 
     # Load the different datastores
-    list_df_meter, list_df_appliance, list_df_status = load_ukdale_series(path_h5, path_data,
-                                                           buildings,
-                                                           appliances,
-                                                           dates=dates)
+    list_df_meter, \
+    list_df_appliance, \
+    list_df_status = load_ukdale_series(path_h5, path_data, buildings,
+                                        appliances, dates=dates,
+                                        thresholds=thresholds,
+                                        min_off=min_off, min_on=min_on)
     num_buildings = len(buildings)
 
     # Load the data loaders
     dl_train, \
     dl_valid, \
-    dl_test = datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
+    dl_test = datastores_to_dataloaders(list_df_meter, list_df_appliance,
+                                        list_df_status,
                                         num_buildings, build_idx_train,
                                         build_idx_valid, build_idx_test,
                                         train_size=train_size,
