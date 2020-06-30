@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 import torch.utils.data as data
 
+from pandas import Series
 from pandas.io.pytables import HDFStore
 from torch.utils.data import DataLoader
 
@@ -129,6 +130,8 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
     if s is None:
         raise ValueError(f"Label {label} not found on house {house}\n"
                          f"Valid labels are: {list(labels.values())}")
+    
+    assert type(s) is Series, f"load_ukdale_meter() should output {Series}\nReceived {type(s)} instead"
 
     s.index.name = 'datetime'
     s.name = label
@@ -156,50 +159,55 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
     Returns
     -------
-    ds_meter : list
+    list_df_meter : list
         List of dataframes.
-    ds_appliance : list
+    list_df_appliance : list
         List of dataframes.
-    ds_status : list
+    list_df_status : list
         List of dataframes.
     """
     # Load datastore
     datastore = load_ukdale_datastore(path_h5)
+    assert type(datastore) is HDFStore, "load_ukdale_datastore() should output {HDFStore}\nReceived {type(datastore)} instead"
 
     # Ensure both parameters are lists
     buildings = to_list(buildings)
     list_appliances = to_list(list_appliances)
-    list_appliances = list(set(list_appliances))
     # Make a list of meters
     list_meters = list_appliances.copy()
     list_meters.append('aggregate')
 
     # Initialize list
-    ds_meter = []
-    ds_appliance = []
-    ds_status = []
+    list_df_meter = []
+    list_df_appliance = []
+    list_df_status = []
 
     for house in buildings:
         meters = []
         for m in list_meters:
-            meter = ukdale_datastore_to_series(path_labels, datastore, house,
+            series_meter = ukdale_datastore_to_series(path_labels, datastore, house,
                                                m, cutoff=10000.)
-            meters += [meter]
+            meters += [series_meter]
 
         meters = pd.concat(meters, axis=1)
         meters.fillna(method='pad', inplace=True)
+        assert meters.shape[1] == len(list_meters), f"meters dataframe must have {len(list_meters)} columns\nIt currently has {meters.shape[1]}"
 
         # Pick range of dates
         if (type(dates) == dict) and (house in dates.keys()):
             date_start = dates[house][0]
-            date_start = pd.to_datetime(date_start).tz_localize('US/Eastern')
+            date_start = pd.to_datetime(date_start).tz_localize('Etc/UCT')
+            print(date_start)
             date_end = dates[house][1]
-            date_end = pd.to_datetime(date_end).tz_localize('US/Eastern')
+            date_end = pd.to_datetime(date_end).tz_localize('Etc/UCT')
+            assert date_end > date_start, f"Start date is {start_date}\nEnd date is {end_date}\nEnd date must be after start date!"
             meters = meters[date_start:date_end]
+            assert meters.shape[0] > 0, f"meters dataframe was left empy after applying dates\nStart date is {start_date}\nEnd date is {end_date}"
 
         meter = meters['aggregate']
         appliances = meters.drop('aggregate', axis=1)
-
+        print(meters)
+        
         arr_apps = np.expand_dims(appliances.values, axis=1)
         thresholds = get_thresholds(arr_apps)
         assert len(thresholds) == len(
@@ -209,17 +217,18 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         status = status.reshape(status.shape[0], len(list_appliances))
         status = pd.DataFrame(status, columns=list_appliances,
                               index=appliances.index)
+        assert status.shape[0] == appliances.shape[0], "Number of records between appliance status and load doesn't match"
 
-        ds_meter.append(meter)
-        ds_appliance.append(appliances)
-        ds_status.append(status)
+        list_df_meter.append(meter)
+        list_df_appliance.append(appliances)
+        list_df_status.append(status)
 
-    return ds_meter, ds_appliance, ds_status
+    return list_df_meter, list_df_appliance, list_df_status
 
 
 class Power(data.Dataset):
     def __init__(self, meter=None, appliance=None, status=None,
-                 length=256, border=680, max_power=1., train=False):
+                 length=512, border=16, max_power=10000., train=False):
         self.length = length
         self.border = border
         self.max_power = max_power
@@ -250,16 +259,16 @@ class Power(data.Dataset):
         return self.epochs
 
 
-def _train_valid_test(ds_meter, ds_appliance, ds_status, num_buildings,
+def _train_valid_test(list_df_meter, list_df_appliance, list_df_status, num_buildings,
                       train_size=0.8, valid_size=0.1,
                       seq_len=512, border=16, max_power=10000.):
     """
     Splits data store data into train, validation and test.
     Parameters
     ----------
-    ds_meter
-    ds_appliance
-    ds_status
+    list_df_meter
+    list_df_appliance
+    list_df_status
     num_buildings
     train_size
     valid_size
@@ -273,40 +282,41 @@ def _train_valid_test(ds_meter, ds_appliance, ds_status, num_buildings,
     ds_valid
     ds_test
     """
-    ds_len = [len(ds_meter[i]) for i in range(num_buildings)]
+    df_len = [len(list_df_meter[i]) for i in range(num_buildings)]
 
-    ds_train = [Power(ds_meter[i][:int(train_size * ds_len[i])],
-                      ds_appliance[i][:int(train_size * ds_len[i])],
-                      ds_status[i][:int(train_size * ds_len[i])],
-                      seq_len, border, max_power, True) for i in
+    ds_train = [Power(list_df_meter[i][:int(train_size * df_len[i])],
+                      list_df_appliance[i][:int(train_size * df_len[i])],
+                      list_df_status[i][:int(train_size * df_len[i])],
+                      seq_len, border, max_power, train=True) for i in
                 range(num_buildings)]
 
     ds_valid = [
-        Power(ds_meter[i][int(train_size * ds_len[i]):int(
-            (train_size + valid_size) * ds_len[i])],
-              ds_appliance[i][int(train_size * ds_len[i]):int(
-                  (train_size + valid_size) * ds_len[i])],
-              ds_status[i][int(train_size * ds_len[i]):int(
-                  (train_size + valid_size) * ds_len[i])],
-              seq_len, border, max_power, False) for i in range(num_buildings)]
+        Power(list_df_meter[i][int(train_size * df_len[i]):int(
+            (train_size + valid_size) * df_len[i])],
+              list_df_appliance[i][int(train_size * df_len[i]):int(
+                  (train_size + valid_size) * df_len[i])],
+              list_df_status[i][int(train_size * df_len[i]):int(
+                  (train_size + valid_size) * df_len[i])],
+              seq_len, border, max_power, train=False) for i in range(num_buildings)]
 
     ds_test = [
-        Power(ds_meter[i][int((train_size + valid_size) * ds_len[i]):],
-              ds_appliance[i][int((train_size + valid_size) * ds_len[i]):],
-              ds_status[i][int((train_size + valid_size) * ds_len[i]):],
-              seq_len, border, max_power, False) for i in
+        Power(list_df_meter[i][int((train_size + valid_size) * df_len[i]):],
+              list_df_appliance[i][int((train_size + valid_size) * df_len[i]):],
+              list_df_status[i][int((train_size + valid_size) * df_len[i]):],
+              seq_len, border, max_power, train=False) for i in
         range(num_buildings)]
+    
     return ds_train, ds_valid, ds_test
 
 
-def _datastore_to_dataloader(ds, buildings, batch_size, shuffle):
+def _datastore_to_dataloader(list_ds, build_idx, batch_size, shuffle):
     """
     Turns a datastore into a dataloader.
     
     Parameters
     ----------
-    ds
-    buildings
+    list_ds
+    build_idx
     batch_size
     shuffle
 
@@ -314,16 +324,16 @@ def _datastore_to_dataloader(ds, buildings, batch_size, shuffle):
     -------
     dl
     """
-    buildings = to_list(buildings)
+    build_idx = to_list(build_idx)
     ds = []
-    for building in buildings:
-        ds += [ds[building]]
+    for idx in build_idx:
+        ds += [list_ds[idx]]
     ds = torch.utils.data.ConcatDataset(ds)
     dl = DataLoader(dataset=ds, batch_size=batch_size, shuffle=shuffle)
     return dl
 
 
-def datastores_to_dataloaders(ds_meter, ds_appliance, ds_status, num_buildings,
+def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status, num_buildings,
                               build_id_train, build_id_valid, build_id_test,
                               train_size=0.8, valid_size=0.1, batch_size=64,
                               seq_len=512, border=16, max_power=10000.):
@@ -332,9 +342,9 @@ def datastores_to_dataloaders(ds_meter, ds_appliance, ds_status, num_buildings,
     
     Parameters
     ----------
-    ds_meter
-    ds_appliance
-    ds_status
+    list_df_meter
+    list_df_appliance
+    list_df_status
     num_buildings
     build_id_train
     build_id_valid
@@ -356,7 +366,7 @@ def datastores_to_dataloaders(ds_meter, ds_appliance, ds_status, num_buildings,
     ds_train, \
     ds_valid, \
     ds_test = _train_valid_test(
-        ds_meter, ds_appliance, ds_status, num_buildings,
+        list_df_meter, list_df_appliance, list_df_status, num_buildings,
         train_size=train_size, valid_size=valid_size,
         seq_len=seq_len, border=border, max_power=max_power)
 
@@ -463,7 +473,7 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
                                        build_id_valid, build_id_test)
 
     # Load the different datastores
-    ds_meter, ds_appliance, ds_status = load_ukdale_series(path_h5, path_data,
+    list_df_meter, list_df_appliance, list_df_status = load_ukdale_series(path_h5, path_data,
                                                            buildings,
                                                            appliances,
                                                            dates=dates)
@@ -472,7 +482,7 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
     # Load the data loaders
     dl_train, \
     dl_valid, \
-    dl_test = datastores_to_dataloaders(ds_meter, ds_appliance, ds_status,
+    dl_test = datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
                                         num_buildings, build_idx_train,
                                         build_idx_valid, build_idx_test,
                                         train_size=train_size,

@@ -2,7 +2,7 @@ import sys
 
 sys.path.insert(0, '../better_nilm')
 
-from better_nilm.ukdale.ukdale_data import load_dataloaders
+from better_nilm.ukdale.ukdale_preprocessing import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
 from better_nilm.model.scores import classification_scores_dict
@@ -17,16 +17,16 @@ dates = {1:('2013-04-12', '2014-12-15'),
         2: ('2013-05-22', '2013-10-03 6:16'),
         5: ('2014-04-29', '2014-09-01')}
 
-build_id_train = [1, 5]
-build_id_valid = [1]
-build_id_test = [2]
+train_buildings = [1, 5]
+valid_buildings = [1]
+test_buildings = [2]
 
 train_size = 0.8
 valid_size = 0.1
 
 seq_len = 480
 border = 16
-max_power = 10000.
+max_power = 2000.
 num_appliances = len(appliances)
 
 batch_size = 32
@@ -42,9 +42,9 @@ Load data
 dl_train, \
 dl_valid, \
 dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
-                           build_id_train=build_id_train,
-                           build_id_valid=build_id_valid,
-                           build_id_test=build_id_test,
+                           train_buildings=train_buildings,
+                           valid_buildings=valid_buildings,
+                           test_buildings=test_buildings,
                            dates=dates,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
