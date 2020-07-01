@@ -132,8 +132,9 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
         raise ValueError(f"Label {label} not found on house {house}\n"
                          f"Valid labels are: {list(labels.values())}")
 
-    assert type(
-        s) is Series, f"load_ukdale_meter() should output {Series}\nReceived {type(s)} instead"
+    msg = f"load_ukdale_meter() should output {Series}\n" \
+          f"Received {type(s)} instead"
+    assert type(s) is Series, msg
 
     s.index.name = 'datetime'
     s.name = label
@@ -231,7 +232,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
             meters = meters[date_start:date_end]
 
-            msg = "meters dataframe was left empy after applying dates\n" \
+            msg = "meters dataframe was left empty after applying dates\n" \
                   f"Start date is {date_start}\nEnd date is {date_end}"
             assert meters.shape[0] > 0, msg
 

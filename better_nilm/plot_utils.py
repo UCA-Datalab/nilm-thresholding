@@ -61,9 +61,9 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     plt.figure(dpi=180)
     plt.plot(plt_x, plt_test)
     plt.plot(plt_x, plt_pred, alpha=.75)
-        
+
     legend = ["Test", "Prediction"]
-    
+
     if y_total is not None:
         plt_total = y_total[:, :, idx].flatten().copy()
         assert len(plt_total) == len(plt_test), "All arrays must have the " \
@@ -82,7 +82,7 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     else:
         plt.ylabel("State")
     plt.xlabel(f"Time ({time_units})")
-    
+
     plt.legend(legend)
     if savefig is not None:
         plt.savefig(savefig)
@@ -141,3 +141,64 @@ def plot_load_and_state(load, state, idx=0,
 
     if savefig is not None:
         fig.savefig(savefig)
+
+
+def plot_status_accuracy(p_true, s_true, s_hat,
+                         records=480, app_idx=0, scale=1.,
+                         period=1., dpi=100):
+    """
+
+    Parameters
+    ----------
+    p_true : numpy.array
+        shape = (total_records, num_appliances)
+    s_true : numpy.array
+        shape = (total_records, num_appliances)
+    s_hat : numpy.array
+        shape = (total_records, num_appliances)
+    records : int, default=480
+        Number of records to plot
+    app_idx : int, default = 0
+        Appliance index
+    scale : float, default=1.
+        Value to multiply the load
+    period : float, default=1.
+        Sample period, in minutes
+    dpi : int, default=100
+        Dots per inch, image quality
+    """
+    # We dont want to modify the originals
+    p_true = p_true.copy()
+    s_true = s_true.copy()
+    s_hat = s_hat.copy()
+
+    # Define time
+    t = np.array([i for i in range(records)])
+    t = np.multiply(t, period)
+
+    # Take appliance power and scale it
+    pw = p_true[:, app_idx] * scale
+
+    # Scale status to see it properly
+    s_scaled = s_hat[:records, app_idx].copy()
+    s_scaled[s_scaled == 0] = -0.001
+    s_scaled[s_scaled == 1] = 1.001
+    s_scaled = np.multiply(s_scaled, pw.max())
+
+    # Distinguish between correct and incorrect guesses
+    mask_good = np.array(s_hat[:records, app_idx] == s_true[:records, app_idx])
+    mask_bad = np.array(s_hat[:records, app_idx] != s_true[:records, app_idx])
+
+    # Plot the figure
+    plt.figure(dpi=dpi)
+    plt.bar(t, np.multiply(s_true[:records, app_idx], pw.max() * 2),
+            color='grey', alpha=.2, width=1)
+    plt.plot(t, pw[:records])
+    plt.scatter(t[mask_bad], s_scaled[mask_bad], color='red', s=.6)
+    plt.scatter(t[mask_good], s_scaled[mask_good], color='green', s=.6)
+
+    plt.ylim([pw.max() * -.05, pw.max() * 1.05])
+    plt.ylabel('Load (watts)')
+    plt.xlabel('Time (minutes)')
+
+    plt.show()
