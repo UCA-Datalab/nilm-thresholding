@@ -102,7 +102,9 @@ class TorchModel:
                 self.optimizer.zero_grad()
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
-                output_power, output_status = self.model(data).permute(0, 2, 1)
+                output_power, output_status = self.model(data)
+                output_power = output_power.permute(0, 2, 1)
+                output_status = output_status.permute(0, 2, 1)
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
@@ -126,11 +128,13 @@ class TorchModel:
 
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
-                output_power, output_status = self.model(data).permute(0, 2, 1)
+                output_power, output_status = self.model(data)
+                output_power = output_power.permute(0, 2, 1)
+                output_status = output_status.permute(0, 2, 1)
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = pow_loss + act_loss
+                loss = self.pow_w * pow_loss + self.act_w * act_loss
                 # record validation loss
                 valid_losses.append(loss.item())
 
@@ -190,7 +194,9 @@ class TorchModel:
         self.model.eval()
         tensor_x = torch.Tensor(x_test)
         tensor_x = tensor_x.permute(0, 2, 1).cuda()
-        output_power, output_status = self.model(tensor_x).permute(0, 2, 1)
+        output_power, output_status = self.model(data)
+        output_power = output_power.permute(0, 2, 1)
+        output_status = output_status.permute(0, 2, 1)
         return output_power, output_status
 
     def predict_loader(self, loader):
@@ -212,6 +218,9 @@ class TorchModel:
                 sh = sh.permute(0, 2, 1)
                 sh = sh.detach().cpu().numpy()
                 s_hat.append(sh.reshape(-1, sh.shape[-1]))
+                
+                pw = pw.permute(0, 2, 1)
+                pw = pw.detach().cpu().numpy()
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))
 
                 x_true.append(x[:, :,

@@ -15,8 +15,11 @@ buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 thresholds = [50., 10., 20.]
-min_on = [1., 30., 30.]
-min_off = [1., 30., 3.]
+min_on = None  #[1., 30., 30.]
+min_off = None  #[1., 30., 3.]
+
+activation_w = 0
+power_w = 1
 
 dates = {1:('2013-04-12', '2014-12-15'),
         2: ('2013-05-22', '2013-10-03 6:16'),
@@ -33,8 +36,8 @@ num_appliances = len(appliances)
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
-epochs = 100
-patience = 100
+epochs = 300
+patience = 300
 
 """
 Seen
@@ -65,7 +68,8 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
 model = PTPNetModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
-                    learning_rate=learning_rate, dropout=dropout)
+                    learning_rate=learning_rate, dropout=dropout,
+                    activation_w=activation_w, power_w=power_w)
 
 model.train_with_dataloader(dl_train, dl_valid,
                             epochs=epochs,
@@ -73,7 +77,7 @@ model.train_with_dataloader(dl_train, dl_valid,
 
 # Test
 
-x_true, p_true, s_true, s_hat = model.predict_loader(dl_test)
+x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
 if (min_on is None) or (min_off is None):
     s_hat[s_hat >= .5] = 1
@@ -97,6 +101,9 @@ build_id_train = [1, 5]
 build_id_valid = [1]
 build_id_test = [2]
 
+epochs = 100
+patience = 100
+
 # Load data
 
 dl_train, \
@@ -116,7 +123,8 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
 model = PTPNetModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
-                    learning_rate=learning_rate, dropout=dropout)
+                    learning_rate=learning_rate, dropout=dropout,
+                    activation_w=activation_w, power_w=power_w)
 
 model.train_with_dataloader(dl_train, dl_valid,
                             epochs=epochs,
