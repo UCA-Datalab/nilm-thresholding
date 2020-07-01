@@ -63,10 +63,11 @@ class _Decoder(nn.Module):
 
 class _PTPNet(nn.Module):
 
-    def __init__(self, seq_len=480, border=16, out_channels=1, init_features=32,
+    def __init__(self, seq_len=480, border=16, out_channels=1,
+                 init_features=32,
                  dropout=0.1):
         super(_PTPNet, self).__init__()
-        
+
         series_len = seq_len + 2 * border
         p = 2
         k = 1
@@ -95,19 +96,23 @@ class _PTPNet(nn.Module):
         s = (series_len - 32) / 8
 
         self.tpool1 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=int(s/12), dropout=dropout)
+                                       kernel_size=int(s / 12),
+                                       dropout=dropout)
         self.tpool2 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=int(s/6), dropout=dropout)
+                                       kernel_size=int(s / 6), dropout=dropout)
         self.tpool3 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=int(s/3), dropout=dropout)
+                                       kernel_size=int(s / 3), dropout=dropout)
         self.tpool4 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
-                                       kernel_size=int(s/2), dropout=dropout)
+                                       kernel_size=int(s / 2), dropout=dropout)
 
         self.decoder = _Decoder(2 * features * 8 ** k, features * 1 ** k,
                                 kernel_size=p ** 3, stride=p ** 3)
 
         self.activation = nn.Conv1d(features * 1 ** k, out_channels,
                                     kernel_size=1, padding=0)
+
+        self.power = nn.Conv1d(features * 1 ** k, out_channels,
+                               kernel_size=1, padding=0)
 
     def forward(self, x):
         enc1 = self.encoder1(x)
@@ -122,16 +127,20 @@ class _PTPNet(nn.Module):
 
         dec = self.decoder(torch.cat([enc4, tp1, tp2, tp3, tp4], dim=1))
 
+        pow = self.power(dec)
         act = self.activation(dec)
-        return act
+
+        return pow, act
 
 
 class PTPNetModel(TorchModel):
 
-    def __init__(self, seq_len=480, border=16, out_channels=1, init_features=32,
-                 learning_rate=0.001, dropout=0.1):
+    def __init__(self, seq_len=480, border=16, out_channels=1,
+                 init_features=32,
+                 learning_rate=0.001, dropout=0.1,
+                 activation_w=1, power_w=0):
         super(TorchModel, self).__init__()
-    
+
         series_len = seq_len + 2 * border
         # The time series will undergo four convolutions + poolings
         # This will give a series of size (batch, S, 256)
@@ -145,7 +154,7 @@ class PTPNetModel(TorchModel):
                              f" valid value is {96 * s + 32}")
 
         self.border = border
-        
+
         self.model = _PTPNet(seq_len=seq_len,
                              border=border,
                              out_channels=out_channels,
@@ -153,4 +162,7 @@ class PTPNetModel(TorchModel):
                              dropout=dropout).cuda()
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.criterion = nn.BCEWithLogitsLoss()
+        self.pow_criterion = nn.MSELoss()
+        self.act_criterion = nn.BCEWithLogitsLoss()
+        self.pow_w = power_w
+        self.act_w = activation_w

@@ -58,6 +58,8 @@ class TorchModel:
         self.model = None
         self.batch_size = batch_size
         self.shuffle = True
+        self.pow_w = 1
+        self.act_w = 1
 
     def _get_dataloader(self, x, y, y_bin):
         tensor_x = torch.Tensor(x)
@@ -100,9 +102,11 @@ class TorchModel:
                 self.optimizer.zero_grad()
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
-                output_status = self.model(data).permute(0, 2, 1)
+                output_power, output_status = self.model(data).permute(0, 2, 1)
                 # calculate the loss
-                loss = self.criterion(output_status, target_status)
+                pow_loss = self.pow_criterion(output_power, target_power)
+                act_loss = self.act_criterion(output_status, target_status)
+                loss = self.pow_w * pow_loss + self.act_w * act_loss
                 # backward pass: compute gradient of the loss with respect
                 # to model parameters
                 loss.backward()
@@ -122,9 +126,11 @@ class TorchModel:
 
                 # forward pass: compute predicted outputs by passing inputs
                 # to the model
-                output_status = self.model(data).permute(0, 2, 1)
+                output_power, output_status = self.model(data).permute(0, 2, 1)
                 # calculate the loss
-                loss = self.criterion(output_status, target_status)
+                pow_loss = self.pow_criterion(output_power, target_power)
+                act_loss = self.act_criterion(output_status, target_status)
+                loss = pow_loss + act_loss
                 # record validation loss
                 valid_losses.append(loss.item())
 
@@ -184,36 +190,41 @@ class TorchModel:
         self.model.eval()
         tensor_x = torch.Tensor(x_test)
         tensor_x = tensor_x.permute(0, 2, 1).cuda()
-        output_status = self.model(tensor_x).permute(0, 2, 1)
-        return output_status
-    
-    
+        output_power, output_status = self.model(tensor_x).permute(0, 2, 1)
+        return output_power, output_status
+
     def predict_loader(self, loader):
         x_true = []
         s_true = []
         p_true = []
         s_hat = []
+        p_hat = []
 
         self.model.eval()
 
         with torch.no_grad():
             for x, power, status in loader:
                 x = x.unsqueeze(1).cuda()
-                
-                sh = self.model(x)
+
+                pw, sh = self.model(x)
                 sh = torch.sigmoid(sh)
-                
-                sh = sh.permute(0,2,1)
+
+                sh = sh.permute(0, 2, 1)
                 sh = sh.detach().cpu().numpy()
                 s_hat.append(sh.reshape(-1, sh.shape[-1]))
+                p_hat.append(pw.reshape(-1, pw.shape[-1]))
 
-                x_true.append(x[:,:,self.border:-self.border].detach().cpu().numpy().flatten())
-                s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
-                p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
-        
+                x_true.append(x[:, :,
+                              self.border:-self.border].detach().cpu().numpy().flatten())
+                s_true.append(
+                    status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+                p_true.append(
+                    power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+
         x_true = np.hstack(x_true)
         s_true = np.concatenate(s_true, axis=0)
         p_true = np.concatenate(p_true, axis=0)
         s_hat = np.concatenate(s_hat, axis=0)
+        p_hat = np.concatenate(p_hat, axis=0)
 
-        return x_true, p_true, s_true, s_hat
+        return x_true, p_true, s_true, p_hat, s_hat

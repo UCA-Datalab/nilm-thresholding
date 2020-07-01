@@ -124,7 +124,7 @@ model.train_with_dataloader(dl_train, dl_valid,
 
 # Test
 
-x_true, p_true, s_true, s_hat = model.predict_loader(dl_test)
+x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
 if (min_on is None) or (min_off is None):
     s_hat[s_hat >= .5] = 1
