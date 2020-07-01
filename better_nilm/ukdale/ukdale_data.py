@@ -142,7 +142,9 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
 
 
 def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
-                       dates=None, thresholds=None, min_off=None, min_on=None):
+                       dates=None,
+                       thresholds=None, min_off=None, min_on=None,
+                       threshold_std=True):
     """
     
     Parameters
@@ -160,10 +162,21 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         Both dates are strings with format: 'YY-MM-DD'
     thresholds : numpy.array, default=None
         shape = (num_meters,)
+        Thresholds per appliance, in watts. If not provided, thresholds are 
+        computed using k-means
     min_off : numpy.array, default=None
         shape = (num_meters,)
+        Number of records that an appliance must be below the threshold to 
+        be considered turned OFF. If not provided, thresholds are 
+        computed using k-means
     min_on : numpy.array, default=None
         shape = (num_meters,)
+        Number of records that an appliance must be above the threshold to 
+        be considered turned ON. If not provided, thresholds are 
+        computed using k-means
+    threshold_std : bool, default=True
+        If the threshold is computed by k-means, use the standard deviation 
+        of each cluster to move the threshold
 
     Returns
     -------
@@ -227,7 +240,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
         arr_apps = np.expand_dims(appliances.values, axis=1)
         if (thresholds is None) or (min_on is None) or (min_off is None):
-            thresholds = get_thresholds(arr_apps)
+            thresholds = get_thresholds(arr_apps, use_std=threshold_std)
 
             msg = "Number of thresholds doesn't match number of appliances"
             assert len(thresholds) == len(list_appliances), msg
@@ -463,38 +476,67 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid,
     return build_idx_train, build_idx_valid, build_idx_test
 
 
-def load_dataloaders(path_h5, path_data, buildings, appliances,
+def load_dataloaders(path_h5, path_labels, buildings, appliances,
                      dates=None,
                      build_id_train=None, build_id_valid=None,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
-                     seq_len=512, border=16, max_power=10000.,
-                     thresholds=None, min_off=None, min_on=None):
+                     seq_len=480, border=16, max_power=10000.,
+                     thresholds=None, min_off=None, min_on=None,
+                     threshold_std=True):
     """
     Load the UKDALE dataloaders from the raw data.
     
     Parameters
     ----------
-    path_h5
-    path_data
-    buildings
-    appliances
-    dates
-    build_id_train
-    build_id_valid
-    build_id_test
-    train_size
-    valid_size
-    batch_size
-    seq_len
-    border
-    max_power
-    thresholds : numpy.array
+    path_h5 : str
+        Path to the original UKDALE h5 file
+    path_labels : str
+        Path to the directory that contains the csv of the meter labels.
+    buildings : list
+        List of buildings IDs. List of integers.
+    appliances : list
+        List of appliances labels. List of strings.
+    dates : dict, default=None
+        {building_id : (date_start, date_end)}
+        Both dates are strings with format: 'YY-MM-DD'
+    build_id_train : list
+        Buildings to use when training the model
+    build_id_valid : list
+        Buildings to use when validating the model
+    build_id_test : list
+        Buildings to use when testing the model
+    train_size : float
+        Train proportion. Must be between 0 and 1
+    valid_size : float
+        Train proportion. Must be between 0 and 1
+    batch_size : int
+    seq_len : int
+        Length of the sequence to output
+        len(output) = seq_len
+    border : int
+        Borders of the input sequence, that will be lost in the output.
+        len(input) = seq_len + 2 * border
+    max_power : float
+        Maximum load power, in watts. Any value higher than max_power will be
+        changed to this one
+    thresholds : numpy.array, default=None
         shape = (num_meters,)
-    min_off : numpy.array
+        Thresholds per appliance, in watts. If not provided, thresholds are 
+        computed using k-means
+    min_off : numpy.array, default=None
         shape = (num_meters,)
-    min_on : numpy.array
+        Number of records that an appliance must be below the threshold to 
+        be considered turned OFF. If not provided, thresholds are 
+        computed using k-means
+    min_on : numpy.array, default=None
         shape = (num_meters,)
+        Number of records that an appliance must be above the threshold to 
+        be considered turned ON. If not provided, thresholds are 
+        computed using k-means
+    threshold_std : bool, default=True
+        If the threshold is computed by k-means, use the standard deviation 
+        of each cluster to move the threshold
 
     Returns
     -------
@@ -511,10 +553,11 @@ def load_dataloaders(path_h5, path_data, buildings, appliances,
     # Load the different datastores
     list_df_meter, \
     list_df_appliance, \
-    list_df_status = load_ukdale_series(path_h5, path_data, buildings,
+    list_df_status = load_ukdale_series(path_h5, path_labels, buildings,
                                         appliances, dates=dates,
                                         thresholds=thresholds,
-                                        min_off=min_off, min_on=min_on)
+                                        min_off=min_off, min_on=min_on,
+                                        threshold_std=threshold_std)
     num_buildings = len(buildings)
 
     # Load the data loaders

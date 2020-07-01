@@ -15,15 +15,15 @@ buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 thresholds = [50., 10., 20.]
-min_on = None  #[1., 30., 30.]
-min_off = None  #[1., 30., 3.]
+min_on = None  # [1., 30., 30.]
+min_off = None  # [1., 30., 3.]
 
 activation_w = 1
 power_w = 0
 
-dates = {1:('2013-04-12', '2014-12-15'),
-        2: ('2013-05-22', '2013-10-03 6:16'),
-        5: ('2014-04-29', '2014-09-01')}
+dates = {1: ('2013-04-12', '2014-12-15'),
+         2: ('2013-05-22', '2013-10-03 6:16'),
+         5: ('2014-04-29', '2014-09-01')}
 
 train_size = 0.8
 valid_size = 0.1
@@ -61,7 +61,8 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
                            border=border, max_power=max_power,
-                          thresholds=thresholds, min_off=min_off, min_on=min_on)
+                           thresholds=thresholds, min_off=min_off,
+                           min_on=min_on)
 
 # Training
 
@@ -90,7 +91,6 @@ class_scores = classification_scores_dict(s_hat, s_true, appliances)
 for app, scores in class_scores.items():
     print(app, "\n", scores)
 
-
 """
 Unseen
 """
@@ -116,7 +116,8 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
                            border=border, max_power=max_power,
-                          thresholds=thresholds, min_off=min_off, min_on=min_on)
+                           thresholds=thresholds, min_off=min_off,
+                           min_on=min_on)
 
 # Training
 
