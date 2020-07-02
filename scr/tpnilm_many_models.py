@@ -146,9 +146,9 @@ if not os.path.isdir(path_plots):
 
 with open(f"{path_plots}/scores.txt", "w") as text_file:
     for key, dic1 in scores.items():
-        text_file.write(key, '\n')
+        text_file.write(f"{key}\n------------------------------------------\n")
         for app, dic2 in dic1.items():
-            text_file.write(app, '\n')
+            text_file.write(f"{app} \n")
             for name, value in dic2.items():
                 text_file.write(f"{name}: {value}\n")
             text_file.write('----------------------------------------------\n')
