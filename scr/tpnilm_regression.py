@@ -30,7 +30,7 @@ valid_size = 0.1
 
 seq_len = 480
 border = 16
-max_power = 2000.
+power_scale = 2000.
 num_appliances = len(appliances)
 
 batch_size = 32
@@ -60,7 +60,7 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            dates=dates,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
-                           border=border, max_power=max_power,
+                           border=border, power_scale=power_scale,
                           thresholds=thresholds, min_off=min_off, min_on=min_on)
 
 # Training
@@ -115,7 +115,7 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            dates=dates,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
-                           border=border, max_power=max_power,
+                           border=border, power_scale=power_scale,
                           thresholds=thresholds, min_off=min_off, min_on=min_on)
 
 # Training

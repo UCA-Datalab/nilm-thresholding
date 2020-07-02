@@ -9,11 +9,12 @@ sys.path.insert(0, '../better_nilm')
 from better_nilm.ukdale.ukdale_data import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
+from better_nilm.model.preprocessing import get_status
+
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
 
 from better_nilm.plot_utils import plot_status_accuracy
-
 
 path_h5 = "data/ukdale.h5"
 path_data = "../nilm/data/ukdale"
@@ -37,7 +38,7 @@ valid_size = 0.1
 seq_len = 480
 border = 16
 period = '1min'
-max_power = 2000.
+power_scale = 2000.
 num_appliances = len(appliances)
 
 batch_size = 32
@@ -50,19 +51,22 @@ num_models = 5
 
 # Load data
 
-dl_train, \
-dl_valid, \
-dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
-                           build_id_train=build_id_train,
-                           build_id_valid=build_id_valid,
-                           build_id_test=build_id_test,
-                           dates=dates, period=period,
-                           train_size=train_size, valid_size=valid_size,
-                           batch_size=batch_size, seq_len=seq_len,
-                           border=border, max_power=max_power)
+params = load_dataloaders(path_h5, path_data, buildings, appliances,
+                          build_id_train=build_id_train,
+                          build_id_valid=build_id_valid,
+                          build_id_test=build_id_test,
+                          dates=dates, period=period,
+                          train_size=train_size, valid_size=valid_size,
+                          batch_size=batch_size, seq_len=seq_len,
+                          border=border, power_scale=power_scale,
+                          return_kmeans=True)
+
+dl_train, dl_valid, dl_test, kmeans = params
+thresholds, means = kmeans
 
 # Training
-list_scores = []
+act_scores = []
+pow_scores = []
 
 for i in range(num_models):
     print(f"\nModel {i + 1}\n")
@@ -81,24 +85,38 @@ for i in range(num_models):
 
     x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
+    # Activation scores
+
     s_hat[s_hat >= .5] = 1
     s_hat[s_hat < 0.5] = 0
 
-    p_true = np.multiply(p_true, max_power)
-    p_hat = np.multiply(p_hat, max_power)
+    import ipdb; ipdb.set_trace()
+    sp_hat = np.multiply(s_hat, means)
 
     class_scores = classification_scores_dict(s_hat, s_true, appliances)
+    reg_scores = regression_scores_dict(sp_hat, p_true, appliances)
+    act_scores += [class_scores, reg_scores]
+
+    # Power scores
+
+    p_true = np.multiply(p_true, power_scale)
+    p_hat = np.multiply(p_hat, power_scale)
+
+    ps_hat = get_status(s_hat, thresholds)
+
+    class_scores = classification_scores_dict(ps_hat, s_true, appliances)
     reg_scores = regression_scores_dict(p_hat, p_true, appliances)
-    list_scores += [class_scores, reg_scores]
+    pow_scores += [class_scores, reg_scores]
 
 # List scores
 
 scores = {}
 for app in appliances:
     counter = collections.Counter()
-    for sc in list_scores:
+    for sc in act_scores:
         counter.update(sc[app])
-    scores[app] = {k: round(v, 6) / num_models for k, v in dict(counter).items()}
+    scores[app] = {k: round(v, 6) / num_models for k, v in
+                   dict(counter).items()}
 
 for app, scs in scores.items():
     print(app, "\n", scs)

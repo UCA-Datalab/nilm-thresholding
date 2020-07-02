@@ -43,7 +43,7 @@ def load_ukdale_datastore(path_h5):
 
 
 def load_ukdale_meter(datastore, building=1, meter=1, period='1min',
-                      cutoff=10000.):
+                      max_power=10000.):
     """
     Loads an UKDALE meter from the datastore, and resamples it to given period.
     
@@ -56,7 +56,7 @@ def load_ukdale_meter(datastore, building=1, meter=1, period='1min',
         Meter ID.
     period : str, default='1min'
         Sample period. Time between records.
-    cutoff : float, default=10000.
+    max_power : float, default=10000.
         Maximum load. Any value higher than this is decreased to match this 
         value.
 
@@ -71,7 +71,7 @@ def load_ukdale_meter(datastore, building=1, meter=1, period='1min',
     m = datastore[key]
     v = m.values.flatten()
     t = m.index
-    s = pd.Series(v, index=t).clip(0., cutoff)
+    s = pd.Series(v, index=t).clip(0., max_power)
     s[s < 10.] = 0.
     s = s.resample('1s').ffill(limit=300).fillna(0.)
     s = s.resample(period).mean().tz_convert('UTC')
@@ -79,7 +79,7 @@ def load_ukdale_meter(datastore, building=1, meter=1, period='1min',
 
 
 def ukdale_datastore_to_series(path_labels, datastore, house, label,
-                               period='1min', cutoff=10000.,
+                               period='1min', max_power=10000.,
                                verbose=True):
     """
     
@@ -93,7 +93,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
     label : str
         Meter name
     period : str, default='1min'
-    cutoff : float, default=10000.
+    max_power : float, default=10000.
     verbose : bool, default=True
 
     Returns
@@ -126,7 +126,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
         # When we find the input label, we load the meter records
         if lab == label:
             print(i, labels[i])
-            s = load_ukdale_meter(datastore, house, i, period, cutoff)
+            s = load_ukdale_meter(datastore, house, i, period, max_power)
 
     if s is None:
         raise ValueError(f"Label {label} not found on house {house}\n"
@@ -143,9 +143,9 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
 
 
 def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
-                       dates=None, period='1min', cutoff=10000.,
+                       dates=None, period='1min', max_power=10000.,
                        thresholds=None, min_off=None, min_on=None,
-                       threshold_std=True):
+                       threshold_std=True, return_kmeans=False):
     """
     
     Parameters
@@ -163,7 +163,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         Both dates are strings with format: 'YY-MM-DD'
     period : str, default='1min'
         Record frequency
-    cutoff : float, default=10000.
+    max_power : float, default=10000.
         Maximum load value
     thresholds : numpy.array, default=None
         shape = (num_meters,)
@@ -182,6 +182,8 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     threshold_std : bool, default=True
         If the threshold is computed by k-means, use the standard deviation 
         of each cluster to move the threshold
+    return_kmeans : bool, default=False
+        If True, also return the computed thresholds and means
 
     Returns
     -------
@@ -214,7 +216,8 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         meters = []
         for m in list_meters:
             series_meter = ukdale_datastore_to_series(path_labels, datastore,
-                                                      house, m, cutoff=cutoff,
+                                                      house, m,
+                                                      max_power=max_power,
                                                       period=period)
             meters += [series_meter]
 
@@ -246,13 +249,15 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
         arr_apps = np.expand_dims(appliances.values, axis=1)
         if (thresholds is None) or (min_on is None) or (min_off is None):
-            thresholds = get_thresholds(arr_apps, use_std=threshold_std)
+            thresholds, means = get_thresholds(arr_apps, use_std=threshold_std,
+                                               return_mean=True)
 
             msg = "Number of thresholds doesn't match number of appliances"
             assert len(thresholds) == len(list_appliances), msg
 
             status = get_status(arr_apps, thresholds)
         else:
+            means = None
             status = get_status_by_duration(arr_apps, thresholds,
                                             min_off, min_on)
         status = status.reshape(status.shape[0], len(list_appliances))
@@ -267,19 +272,23 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         list_df_appliance.append(appliances)
         list_df_status.append(status)
 
-    return list_df_meter, list_df_appliance, list_df_status
+    return_params = (list_df_meter, list_df_appliance, list_df_status)
+    if (return_kmeans) and (means is not None):
+        return_params += ((thresholds, means), )
+
+    return return_params
 
 
 class Power(data.Dataset):
     def __init__(self, meter=None, appliance=None, status=None,
-                 length=512, border=16, max_power=10000., train=False):
+                 length=512, border=16, power_scale=2000., train=False):
         self.length = length
         self.border = border
-        self.max_power = max_power
+        self.power_scale = power_scale
         self.train = train
 
-        self.meter = meter.copy() / self.max_power
-        self.appliance = appliance.copy() / self.max_power
+        self.meter = meter.copy() / self.power_scale
+        self.appliance = appliance.copy() / self.power_scale
         self.status = status.copy()
 
         self.epochs = (len(self.meter) - 2 * self.border) // self.length
@@ -306,7 +315,7 @@ class Power(data.Dataset):
 def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
                       num_buildings,
                       train_size=0.8, valid_size=0.1,
-                      seq_len=512, border=16, max_power=10000.):
+                      seq_len=512, border=16, power_scale=2000.):
     """
     Splits data store data into train, validation and test.
     Parameters
@@ -319,7 +328,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
     valid_size
     seq_len
     border
-    max_power
+    power_scale
 
     Returns
     -------
@@ -332,7 +341,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
     ds_train = [Power(list_df_meter[i][:int(train_size * df_len[i])],
                       list_df_appliance[i][:int(train_size * df_len[i])],
                       list_df_status[i][:int(train_size * df_len[i])],
-                      seq_len, border, max_power, train=True) for i in
+                      seq_len, border, power_scale, train=True) for i in
                 range(num_buildings)]
 
     ds_valid = [
@@ -342,7 +351,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
                   (train_size + valid_size) * df_len[i])],
               list_df_status[i][int(train_size * df_len[i]):int(
                   (train_size + valid_size) * df_len[i])],
-              seq_len, border, max_power, train=False) for i in
+              seq_len, border, power_scale, train=False) for i in
         range(num_buildings)]
 
     ds_test = [
@@ -350,7 +359,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
               list_df_appliance[i][
               int((train_size + valid_size) * df_len[i]):],
               list_df_status[i][int((train_size + valid_size) * df_len[i]):],
-              seq_len, border, max_power, train=False) for i in
+              seq_len, border, power_scale, train=False) for i in
         range(num_buildings)]
 
     return ds_train, ds_valid, ds_test
@@ -384,7 +393,7 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
                               num_buildings,
                               build_id_train, build_id_valid, build_id_test,
                               train_size=0.8, valid_size=0.1, batch_size=64,
-                              seq_len=512, border=16, max_power=10000.):
+                              seq_len=512, border=16, power_scale=2000.):
     """
     Turns datastores into dataloaders.
     
@@ -402,7 +411,7 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
     batch_size
     seq_len
     border
-    max_power
+    power_scale
 
     Returns
     -------
@@ -416,7 +425,7 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
     ds_test = _train_valid_test(
         list_df_meter, list_df_appliance, list_df_status, num_buildings,
         train_size=train_size, valid_size=valid_size,
-        seq_len=seq_len, border=border, max_power=max_power)
+        seq_len=seq_len, border=border, power_scale=power_scale)
 
     dl_train = _datastore_to_dataloader(ds_train, build_id_train,
                                         batch_size, True)
@@ -483,13 +492,13 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid,
 
 
 def load_dataloaders(path_h5, path_labels, buildings, appliances,
-                     dates=None, period='1min',
+                     dates=None, period='1min', max_power=10000.,
                      build_id_train=None, build_id_valid=None,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
-                     seq_len=480, border=16, max_power=10000.,
+                     seq_len=480, border=16, power_scale=2000.,
                      thresholds=None, min_off=None, min_on=None,
-                     threshold_std=True):
+                     threshold_std=True, return_kmeans=False):
     """
     Load the UKDALE dataloaders from the raw data.
     
@@ -528,6 +537,8 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     max_power : float, default=10000.
         Maximum load power, in watts. Any value higher than max_power will be
         changed to this one
+    power_scale : float, default=2000.
+        Value by which we divide the power load values, to normalize them
     thresholds : numpy.array, default=None
         shape = (num_meters,)
         Thresholds per appliance, in watts. If not provided, thresholds are 
@@ -545,6 +556,8 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     threshold_std : bool, default=True
         If the threshold is computed by k-means, use the standard deviation 
         of each cluster to move the threshold
+    return_kmeans : bool, default=False
+        If True, return as last argument the computed thresholds
 
     Returns
     -------
@@ -559,14 +572,21 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                        build_id_valid, build_id_test)
 
     # Load the different datastores
-    list_df_meter, \
-    list_df_appliance, \
-    list_df_status = load_ukdale_series(path_h5, path_labels, buildings,
-                                        appliances, dates=dates,
-                                        period=period, cutoff=max_power,
-                                        thresholds=thresholds,
-                                        min_off=min_off, min_on=min_on,
-                                        threshold_std=threshold_std)
+    params = load_ukdale_series(path_h5, path_labels, buildings, appliances,
+                                dates=dates, period=period,
+                                max_power=max_power, thresholds=thresholds,
+                                min_off=min_off, min_on=min_on,
+                                threshold_std=threshold_std,
+                                return_kmeans=return_kmeans)
+    if return_kmeans:
+        list_df_meter, \
+        list_df_appliance, \
+        list_df_status, kmeans = params
+    else:
+        list_df_meter, \
+        list_df_appliance, \
+        list_df_status = params
+
     num_buildings = len(buildings)
 
     # Load the data loaders
@@ -580,5 +600,10 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                         valid_size=valid_size,
                                         batch_size=batch_size,
                                         seq_len=seq_len, border=border,
-                                        max_power=max_power)
-    return dl_train, dl_valid, dl_test
+                                        power_scale=power_scale)
+
+    return_params = (dl_train, dl_valid, dl_test)
+    if return_kmeans:
+        return_params += (kmeans,)
+
+    return return_params
