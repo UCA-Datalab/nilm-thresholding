@@ -102,15 +102,17 @@ for i in range(num_models):
     class_scores = classification_scores_dict(s_hat, s_true, appliances)
     reg_scores = regression_scores_dict(sp_hat, p_true, appliances)
     act_scores += [class_scores, reg_scores]
+    print(act_scores)
 
     # Power scores
 
     # Get status from power values
-    ps_hat = get_status(s_hat, thresholds)
+    ps_hat = get_status(p_hat, thresholds)
 
     class_scores = classification_scores_dict(ps_hat, s_true, appliances)
     reg_scores = regression_scores_dict(p_hat, p_true, appliances)
     pow_scores += [class_scores, reg_scores]
+    print(pow_scores)
 
 # List scores
 
