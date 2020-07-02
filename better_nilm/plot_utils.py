@@ -183,7 +183,7 @@ def plot_status_accuracy(p_true, s_true, s_hat,
     
     # Ensure that the plot shows activations
     idx0 = 0
-    while pw[idx0, app_idx] <= pw.max() * .01:
+    while pw[idx0] <= pw.max() * .01:
         idx0 += 1
     idx1 = idx0 + records
 
@@ -195,7 +195,7 @@ def plot_status_accuracy(p_true, s_true, s_hat,
 
     s_hat = s_hat[idx0:idx1, app_idx]
     s_true = s_true[idx0:idx1, app_idx]
-    
+
     # Distinguish between correct and incorrect guesses
     mask_good = np.array(s_hat == s_true)
     mask_bad = np.array(s_hat != s_true)
