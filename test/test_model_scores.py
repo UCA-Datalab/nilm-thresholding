@@ -9,7 +9,7 @@ from better_nilm.model.preprocessing import denormalize_meters
 
 from better_nilm.model.architecture.gru import create_gru_model
 
-from better_nilm.model.scores import regression_score_dict
+from better_nilm.model.scores import regression_scores_dict
 from better_nilm.model.scores import classification_scores_dict
 
 # This path is set to work on Zappa
@@ -93,7 +93,7 @@ y_test = denormalize_meters(y_test, y_max)
 Scores
 """
 
-reg_scores = regression_score_dict(y_pred, y_test, appliances)
+reg_scores = regression_scores_dict(y_pred, y_test, appliances)
 print(reg_scores)
 
 class_scores = classification_scores_dict(bin_pred, bin_test, appliances)

@@ -20,7 +20,7 @@ def _assert_shape(y_pred, y_real, appliances):
                          f"Appliances in appliances list: {len(appliances)}")
 
 
-def regression_score_dict(y_pred, y_real, appliances):
+def regression_scores_dict(y_pred, y_real, appliances):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - MSE, Mean Square Error
