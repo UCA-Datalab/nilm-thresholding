@@ -85,13 +85,19 @@ for i in range(num_models):
 
     x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
+    # Denormalize power values
+    p_true = np.multiply(p_true, power_scale)
+    p_hat = np.multiply(p_hat, power_scale)
+
     # Activation scores
 
     s_hat[s_hat >= .5] = 1
     s_hat[s_hat < 0.5] = 0
 
-    import ipdb; ipdb.set_trace()
-    sp_hat = np.multiply(s_hat, means)
+    # Get power values from status
+    sp_hat = np.multiply(np.ones(s_hat.shape), means[:, 0])
+    sp_on = np.multiply(np.ones(s_hat.shape), means[:, 1])
+    sp_hat[s_hat == 1] = sp_on[s_hat == 1]
 
     class_scores = classification_scores_dict(s_hat, s_true, appliances)
     reg_scores = regression_scores_dict(sp_hat, p_true, appliances)
@@ -99,9 +105,7 @@ for i in range(num_models):
 
     # Power scores
 
-    p_true = np.multiply(p_true, power_scale)
-    p_hat = np.multiply(p_hat, power_scale)
-
+    # Get status from power values
     ps_hat = get_status(s_hat, thresholds)
 
     class_scores = classification_scores_dict(ps_hat, s_true, appliances)
@@ -110,16 +114,20 @@ for i in range(num_models):
 
 # List scores
 
-scores = {}
+scores = {'activation': {},
+          'power': {}}
 for app in appliances:
     counter = collections.Counter()
     for sc in act_scores:
         counter.update(sc[app])
-    scores[app] = {k: round(v, 6) / num_models for k, v in
-                   dict(counter).items()}
+    scores['activation'][app] = {k: round(v, 6) / num_models for k, v in
+                                 dict(counter).items()}
 
-for app, scs in scores.items():
-    print(app, "\n", scs)
+    counter = collections.Counter()
+    for sc in pow_scores:
+        counter.update(sc[app])
+    scores['power'][app] = {k: round(v, 6) / num_models for k, v in
+                            dict(counter).items()}
 
 # Plot
 
