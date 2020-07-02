@@ -15,6 +15,8 @@ from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
 
 from better_nilm.plot_utils import plot_status_accuracy
+from better_nilm.plot_utils import plot_real_vs_prediction
+
 
 path_h5 = "data/ukdale.h5"
 path_data = "../nilm/data/ukdale"
@@ -88,6 +90,7 @@ for i in range(num_models):
     # Denormalize power values
     p_true = np.multiply(p_true, power_scale)
     p_hat = np.multiply(p_hat, power_scale)
+    p_hat[p_hat < 0.] = 0.
 
     # Activation scores
 
@@ -169,7 +172,13 @@ elif period.endswith('s'):
     period_x = float(period.replace('s', '')) / 60
 
 for idx, app in enumerate(appliances):
-    savefig = os.path.join(path_plots, f"{app}.png")
+    savefig = os.path.join(path_plots, f"{app}_activation.png")
     plot_status_accuracy(p_true, s_true, s_hat, records=seq_len,
                          app_idx=idx, scale=1., period=period_x, dpi=180,
                          savefig=savefig)
+
+    savefig = os.path.join(path_plots, f"{app}_power.png")
+
+    plot_real_vs_prediction(p_true, p_hat, idx=idx, dpi=180,
+                            sample_period=period_x * 60, savefig=savefig,
+                            threshold=thresholds[idx])

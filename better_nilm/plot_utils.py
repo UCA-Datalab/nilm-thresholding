@@ -23,7 +23,8 @@ def _flatten_series(y_a, y_b, idx, num_series):
 
 
 def plot_real_vs_prediction(y_test, y_pred, idx=0,
-                            sample_period=6, num_series=None, savefig=None,
+                            sample_period=6, num_series=None,
+                            dpi=180, savefig=None,
                             threshold=None, y_total=None):
     """
     Plots the evolution of real and predicted appliance load values,
@@ -39,6 +40,7 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
         Time between records, in seconds.
     num_series : int, default=None
         If given, limit the number of plotted sequences.
+    dpi : int, default=180
     savefig : str, default=None
         Path where the figure is stored.
     threshold : float, default=None
@@ -58,7 +60,7 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     else:
         time_units = "s"
 
-    plt.figure(dpi=180)
+    plt.figure(dpi=dpi)
     plt.plot(plt_x, plt_test)
     plt.plot(plt_x, plt_pred, alpha=.75)
 
