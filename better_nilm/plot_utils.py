@@ -180,22 +180,31 @@ def plot_status_accuracy(p_true, s_true, s_hat,
 
     # Take appliance power and scale it
     pw = p_true[:, app_idx] * scale
+    
+    # Ensure that the plot shows activations
+    idx0 = 0
+    while pw[idx0, app_idx] <= pw.max() * .01:
+        idx0 += 1
+    idx1 = idx0 + records
 
     # Scale status to see it properly
-    s_scaled = s_hat[:records, app_idx].copy()
+    s_scaled = s_hat[idx0:idx1, app_idx].copy()
     s_scaled[s_scaled == 0] = -0.001
     s_scaled[s_scaled == 1] = 1.001
     s_scaled = np.multiply(s_scaled, pw.max())
 
+    s_hat = s_hat[idx0:idx1, app_idx]
+    s_true = s_true[idx0:idx1, app_idx]
+    
     # Distinguish between correct and incorrect guesses
-    mask_good = np.array(s_hat[:records, app_idx] == s_true[:records, app_idx])
-    mask_bad = np.array(s_hat[:records, app_idx] != s_true[:records, app_idx])
+    mask_good = np.array(s_hat == s_true)
+    mask_bad = np.array(s_hat != s_true)
 
     # Plot the figure
     plt.figure(dpi=dpi)
-    plt.bar(t, np.multiply(s_true[:records, app_idx], pw.max() * 2),
+    plt.bar(t, np.multiply(s_true, pw.max() * 2),
             color='grey', alpha=.2, width=1)
-    plt.plot(t, pw[:records])
+    plt.plot(t, pw[idx0:idx1])
     plt.scatter(t[mask_bad], s_scaled[mask_bad], color='red', s=.6)
     plt.scatter(t[mask_good], s_scaled[mask_good], color='green', s=.6)
 
