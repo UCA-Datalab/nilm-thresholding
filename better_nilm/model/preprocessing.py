@@ -321,7 +321,7 @@ def get_status(ser, thresholds):
 
     # Iterate through all the appliances
     for idx in range(num_app):
-        if len(ser.shape == 3):
+        if len(ser.shape) == 3:
             mask_on = ser[:, :, idx] > thresholds[idx]
             ser_bin[:, :, idx] = mask_on.astype(int)
         else:
