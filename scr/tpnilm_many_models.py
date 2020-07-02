@@ -63,7 +63,8 @@ for i in range(num_models):
     model = PTPNetModel(seq_len=seq_len, border=border,
                         out_channels=num_appliances,
                         init_features=32,
-                        learning_rate=learning_rate, dropout=dropout)
+                        learning_rate=learning_rate, dropout=dropout,
+                        activation_w=activation_w, power_w=power_w)
 
     model.train_with_dataloader(dl_train, dl_valid,
                                 epochs=epochs,
