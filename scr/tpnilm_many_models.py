@@ -144,8 +144,15 @@ path_plots = f"{path_plots}/seq_{str(seq_len)}_{period}_" \
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-with open(f"{path_plots}/scores", 'w') as file:
-    file.write(json.dumps(scores))  # use `json.loads` to do the reverse
+with open(f"{path_plots}/scores.txt", "w") as text_file:
+    for key, dic1 in scores.items():
+        text_file.write(key, '\n')
+        for app, dic2 in dic1.items():
+            text_file.write(app, '\n')
+            for name, value in dic2.items():
+                text_file.write(f"{name}: {value}\n")
+            text_file.write('----------------------------------------------\n')
+        text_file.write('==================================================\n')
 
 # Compute period of x axis
 if period.endswith('min'):
