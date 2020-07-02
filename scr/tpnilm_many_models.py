@@ -170,6 +170,6 @@ elif period.endswith('s'):
 
 for idx, app in enumerate(appliances):
     savefig = os.path.join(path_plots, f"{app}.png")
-    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len * 2,
+    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len,
                          app_idx=idx, scale=1., period=period_x, dpi=180,
                          savefig=savefig)

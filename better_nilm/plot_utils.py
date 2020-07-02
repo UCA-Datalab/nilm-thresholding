@@ -183,7 +183,7 @@ def plot_status_accuracy(p_true, s_true, s_hat,
     
     # Ensure that the plot shows activations
     idx0 = 0
-    while pw[idx0] <= pw.max() * .01:
+    while pw[idx0] <= pw.max() * .25:
         idx0 += 1
     idx1 = idx0 + records
 
