@@ -317,12 +317,16 @@ def get_status(ser, thresholds):
     ser = ser.copy()
 
     ser_bin = np.zeros(ser.shape)
-    num_app = ser.shape[2]
+    num_app = ser.shape[-1]
 
     # Iterate through all the appliances
     for idx in range(num_app):
-        mask_on = ser[:, :, idx] > thresholds[idx]
-        ser_bin[:, :, idx] = mask_on.astype(int)
+        if len(ser.shape == 3):
+            mask_on = ser[:, :, idx] > thresholds[idx]
+            ser_bin[:, :, idx] = mask_on.astype(int)
+        else:
+            mask_on = ser[:, idx] > thresholds[idx]
+            ser_bin[:, idx] = mask_on.astype(int)
 
     ser_bin = ser_bin.astype(int)
 
