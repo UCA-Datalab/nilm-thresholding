@@ -1,4 +1,6 @@
 import collections
+import numpy as np
+import os
 import sys
 
 sys.path.insert(0, '../better_nilm')
@@ -8,6 +10,9 @@ from better_nilm.model.architecture.tpnilm import PTPNetModel
 
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
+
+from better_nilm.plot_utils import plot_status_accuracy
+
 
 path_h5 = "data/ukdale.h5"
 path_data = "../nilm/data/ukdale"
@@ -77,10 +82,14 @@ for i in range(num_models):
     s_hat[s_hat >= .5] = 1
     s_hat[s_hat < 0.5] = 0
 
+    p_true = np.multiply(p_true, max_power)
+    p_hat = np.multiply(p_hat, max_power)
+
     class_scores = classification_scores_dict(s_hat, s_true, appliances)
     reg_scores = regression_scores_dict(p_hat, p_true, appliances)
     list_scores += [class_scores, reg_scores]
 
+# List scores
 
 scores = {}
 for app in appliances:
@@ -91,3 +100,23 @@ for app in appliances:
 
 for app, scs in scores.items():
     print(app, "\n", scs)
+
+# Plot
+
+path_plots = "scr/plots"
+if not os.path.isdir(path_plots):
+    os.mkdir(path_plots)
+
+path_plots = f"{path_plots}/tpnilm"
+if not os.path.isdir(path_plots):
+    os.mkdir(path_plots)
+
+path_plots = f"{path_plots}/seq_{str(seq_len)}_" \
+             f"aw_{str(activation_w)}_pw_{str(power_w)}"
+if not os.path.isdir(path_plots):
+    os.mkdir(path_plots)
+
+for idx, app in enumerate(appliances):
+    savefig = os.path.join(path_plots, f"{app}.png")
+    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len, app_idx=idx,
+                         scale=1., period=1., dpi=100, savefig=savefig)

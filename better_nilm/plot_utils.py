@@ -145,7 +145,7 @@ def plot_load_and_state(load, state, idx=0,
 
 def plot_status_accuracy(p_true, s_true, s_hat,
                          records=480, app_idx=0, scale=1.,
-                         period=1., dpi=100):
+                         period=1., dpi=100, savefig=None):
     """
 
     Parameters
@@ -166,6 +166,8 @@ def plot_status_accuracy(p_true, s_true, s_hat,
         Sample period, in minutes
     dpi : int, default=100
         Dots per inch, image quality
+    savefig : str, default=None
+        Path where the figure is stored.
     """
     # We dont want to modify the originals
     p_true = p_true.copy()
@@ -201,4 +203,5 @@ def plot_status_accuracy(p_true, s_true, s_hat,
     plt.ylabel('Load (watts)')
     plt.xlabel('Time (minutes)')
 
-    plt.show()
+    if savefig is not None:
+        plt.savefig(savefig)
