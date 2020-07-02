@@ -143,7 +143,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
 
 
 def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
-                       dates=None,
+                       dates=None, period='1min', cutoff=10000.,
                        thresholds=None, min_off=None, min_on=None,
                        threshold_std=True):
     """
@@ -161,6 +161,10 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     dates : dict, default=None
         {building_id : (date_start, date_end)}
         Both dates are strings with format: 'YY-MM-DD'
+    period : str, default='1min'
+        Record frequency
+    cutoff : float, default=10000.
+        Maximum load value
     thresholds : numpy.array, default=None
         shape = (num_meters,)
         Thresholds per appliance, in watts. If not provided, thresholds are 
@@ -210,7 +214,8 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         meters = []
         for m in list_meters:
             series_meter = ukdale_datastore_to_series(path_labels, datastore,
-                                                      house, m, cutoff=10000.)
+                                                      house, m, cutoff=cutoff,
+                                                      period=period)
             meters += [series_meter]
 
         meters = pd.concat(meters, axis=1)
@@ -478,7 +483,7 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid,
 
 
 def load_dataloaders(path_h5, path_labels, buildings, appliances,
-                     dates=None,
+                     dates=None, period='1min',
                      build_id_train=None, build_id_valid=None,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
@@ -518,7 +523,9 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     border : int
         Borders of the input sequence, that will be lost in the output.
         len(input) = seq_len + 2 * border
-    max_power : float
+    period : float, default='1min'
+        Record frequency
+    max_power : float, default=10000.
         Maximum load power, in watts. Any value higher than max_power will be
         changed to this one
     thresholds : numpy.array, default=None
@@ -556,6 +563,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     list_df_appliance, \
     list_df_status = load_ukdale_series(path_h5, path_labels, buildings,
                                         appliances, dates=dates,
+                                        period=period, cutoff=max_power,
                                         thresholds=thresholds,
                                         min_off=min_off, min_on=min_on,
                                         threshold_std=threshold_std)

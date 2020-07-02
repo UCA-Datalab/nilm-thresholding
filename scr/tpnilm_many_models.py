@@ -36,6 +36,7 @@ valid_size = 0.1
 
 seq_len = 480
 border = 16
+period = '1min'
 max_power = 2000.
 num_appliances = len(appliances)
 
@@ -55,7 +56,7 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
                            build_id_train=build_id_train,
                            build_id_valid=build_id_valid,
                            build_id_test=build_id_test,
-                           dates=dates,
+                           dates=dates, period=period,
                            train_size=train_size, valid_size=valid_size,
                            batch_size=batch_size, seq_len=seq_len,
                            border=border, max_power=max_power)
@@ -112,7 +113,7 @@ path_plots = f"{path_plots}/tpnilm"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_plots = f"{path_plots}/seq_{str(seq_len)}_" \
+path_plots = f"{path_plots}/seq_{str(seq_len)}_{period}_" \
              f"aw_{str(activation_w)}_pw_{str(power_w)}"
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
@@ -120,8 +121,14 @@ if not os.path.isdir(path_plots):
 with open(f"{path_plots}/scores", 'w') as file:
     file.write(json.dumps(scores))  # use `json.loads` to do the reverse
 
+# Compute period of x axis
+if period.endswith('min'):
+    period_x = int(period.replace('min', ''))
+elif period.endswith('s'):
+    period_x = float(period.replace('s', '')) / 60
+
 for idx, app in enumerate(appliances):
     savefig = os.path.join(path_plots, f"{app}.png")
     plot_status_accuracy(p_true, s_true, s_hat, records=seq_len * 2,
-                         app_idx=idx, scale=1., period=1., dpi=180,
+                         app_idx=idx, scale=1., period=period_x, dpi=180,
                          savefig=savefig)
