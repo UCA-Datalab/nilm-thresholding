@@ -1,4 +1,5 @@
 import collections
+import json
 import numpy as np
 import os
 import sys
@@ -116,7 +117,11 @@ path_plots = f"{path_plots}/seq_{str(seq_len)}_" \
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
+with open(f"{path_plots}/scores", 'w') as file:
+    file.write(json.dumps(scores))  # use `json.loads` to do the reverse
+
 for idx, app in enumerate(appliances):
     savefig = os.path.join(path_plots, f"{app}.png")
-    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len, app_idx=idx,
-                         scale=1., period=1., dpi=100, savefig=savefig)
+    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len * 2,
+                         app_idx=idx, scale=1., period=1., dpi=180,
+                         savefig=savefig)
