@@ -5,8 +5,12 @@ import numpy as np
 def _flatten_series(y_a, y_b, idx, num_series):
     # Take just one appliance
     if num_series is None:
-        plt_a = y_a[:, :, idx].flatten().copy()
-        plt_b = y_b[:, :, idx].flatten().copy()
+        if len(y_a.shape) == 3:
+            plt_a = y_a[:, :, idx].flatten().copy()
+            plt_b = y_b[:, :, idx].flatten().copy()
+        else:
+            plt_a = y_a[:, idx].flatten().copy()
+            plt_b = y_b[:, idx].flatten().copy()
     else:
         # Take a limited number of series
         # Ensure there is at least one activation in the series

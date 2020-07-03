@@ -1,10 +1,11 @@
 import collections
-import json
 import numpy as np
 import os
 import sys
 
-sys.path.insert(0, '../better_nilm')
+path_main = os.path.realpath(__file__)
+path_main = path_main.rsplit('/', 2)[0]
+sys.path.insert(0, os.path.join(path_main, 'better_nilm'))
 
 from better_nilm.ukdale.ukdale_data import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
@@ -17,9 +18,8 @@ from better_nilm.model.scores import regression_scores_dict
 from better_nilm.plot_utils import plot_status_accuracy
 from better_nilm.plot_utils import plot_real_vs_prediction
 
-
-path_h5 = "data/ukdale.h5"
-path_data = "../nilm/data/ukdale"
+path_h5 = os.path.join(path_main, 'data/ukdale.h5')
+path_data = os.path.join(path_main, '../nilm/data/ukdale')
 
 buildings = [1, 2, 5]
 build_id_train = [1, 2, 5]
@@ -142,20 +142,21 @@ for app in appliances:
 
 # Plot
 
-path_plots = "scr/plots"
+path_plots = os.path.join(path_main, '../outputs')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_plots = f"{path_plots}/tpnilm"
+path_plots = os.path.join(path_main, 'tpnilm')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_plots = f"{path_plots}/seq_{str(seq_len)}_{period}_" \
-             f"aw_{str(activation_w)}_pw_{str(power_w)}"
+name = f"seq_{str(seq_len)}_{period}_aw_{str(activation_w)}_pw_{str(power_w)}"
+path_plots = os.path.join(path_main, name)
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-with open(f"{path_plots}/scores.txt", "w") as text_file:
+path_scores = os.path.join(path_plots, 'scores.txt')
+with open(path_scores, "w") as text_file:
     for key, dic1 in scores.items():
         text_file.write(f"{key}\n------------------------------------------\n")
         for app, dic2 in dic1.items():
