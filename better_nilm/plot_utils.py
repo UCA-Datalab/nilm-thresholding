@@ -68,7 +68,7 @@ def plot_real_vs_prediction(y_test, y_pred, idx=0,
     plt.plot(plt_x, plt_test)
     plt.plot(plt_x, plt_pred, alpha=.75)
 
-    legend = ["Test", "Prediction"]
+    legend = ["True", "Prediction"]
 
     if y_total is not None:
         plt_total = y_total[:, :, idx].flatten().copy()
@@ -149,9 +149,9 @@ def plot_load_and_state(load, state, idx=0,
         fig.savefig(savefig)
 
 
-def plot_status_accuracy(p_true, s_true, s_hat,
-                         records=480, app_idx=0, scale=1.,
-                         period=1., dpi=100, savefig=None):
+def plot_informative_sample(p_true, s_true, p_hat, s_hat,
+                            records=480, app_idx=0, scale=1.,
+                            period=1., dpi=100, savefig=None):
     """
 
     Parameters
@@ -178,6 +178,7 @@ def plot_status_accuracy(p_true, s_true, s_hat,
     # We dont want to modify the originals
     p_true = p_true.copy()
     s_true = s_true.copy()
+    p_hat = p_hat.copy()
     s_hat = s_hat.copy()
 
     # Define time
@@ -186,6 +187,7 @@ def plot_status_accuracy(p_true, s_true, s_hat,
 
     # Take appliance power and scale it
     pw = p_true[:, app_idx] * scale
+    pw_pred = p_hat[:, app_idx] * scale
     
     # Ensure that the plot shows activations
     idx0 = 0
@@ -193,28 +195,45 @@ def plot_status_accuracy(p_true, s_true, s_hat,
         idx0 += 1
     idx1 = idx0 + records
 
-    # Scale status to see it properly
-    s_scaled = s_hat[idx0:idx1, app_idx].copy()
-    s_scaled[s_scaled == 0] = -0.001
-    s_scaled[s_scaled == 1] = 1.001
-    s_scaled = np.multiply(s_scaled, pw.max())
+    # Take power in given interval and get the maximum value
+    pw = pw[idx0:idx1]
+    pw_pred = pw_pred[idx0:idx1]
+    pw_max = max(pw.max(), pw_pred.max())
 
+    # Take status in given interval, only ON activations
     s_hat = s_hat[idx0:idx1, app_idx]
     s_true = s_true[idx0:idx1, app_idx]
 
+    mask_on = s_hat == 1
+    s_hat = s_hat[mask_on].copy()
+    s_true = s_true[mask_on].copy()
+    t_on = t[mask_on].copy()
+
     # Distinguish between correct and incorrect guesses
+    # Scale status to power, to see it properly
+    s_scaled = s_hat.copy() + .01
+    s_scaled = np.multiply(s_scaled, pw_max)
     mask_good = np.array(s_hat == s_true)
     mask_bad = np.array(s_hat != s_true)
 
+    # Show all ON guesses in the same color
+    s_hat = s_hat.copy() + .05
+    s_hat = np.multiply(s_hat, pw_max)
+
     # Plot the figure
     plt.figure(dpi=dpi)
-    plt.bar(t, np.multiply(s_true, pw.max() * 2),
+    plt.bar(t_on, np.multiply(s_true, pw_max * 2),
             color='grey', alpha=.2, width=1)
-    plt.plot(t, pw[idx0:idx1])
-    plt.scatter(t[mask_bad], s_scaled[mask_bad], color='red', s=.6)
-    plt.scatter(t[mask_good], s_scaled[mask_good], color='green', s=.6)
 
-    plt.ylim([pw.max() * -.05, pw.max() * 1.05])
+    plt.plot(t, pw, color='black')
+    plt.plot(t, pw_pred, color='blue', alpha=.8)
+    plt.legend(['True', 'Prediction'])
+
+    plt.scatter(t_on[mask_bad], s_scaled[mask_bad], color='red', s=.6)
+    plt.scatter(t_on[mask_good], s_scaled[mask_good], color='green', s=.6)
+    plt.scatter(t_on, s_hat, color='green', s=.6)
+
+    plt.ylim([0, pw_max * 1.1])
     plt.ylabel('Load (watts)')
     plt.xlabel('Time (minutes)')
 

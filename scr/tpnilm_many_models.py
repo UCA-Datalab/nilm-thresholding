@@ -15,7 +15,7 @@ from better_nilm.model.preprocessing import get_status
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
 
-from better_nilm.plot_utils import plot_status_accuracy
+from better_nilm.plot_utils import plot_informative_sample
 from better_nilm.plot_utils import plot_real_vs_prediction
 
 path_h5 = os.path.join(path_main, 'data/ukdale.h5')
@@ -28,7 +28,7 @@ build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 activation_w = 1
-power_w = 0
+power_w = 1
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
@@ -142,16 +142,16 @@ for app in appliances:
 
 # Plot
 
-path_plots = os.path.join(path_main, '../outputs')
+path_plots = os.path.join(path_main, 'outputs')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_plots = os.path.join(path_main, 'tpnilm')
+path_plots = os.path.join(path_plots, 'tpnilm')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
 name = f"seq_{str(seq_len)}_{period}_aw_{str(activation_w)}_pw_{str(power_w)}"
-path_plots = os.path.join(path_main, name)
+path_plots = os.path.join(path_plots, name)
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
@@ -173,13 +173,12 @@ elif period.endswith('s'):
     period_x = float(period.replace('s', '')) / 60
 
 for idx, app in enumerate(appliances):
-    savefig = os.path.join(path_plots, f"{app}_activation.png")
-    plot_status_accuracy(p_true, s_true, s_hat, records=seq_len,
-                         app_idx=idx, scale=1., period=period_x, dpi=180,
-                         savefig=savefig)
+    savefig = os.path.join(path_plots, f"{app}_classification.png")
+    plot_informative_sample(p_true, s_true, sp_hat, s_hat, records=seq_len,
+                            app_idx=idx, scale=1., period=period_x, dpi=180,
+                            savefig=savefig)
 
-    savefig = os.path.join(path_plots, f"{app}_power.png")
-
-    plot_real_vs_prediction(p_true, p_hat, idx=idx, dpi=180,
-                            sample_period=period_x * 60, savefig=savefig,
-                            threshold=thresholds[idx])
+    savefig = os.path.join(path_plots, f"{app}_regression.png")
+    plot_informative_sample(p_true, s_true, p_hat, ps_hat, records=seq_len,
+                            app_idx=idx, scale=1., period=period_x, dpi=180,
+                            savefig=savefig)
