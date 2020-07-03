@@ -206,15 +206,15 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
 
     mask_on = s_hat == 1
     s_hat = s_hat[mask_on].copy()
-    s_true = s_true[mask_on].copy()
+    s_true_on = s_true[mask_on].copy()
     t_on = t[mask_on].copy()
 
     # Distinguish between correct and incorrect guesses
     # Scale status to power, to see it properly
     s_scaled = s_hat.copy() + .01
     s_scaled = np.multiply(s_scaled, pw_max)
-    mask_good = np.array(s_hat == s_true)
-    mask_bad = np.array(s_hat != s_true)
+    mask_good = np.array(s_hat == s_true_on)
+    mask_bad = np.array(s_hat != s_true_on)
 
     # Show all ON guesses in the same color
     s_hat = s_hat.copy() + .05
@@ -222,7 +222,7 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
 
     # Plot the figure
     plt.figure(dpi=dpi)
-    plt.bar(t_on, np.multiply(s_true, pw_max * 2),
+    plt.bar(t, np.multiply(s_true, pw_max * 2),
             color='grey', alpha=.2, width=1)
 
     plt.plot(t, pw, color='black')

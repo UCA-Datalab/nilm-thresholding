@@ -16,7 +16,6 @@ from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
 
 from better_nilm.plot_utils import plot_informative_sample
-from better_nilm.plot_utils import plot_real_vs_prediction
 
 path_h5 = os.path.join(path_main, 'data/ukdale.h5')
 path_data = os.path.join(path_main, '../nilm/data/ukdale')
@@ -28,7 +27,7 @@ build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 activation_w = 1
-power_w = 1
+power_w = 0
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
