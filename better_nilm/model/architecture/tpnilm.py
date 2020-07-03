@@ -156,7 +156,7 @@ class PTPNetModel(TorchModel):
     def __init__(self, seq_len=480, border=16, out_channels=1,
                  init_features=32,
                  learning_rate=0.001, dropout=0.1,
-                 activation_w=1, power_w=0):
+                 classification_w=1, regression_w=0):
         super(TorchModel, self).__init__()
 
         series_len = seq_len + 2 * border
@@ -182,5 +182,5 @@ class PTPNetModel(TorchModel):
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.pow_criterion = nn.MSELoss()
         self.act_criterion = nn.BCEWithLogitsLoss()
-        self.pow_w = power_w
-        self.act_w = activation_w
+        self.pow_w = regression_w
+        self.act_w = classification_w

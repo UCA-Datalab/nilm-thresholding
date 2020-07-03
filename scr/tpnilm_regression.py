@@ -18,8 +18,8 @@ thresholds = [50., 10., 20.]
 min_on = None  #[1., 30., 30.]
 min_off = None  #[1., 30., 3.]
 
-activation_w = 0
-power_w = 1
+classification_w = 0
+regression_w = 1
 
 dates = {1:('2013-04-12', '2014-12-15'),
         2: ('2013-05-22', '2013-10-03 6:16'),
@@ -69,7 +69,7 @@ model = PTPNetModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout,
-                    activation_w=activation_w, power_w=power_w)
+                    classification_w=classification_w, regression_w=regression_w)
 
 model.train_with_dataloader(dl_train, dl_valid,
                             epochs=epochs,
@@ -124,7 +124,7 @@ model = PTPNetModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout,
-                    activation_w=activation_w, power_w=power_w)
+                    classification_w=classification_w, regression_w=regression_w)
 
 model.train_with_dataloader(dl_train, dl_valid,
                             epochs=epochs,

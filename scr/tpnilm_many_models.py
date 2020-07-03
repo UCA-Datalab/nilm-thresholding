@@ -26,8 +26,8 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-activation_w = 1
-power_w = 0
+class_w = 1
+reg_w = 0
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
@@ -76,7 +76,7 @@ for i in range(num_models):
                         out_channels=num_appliances,
                         init_features=32,
                         learning_rate=learning_rate, dropout=dropout,
-                        activation_w=activation_w, power_w=power_w)
+                        classification_w=class_w, regression_w=reg_w)
 
     model.train_with_dataloader(dl_train, dl_valid,
                                 epochs=epochs,
@@ -91,7 +91,7 @@ for i in range(num_models):
     p_hat = np.multiply(p_hat, power_scale)
     p_hat[p_hat < 0.] = 0.
 
-    # Activation scores
+    # classification scores
 
     s_hat[s_hat >= .5] = 1
     s_hat[s_hat < 0.5] = 0
@@ -105,11 +105,11 @@ for i in range(num_models):
     reg_scores = regression_scores_dict(sp_hat, p_true, appliances)
     act_scores += [class_scores, reg_scores]
 
-    print('Activation scores')
+    print('classification scores')
     print(class_scores)
     print(reg_scores)
 
-    # Power scores
+    # regression scores
 
     # Get status from power values
     ps_hat = get_status(p_hat, thresholds)
@@ -118,25 +118,25 @@ for i in range(num_models):
     reg_scores = regression_scores_dict(p_hat, p_true, appliances)
     pow_scores += [class_scores, reg_scores]
 
-    print('Power scores')
+    print('regression scores')
     print(class_scores)
     print(reg_scores)
 
 # List scores
 
-scores = {'activation': {},
-          'power': {}}
+scores = {'classification': {},
+          'regression': {}}
 for app in appliances:
     counter = collections.Counter()
     for sc in act_scores:
         counter.update(sc[app])
-    scores['activation'][app] = {k: round(v, 6) / num_models for k, v in
+    scores['classification'][app] = {k: round(v, 6) / num_models for k, v in
                                  dict(counter).items()}
 
     counter = collections.Counter()
     for sc in pow_scores:
         counter.update(sc[app])
-    scores['power'][app] = {k: round(v, 6) / num_models for k, v in
+    scores['regression'][app] = {k: round(v, 6) / num_models for k, v in
                             dict(counter).items()}
 
 # Plot
@@ -149,7 +149,7 @@ path_plots = os.path.join(path_plots, 'tpnilm')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-name = f"seq_{str(seq_len)}_{period}_aw_{str(activation_w)}_pw_{str(power_w)}"
+name = f"seq_{str(seq_len)}_{period}_aw_{str(class_w)}_pw_{str(reg_w)}"
 path_plots = os.path.join(path_plots, name)
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
