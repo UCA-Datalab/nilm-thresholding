@@ -5,7 +5,7 @@ import sys
 
 path_main = os.path.realpath(__file__)
 path_main = path_main.rsplit('/', 2)[0]
-sys.path.insert(0, os.path.join(path_main, 'better_nilm'))
+sys.path.insert(0, path_main)
 
 from better_nilm.ukdale.ukdale_data import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
