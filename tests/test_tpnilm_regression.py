@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, '../better_nilm')
 
 from better_nilm.ukdale.ukdale_data import load_dataloaders
-from better_nilm.model.architecture.tpnilm import PTPNetModel
+from better_nilm.model.architecture.tpnilm import TPNILMModel
 
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.preprocessing import get_status_by_duration
@@ -65,7 +65,7 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
 
 # Training
 
-model = PTPNetModel(seq_len=seq_len, border=border,
+model = TPNILMModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout,
@@ -120,7 +120,7 @@ dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
 
 # Training
 
-model = PTPNetModel(seq_len=seq_len, border=border,
+model = TPNILMModel(seq_len=seq_len, border=border,
                     out_channels=num_appliances,
                     init_features=32,
                     learning_rate=learning_rate, dropout=dropout,

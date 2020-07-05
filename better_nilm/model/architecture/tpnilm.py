@@ -151,7 +151,7 @@ class _PTPNet(nn.Module):
         return pw, act
 
 
-class PTPNetModel(TorchModel):
+class TPNILMModel(TorchModel):
 
     def __init__(self, seq_len=480, border=16, out_channels=1,
                  init_features=32,
