@@ -391,6 +391,9 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid,
     Takes the list of buildings ID and changes them to their corresponding 
     index.
     """
+
+    buildings = to_list(buildings)
+
     # Train, valid and tests buildings must contain the index, not the ID of
     # the building. Change that
     if build_id_train is None:
@@ -501,6 +504,9 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     dl_test
 
     """
+
+    buildings = to_list(buildings)
+
     build_idx_train, \
     build_idx_valid, \
     build_idx_test = _buildings_to_idx(buildings, build_id_train,

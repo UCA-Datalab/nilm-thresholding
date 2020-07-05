@@ -8,6 +8,8 @@ from sklearn.metrics import f1_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
+from better_nilm.format_utils import to_list
+
 
 def _assert_shape(y_pred, y_real, appliances):
     if not y_pred.shape == y_real.shape:
@@ -45,6 +47,8 @@ def regression_scores_dict(y_pred, y_real, appliances):
         'appliance': {'metric': value}
 
     """
+
+    appliances = to_list(appliances)
     _assert_shape(y_pred, y_real, appliances)
 
     if np.mean(y_real) <= 1:
@@ -111,6 +115,7 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
 
     """
 
+    appliances = to_list(appliances)
     _assert_shape(y_pred, y_real, appliances)
 
     if ((y_pred.max() > 1).any() or (y_real > 1).any()
