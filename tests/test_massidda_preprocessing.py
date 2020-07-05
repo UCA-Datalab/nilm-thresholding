@@ -77,7 +77,7 @@ for house in buildings:
                                       shuffle=shuffle)
     ser_train += [s_train]
 
-    # Only the first house is used for validation and test
+    # Only the first house is used for validation and tests
     if house == 1:
         ser_val, ser_test = train_test_split(s_val, .5,
                                              random_seed=random_seed,

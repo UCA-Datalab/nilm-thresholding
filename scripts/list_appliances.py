@@ -4,6 +4,10 @@ sys.path.insert(0, "../better_nilm")
 
 from better_nilm.nilmtk.data_loader import buildings_to_array
 
+"""
+List the appliances of each nilmtk dataset
+"""
+
 dict_path_buildings = {
     "../nilm/data/nilmtk/redd.h5": [1, 2, 3, 4, 5, 6],
     "../nilm/data/nilmtk/ukdale.h5": [2, 3, 4, 5]}

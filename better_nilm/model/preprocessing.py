@@ -48,7 +48,7 @@ def train_test_split(ser, train_size, shuffle=True, random_seed=0):
         np.random.seed(random_seed)
         np.random.shuffle(ser)
 
-    # Split the shuffled array into train and test
+    # Split the shuffled array into train and tests
     ser_train = ser[:num_train, :, :]
     ser_test = ser[num_train:, :, :]
 
@@ -339,7 +339,7 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                                 normalize=True):
     """
     This function serves as a pipeline for preprocessing. It takes the whole
-    array of data, splits it into train-validation-test, normalize its values
+    array of data, splits it into train-validation-tests, normalize its values
     and computes the binary classification for Y data.
 
     Parameters
@@ -381,12 +381,12 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
         raise ValueError(f"Validation size: {validation_size} is too low for "
                          f"the given amount of series: {num_series}")
 
-    # Split data intro train and validation+test
+    # Split data intro train and validation+tests
     ser_train, ser_test = train_test_split(ser, train_size,
                                            random_seed=random_seed,
                                            shuffle=shuffle)
 
-    # Re-escale validation size. Split remaining data into validation and test
+    # Re-escale validation size. Split remaining data into validation and tests
     validation_size /= (1 - train_size)
     ser_val, ser_test = train_test_split(ser_test, validation_size,
                                          random_seed=random_seed,
@@ -432,7 +432,7 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                    "validation": {"x": x_val,
                                   "y": y_val,
                                   "bin": bin_val},
-                   "test": {"x": x_test,
+                   "tests": {"x": x_test,
                             "y": y_test,
                             "bin": bin_test},
                    "max_values": {"x": x_max,

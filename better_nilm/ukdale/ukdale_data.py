@@ -57,8 +57,8 @@ def load_ukdale_meter(datastore, building=1, meter=1, period='1min',
     period : str, default='1min'
         Sample period. Time between records.
     max_power : float, default=10000.
-        Maximum load. Any value higher than this is decreased to match this 
-        value.
+        Maximum load. Any value higher than max_power is decreased to match
+        this value.
 
     Returns
     -------
@@ -273,7 +273,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         list_df_status.append(status)
 
     return_params = (list_df_meter, list_df_appliance, list_df_status)
-    if (return_kmeans) and (means is not None):
+    if return_kmeans and (means is not None):
         return_params += ((thresholds, means), )
 
     return return_params
@@ -317,24 +317,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
                       train_size=0.8, valid_size=0.1,
                       seq_len=512, border=16, power_scale=2000.):
     """
-    Splits data store data into train, validation and test.
-    Parameters
-    ----------
-    list_df_meter
-    list_df_appliance
-    list_df_status
-    num_buildings
-    train_size
-    valid_size
-    seq_len
-    border
-    power_scale
-
-    Returns
-    -------
-    ds_train
-    ds_valid
-    ds_test
+    Splits data store data into train, validation and tests.
     """
     df_len = [len(list_df_meter[i]) for i in range(num_buildings)]
 
@@ -368,17 +351,6 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
 def _datastore_to_dataloader(list_ds, build_idx, batch_size, shuffle):
     """
     Turns a datastore into a dataloader.
-    
-    Parameters
-    ----------
-    list_ds
-    build_idx
-    batch_size
-    shuffle
-
-    Returns
-    -------
-    dl
     """
     build_idx = to_list(build_idx)
     ds = []
@@ -396,29 +368,6 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
                               seq_len=512, border=16, power_scale=2000.):
     """
     Turns datastores into dataloaders.
-    
-    Parameters
-    ----------
-    list_df_meter
-    list_df_appliance
-    list_df_status
-    num_buildings
-    build_id_train
-    build_id_valid
-    build_id_test
-    train_size
-    valid_size
-    batch_size
-    seq_len
-    border
-    power_scale
-
-    Returns
-    -------
-    dl_train
-    dl_valid
-    dl_test
-
     """
     ds_train, \
     ds_valid, \
@@ -441,22 +390,8 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid,
     """
     Takes the list of buildings ID and changes them to their corresponding 
     index.
-    
-    Parameters
-    ----------
-    buildings
-    build_id_train
-    build_id_valid
-    build_id_test
-
-    Returns
-    -------
-    build_idx_train
-    build_idx_valid
-    build_idx_test
-
     """
-    # Train, valid and test buildings must contain the index, not the ID of
+    # Train, valid and tests buildings must contain the index, not the ID of
     # the building. Change that
     if build_id_train is None:
         build_idx_train = [i for i in range(len(buildings))]

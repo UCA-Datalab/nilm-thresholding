@@ -1,244 +1,147 @@
-import numpy as np
-import pandas as pd
-import os
 import sys
 
-sys.path.insert(0, "../better_nilm")
+sys.path.insert(0, '../better_nilm')
 
-from better_nilm.nilmtk.data_loader import metergroup_from_file
-from better_nilm.nilmtk.data_loader import metergroup_to_dataframe
-from better_nilm.nilmtk.data_loader import dataframe_to_array
-
-from better_nilm.nilmtk.metergroup_utils import \
-    list_of_timeframes_from_list_of_tuples
-
+from better_nilm.ukdale.ukdale_data import load_dataloaders
 from better_nilm.model.architecture.tpnilm import PTPNetModel
 
 from better_nilm.model.scores import classification_scores_dict
-
-from better_nilm.model.preprocessing import train_test_split
-from better_nilm.model.preprocessing import feature_target_split
-from better_nilm.model.preprocessing import normalize_meters
-from better_nilm.model.preprocessing import denormalize_meters
 from better_nilm.model.preprocessing import get_status_by_duration
 
-from better_nilm.plot_utils import plot_real_vs_prediction
-from better_nilm.plot_utils import plot_load_and_state
+path_h5 = "data/ukdale.h5"
+path_data = "../nilm/data/ukdale"
 
-from better_nilm.exploration_utils import print_basic_statistics
-from better_nilm.exploration_utils import print_appliance_statistics
-
-"""
-This script tries to reproduce the results of Luca Massidda in his paper
-Non-Intrusive Load Disaggregation by Convolutional Neural Network and 
-Multilabel Classification
-"""
-
-# This path is set to work on Zappa
-path_data = "../nilm/data/nilmtk/ukdale.h5"
 buildings = [1, 2, 5]
-timestamps = [(pd.to_datetime('2013-04-12').tz_localize('US/Eastern'),
-               pd.to_datetime('2015-05-17').tz_localize('US/Eastern')),
-              # pd.to_datetime('2014-12-15').tz_localize('US/Eastern')),
-              (pd.to_datetime('2013-05-22').tz_localize('US/Eastern'),
-               pd.to_datetime('2013-11-05 18:50').tz_localize('US/Eastern')),
-              # pd.to_datetime('2013-10-03 06:16').tz_localize('US/Eastern')),
-              (pd.to_datetime('2014-06-29').tz_localize('US/Eastern'),
-               pd.to_datetime('2014-09-17').tz_localize('US/Eastern'))]
-# pd.to_datetime('2014-09-01').tz_localize('US/Eastern'))]
+appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-appliances = ['dishwasher',
-              'fridge',
-              'washingmachine']
+thresholds = [50., 10., 20.]
+min_on = None  # [1., 30., 30.]
+min_off = None  # [1., 30., 3.]
 
-thresholds = [10,  # dishwasher
-              50,  # fridge
-              20]  # washingmachine
+classification_w = 1
+regression_w = 0
 
-x_max = [2000]  # maximum load
-y_max = [2500,  # dishwasher
-         300,  # fridge
-         2500]  # washingmachine
+dates = {1: ('2013-04-12', '2014-12-15'),
+         2: ('2013-05-22', '2013-10-03 6:16'),
+         5: ('2014-04-29', '2014-09-01')}
 
-min_off = [30,  # dishwasher
-           1,  # fridge
-           3]  # washingmachine
-min_on = [30,  # dishwasher
-          1,  # fridge
-          30]  # washingmachine
+train_size = 0.8
+valid_size = 0.1
 
-sample_period = 60  # in seconds
-series_len = 512  # in number of records
-border = 16  # borders lost after convolutions
+seq_len = 480
+border = 16
+power_scale = 2000.
+num_appliances = len(appliances)
 
-max_series = None
-skip_first = None
-to_int = False
-subtract_mean = True
-only_good_sections = False
-ffill = 5
-use_aggregate = False
-
-train_size = .8
-epochs = 300
-patience = 300
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
-
-random_seed = 0
-shuffle = True
-num_appliances = len(appliances)
+epochs = 300
+patience = 300
 
 """
-Load the train data
+Seen
 """
 
-ser_train = []
+print("\nSeen\n")
 
-for idx, building in enumerate(buildings):
-    sections = [(timestamps[idx])]
-    sections = list_of_timeframes_from_list_of_tuples(sections)
+build_id_train = [1, 2, 5]
+build_id_valid = [1]
+build_id_test = [1]
 
-    metergroup = metergroup_from_file(path_data, building,
-                                      appliances=appliances)
-    df = metergroup_to_dataframe(metergroup, appliances=appliances,
-                                 sample_period=sample_period,
-                                 series_len=series_len, max_series=max_series,
-                                 to_int=to_int,
-                                 only_good_sections=only_good_sections,
-                                 sections=sections,
-                                 ffill=ffill,
-                                 use_aggregate=use_aggregate,
-                                 verbose=True)
-    ser, meters = dataframe_to_array(df, series_len)
+# Load data
 
-    s_train, s_val = train_test_split(ser, train_size, shuffle=False,
-                                      random_seed=0)
-    ser_train += [s_train]
+dl_train, \
+dl_valid, \
+dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
+                           build_id_train=build_id_train,
+                           build_id_valid=build_id_valid,
+                           build_id_test=build_id_test,
+                           dates=dates,
+                           train_size=train_size, valid_size=valid_size,
+                           batch_size=batch_size, seq_len=seq_len,
+                           border=border, power_scale=power_scale,
+                           thresholds=thresholds, min_off=min_off,
+                           min_on=min_on)
 
-    # Only the first house is used for validation and test
-    if building == 1:
-        ser_val, ser_test = train_test_split(s_val, 0.5, shuffle=False,
-                                             random_seed=0)
+# Training
 
-# Concatenate training list
-ser_train = np.concatenate(ser_train)
-
-# Free memory
-del metergroup, df, ser, s_train, s_val
-
-"""
-Preprocessing train
-"""
-
-# Split data into X and Y
-x_train, y_train = feature_target_split(ser_train, meters)
-
-x_val, y_val = feature_target_split(ser_val, meters)
-
-# Get the binary meter status of each Y series
-bin_train = get_status_by_duration(y_train, thresholds, min_off, min_on)
-bin_val = get_status_by_duration(y_val, thresholds, min_off, min_on)
-
-# Normalize
-x_train, _ = normalize_meters(x_train, max_values=x_max,
-                              subtract_mean=subtract_mean)
-y_train, _ = normalize_meters(y_train, max_values=y_max)
-
-x_val, _ = normalize_meters(x_val, max_values=x_max,
-                            subtract_mean=subtract_mean)
-y_val, _ = normalize_meters(y_val, max_values=y_max)
-
-# Skip first and last border records of Y
-y_train = y_train[:, border:-border, :]
-bin_train = bin_train[:, border:-border, :]
-y_val = y_val[:, border:-border, :]
-bin_val = bin_val[:, border:-border, :]
-
-"""
-Statistics
-"""
-print_basic_statistics(x_train, "Train X")
-print_appliance_statistics(bin_train, "Train", appliances)
-
-"""
-Training
-"""
-
-model = PTPNetModel(series_len=series_len, out_channels=num_appliances,
+model = PTPNetModel(seq_len=seq_len, border=border,
+                    out_channels=num_appliances,
                     init_features=32,
-                    learning_rate=learning_rate, dropout=dropout)
+                    learning_rate=learning_rate, dropout=dropout,
+                    classification_w=classification_w, regression_w=regression_w)
 
-model.train_with_data(x_train, y_train, bin_train,
-                      x_val, y_val, bin_val,
-                      epochs=epochs,
-                      batch_size=batch_size,
-                      shuffle=shuffle,
-                      patience=patience)
+model.train_with_dataloader(dl_train, dl_valid,
+                            epochs=epochs,
+                            patience=patience)
 
-"""
-Testing
-"""
+# Test
 
-x_test, y_test = feature_target_split(ser_test, meters)
-y_test = y_test[:, border:-border, :]
+x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
-# Binarize
-bin_test = get_status_by_duration(y_test, thresholds, min_off, min_on)
+if (min_on is None) or (min_off is None):
+    s_hat[s_hat >= .5] = 1
+    s_hat[s_hat < 0.5] = 0
+else:
+    thresh = [0.5] * len(min_on)
+    s_hat = get_status_by_duration(s_hat, thresh, min_off, min_on)
 
-# Normalize
-x_test, _ = normalize_meters(x_test, max_values=x_max,
-                             subtract_mean=subtract_mean)
-y_test, _ = normalize_meters(y_test, max_values=y_max)
-
-# Prediction
-bin_pred = model.predict(x_test)
-
-# Convert torch tensors to numpy arrays
-bin_pred = bin_pred.cpu().detach().numpy()
-
-# Binarize prediction
-# To do so we flatten the sequences into one - we can do this because
-# they were not shuffled - and after getting the status we get back
-# the individual sequences
-bin_pred = bin_pred.reshape(-1, num_appliances)
-bin_pred = get_status_by_duration(bin_pred, [.5] * 3, min_off, min_on)
-bin_pred = bin_pred.reshape(bin_test.shape)
-
-"""
-Statistics
-"""
-print_basic_statistics(x_test, "Test X")
-print_appliance_statistics(bin_test, "Test", appliances)
-
-"""
-Scores
-"""
-
-class_scores = classification_scores_dict(bin_pred, bin_test, appliances)
+class_scores = classification_scores_dict(s_hat, s_true, appliances)
 for app, scores in class_scores.items():
     print(app, "\n", scores)
 
 """
-Plot
+Unseen
 """
 
-# Denormalize meters, if able
-if not subtract_mean:
-    y_test = denormalize_meters(y_test, y_max)
+print("\nUnseen\n")
 
-path_plots = "papers/plots"
-if not os.path.isdir(path_plots):
-    os.mkdir(path_plots)
+build_id_train = [1, 5]
+build_id_valid = [1]
+build_id_test = [2]
 
-for idx, app in enumerate(appliances):
-    path_fig = os.path.join(path_plots,
-                            f"massidda_seen_{app}_classification.png")
-    plot_real_vs_prediction(bin_test, bin_pred, idx=idx, num_series=4,
-                            sample_period=sample_period, savefig=path_fig)
+epochs = 100
+patience = 100
 
-    path_fig = os.path.join(path_plots,
-                            f"massidda_seen_{app}_binarization.png")
-    plot_load_and_state(y_test, bin_test, idx=idx, num_series=4,
-                        sample_period=sample_period, savefig=path_fig)
+# Load data
+
+dl_train, \
+dl_valid, \
+dl_test = load_dataloaders(path_h5, path_data, buildings, appliances,
+                           build_id_train=build_id_train,
+                           build_id_valid=build_id_valid,
+                           build_id_test=build_id_test,
+                           dates=dates,
+                           train_size=train_size, valid_size=valid_size,
+                           batch_size=batch_size, seq_len=seq_len,
+                           border=border, power_scale=power_scale,
+                           thresholds=thresholds, min_off=min_off,
+                           min_on=min_on)
+
+# Training
+
+model = PTPNetModel(seq_len=seq_len, border=border,
+                    out_channels=num_appliances,
+                    init_features=32,
+                    learning_rate=learning_rate, dropout=dropout,
+                    classification_w=classification_w, regression_w=regression_w)
+
+model.train_with_dataloader(dl_train, dl_valid,
+                            epochs=epochs,
+                            patience=patience)
+
+# Test
+
+x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+
+if (min_on is None) or (min_off is None):
+    s_hat[s_hat >= .5] = 1
+    s_hat[s_hat < 0.5] = 0
+else:
+    thresh = [0.5] * len(min_on)
+    s_hat = get_status_by_duration(s_hat, thresh, min_off, min_on)
+
+class_scores = classification_scores_dict(s_hat, s_true, appliances)
+for app, scores in class_scores.items():
+    print(app, "\n", scores)

@@ -62,9 +62,9 @@ x_val = dict_prepro["validation"]["x"]
 y_val = dict_prepro["validation"]["y"]
 bin_val = dict_prepro["validation"]["bin"]
 
-x_test = dict_prepro["test"]["x"]
-y_test = dict_prepro["test"]["y"]
-bin_test = dict_prepro["test"]["bin"]
+x_test = dict_prepro["tests"]["x"]
+y_test = dict_prepro["tests"]["y"]
+bin_test = dict_prepro["tests"]["bin"]
 
 y_max = dict_prepro["max_values"]["y"]
 
@@ -90,7 +90,7 @@ model.fit(x_train, [y_train, bin_train],
 Store
 """
 
-path_output = "test/output"
+path_output = "tests/output"
 if not os.path.isdir(path_output):
     os.mkdir(path_output)
 

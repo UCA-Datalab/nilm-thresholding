@@ -8,7 +8,7 @@ path_main = path_main.rsplit('/', 2)[0]
 sys.path.insert(0, path_main)
 
 from better_nilm.ukdale.ukdale_data import load_dataloaders
-from better_nilm.model.architecture.tpnilm import PTPNetModel
+from better_nilm.model.architecture.bilstm import BiLSTMModel
 
 from better_nilm.model.preprocessing import get_status
 
@@ -17,17 +17,22 @@ from better_nilm.model.scores import regression_scores_dict
 
 from better_nilm.plot_utils import plot_informative_sample
 
+"""
+Trains several Bi-LSTM models under the same conditions
+"""
+
+# Parameters to modify
+
 path_h5 = os.path.join(path_main, 'data/ukdale.h5')
 path_data = os.path.join(path_main, '../nilm/data/ukdale')
 
-buildings = [1, 2, 5]
 build_id_train = [1, 2, 5]
 build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 class_w = 1
-reg_w = 0
+reg_w = 1
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
@@ -36,11 +41,10 @@ dates = {1: ('2013-04-12', '2014-12-15'),
 train_size = 0.8
 valid_size = 0.1
 
-seq_len = 480
-border = 16
+input_len = 510
+output_len = 480
 period = '1min'
 power_scale = 2000.
-num_appliances = len(appliances)
 
 batch_size = 32
 learning_rate = 1.E-4
@@ -50,6 +54,12 @@ patience = 300
 
 num_models = 5
 
+# Other parameters (no need to modify these)
+
+buildings = sorted(set(build_id_train + build_id_valid + build_id_test))
+border = int((input_len - output_len) / 2)
+num_appliances = len(appliances)
+
 # Load data
 
 params = load_dataloaders(path_h5, path_data, buildings, appliances,
@@ -58,7 +68,7 @@ params = load_dataloaders(path_h5, path_data, buildings, appliances,
                           build_id_test=build_id_test,
                           dates=dates, period=period,
                           train_size=train_size, valid_size=valid_size,
-                          batch_size=batch_size, seq_len=seq_len,
+                          batch_size=batch_size, seq_len=output_len,
                           border=border, power_scale=power_scale,
                           return_kmeans=True)
 
@@ -72,11 +82,10 @@ pow_scores = []
 for i in range(num_models):
     print(f"\nModel {i + 1}\n")
 
-    model = PTPNetModel(seq_len=seq_len, border=border,
+    model = BiLSTMModel(input_len=input_len, output_len=output_len,
                         out_channels=num_appliances,
-                        init_features=32,
                         learning_rate=learning_rate, dropout=dropout,
-                        classification_w=class_w, regression_w=reg_w)
+                        regression_w=reg_w, classification_w=class_w)
 
     model.train_with_dataloader(dl_train, dl_valid,
                                 epochs=epochs,
@@ -131,13 +140,13 @@ for app in appliances:
     for sc in act_scores:
         counter.update(sc[app])
     scores['classification'][app] = {k: round(v, 6) / num_models for k, v in
-                                 dict(counter).items()}
+                                     dict(counter).items()}
 
     counter = collections.Counter()
     for sc in pow_scores:
         counter.update(sc[app])
     scores['regression'][app] = {k: round(v, 6) / num_models for k, v in
-                            dict(counter).items()}
+                                 dict(counter).items()}
 
 # Plot
 
@@ -145,11 +154,11 @@ path_plots = os.path.join(path_main, 'outputs')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-path_plots = os.path.join(path_plots, 'tpnilm')
+path_plots = os.path.join(path_plots, 'bilstm')
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
 
-name = f"seq_{str(seq_len)}_{period}_aw_{str(class_w)}_pw_{str(reg_w)}"
+name = f"seq_{str(output_len)}_{period}_clas_{str(class_w)}_reg_{str(reg_w)}"
 path_plots = os.path.join(path_plots, name)
 if not os.path.isdir(path_plots):
     os.mkdir(path_plots)
@@ -173,11 +182,11 @@ elif period.endswith('s'):
 
 for idx, app in enumerate(appliances):
     savefig = os.path.join(path_plots, f"{app}_classification.png")
-    plot_informative_sample(p_true, s_true, sp_hat, s_hat, records=seq_len,
+    plot_informative_sample(p_true, s_true, sp_hat, s_hat, records=output_len,
                             app_idx=idx, scale=1., period=period_x, dpi=180,
                             savefig=savefig)
 
     savefig = os.path.join(path_plots, f"{app}_regression.png")
-    plot_informative_sample(p_true, s_true, p_hat, ps_hat, records=seq_len,
+    plot_informative_sample(p_true, s_true, p_hat, ps_hat, records=output_len,
                             app_idx=idx, scale=1., period=period_x, dpi=180,
                             savefig=savefig)

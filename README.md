@@ -19,7 +19,7 @@ command prompt:
 
 # Module's scripts
 
-Take a look at [test/](test) scripts to get a good idea about how the
+Take a look at [test/](tests) scripts to get a good idea about how the
 library scripts work. Specially look at
-[test_model_train](test/test_model_train.py) to see a full implementation
+[test_model_train](tests/test_model_train.py) to see a full implementation
 of the data load and training phase.
