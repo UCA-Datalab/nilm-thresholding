@@ -169,7 +169,7 @@ if period.endswith('min'):
 elif period.endswith('s'):
     period_x = float(period.replace('s', '')) / 60
 
-for idx, app in appliances:
+for idx, app in enumerate(appliances):
     savefig = os.path.join(path_plots, f"{app}_classification.png")
     plot_informative_sample(p_true, s_true, sp_hat, s_hat,
                             records=seq_len,

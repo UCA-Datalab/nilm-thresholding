@@ -35,10 +35,10 @@ power_scale = 2000.
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
-epochs = 3
-patience = 3
+epochs = 300
+patience = 300
 
-num_models = 1
+num_models = 5
 
 # Other parameters (no need to modify these)
 
