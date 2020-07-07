@@ -40,7 +40,7 @@ dropout = 0.1
 epochs = 300
 patience = 300
 
-num_models = 5
+num_models = 50
 
 # Other parameters (no need to modify these)
 

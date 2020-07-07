@@ -155,16 +155,13 @@ with open(path_scores, "w") as text_file:
                     f"Patience: {patience}\n"
                     f"=============================================\n")
     for key, dic1 in scores.items():
-        text_file.write(
-            f"{key}\n------------------------------------------\n")
+        text_file.write(f"{key}\n------------------------------------------\n")
         for app, dic2 in dic1.items():
             text_file.write(f"{app} \n")
             for name, value in dic2.items():
                 text_file.write(f"{name}: {value}\n")
-            text_file.write(
-                '----------------------------------------------\n')
-        text_file.write(
-            '==================================================\n')
+            text_file.write('----------------------------------------------\n')
+        text_file.write('==================================================\n')
 
 # Compute period of x axis
 if period.endswith('min'):
@@ -172,16 +169,17 @@ if period.endswith('min'):
 elif period.endswith('s'):
     period_x = float(period.replace('s', '')) / 60
 
-savefig = os.path.join(path_plots, f"{app}_classification.png")
-plot_informative_sample(p_true, s_true, sp_hat, s_hat,
-                        records=seq_len,
-                        app_idx=0, scale=1., period=period_x,
-                        dpi=180,
-                        savefig=savefig)
+for idx, app in appliances:
+    savefig = os.path.join(path_plots, f"{app}_classification.png")
+    plot_informative_sample(p_true, s_true, sp_hat, s_hat,
+                            records=seq_len,
+                            app_idx=idx, scale=1., period=period_x,
+                            dpi=180,
+                            savefig=savefig)
 
-savefig = os.path.join(path_plots, f"{app}_regression.png")
-plot_informative_sample(p_true, s_true, p_hat, ps_hat,
-                        records=seq_len,
-                        app_idx=0, scale=1., period=period_x,
-                        dpi=180,
-                        savefig=savefig)
+    savefig = os.path.join(path_plots, f"{app}_regression.png")
+    plot_informative_sample(p_true, s_true, p_hat, ps_hat,
+                            records=seq_len,
+                            app_idx=idx, scale=1., period=period_x,
+                            dpi=180,
+                            savefig=savefig)
