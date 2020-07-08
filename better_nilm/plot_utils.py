@@ -231,7 +231,7 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
 
     plt.scatter(t_on[mask_bad], s_scaled[mask_bad], color='red', s=.6)
     plt.scatter(t_on[mask_good], s_scaled[mask_good], color='green', s=.6)
-    plt.scatter(t_on, s_hat, color='green', s=.6)
+    plt.scatter(t_on, s_hat, color='blue', s=.6)
 
     plt.ylim([0, pw_max * 1.1])
     plt.ylabel('Load (watts)')
