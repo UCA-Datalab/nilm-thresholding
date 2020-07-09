@@ -60,6 +60,7 @@ class TorchModel:
         self.shuffle = True
         self.pow_w = 1
         self.act_w = 1
+        self.border = 0
 
     def _get_dataloader(self, x, y, y_bin):
         tensor_x = torch.Tensor(x)
@@ -194,7 +195,7 @@ class TorchModel:
         self.model.eval()
         tensor_x = torch.Tensor(x_test)
         tensor_x = tensor_x.permute(0, 2, 1).cuda()
-        output_power, output_status = self.model(data)
+        output_power, output_status = self.model(tensor_x)
         output_power = output_power.permute(0, 2, 1)
         output_status = output_status.permute(0, 2, 1)
         return output_power, output_status

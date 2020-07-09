@@ -75,37 +75,35 @@ class _Regressor(nn.Module):
 
 class _PTPNet(nn.Module):
 
-    def __init__(self, seq_len=480, border=16, out_channels=1,
-                 init_features=32,
-                 dropout=0.1):
+    def __init__(self, seq_len=480, out_channels=1,
+                 init_features=32, dropout=0.1):
         super(_PTPNet, self).__init__()
 
-        series_len = seq_len + 2 * border
         p = 2
         k = 1
         features = init_features
         self.encoder1 = _Encoder(1, features, kernel_size=3,
                                  padding=0, dropout=dropout)
-        # (batch, series_len - 2, 32)
+        # (batch, input_len - 2, 32)
         self.pool1 = nn.MaxPool1d(kernel_size=p, stride=p)
 
         self.encoder2 = _Encoder(features * 1 ** k, features * 2 ** k,
                                  kernel_size=3, padding=0, dropout=dropout)
-        # (batch, [series_len - 6] / 2, 64)
+        # (batch, [input_len - 6] / 2, 64)
         self.pool2 = nn.MaxPool1d(kernel_size=p, stride=p)
 
         self.encoder3 = _Encoder(features * 2 ** k, features * 4 ** k,
                                  kernel_size=3, padding=0, dropout=dropout)
-        # (batch, [series_len - 12] / 4, 128)
+        # (batch, [input_len - 12] / 4, 128)
         self.pool3 = nn.MaxPool1d(kernel_size=p, stride=p)
 
         self.encoder4 = _Encoder(features * 4 ** k, features * 8 ** k,
                                  kernel_size=3, padding=0, dropout=dropout)
-        # (batch, [series_len - 30] / 8, 256)
+        # (batch, [input_len - 30] / 8, 256)
 
         # Compute the output size of the encoder4 layer
         # (batch, S, 256)
-        s = (series_len - 32) / 8
+        s = seq_len / 8
 
         self.tpool1 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
                                        kernel_size=int(s / 12),
@@ -159,17 +157,16 @@ class TPNILMModel(TorchModel):
                  classification_w=1, regression_w=0):
         super(TorchModel, self).__init__()
 
-        series_len = seq_len + 2 * border
-        # The time series will undergo four convolutions + poolings
+        # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
-        # Where S = (series_len - 30) / 8
+        # Where S = seq_len / 8
         # That series will them pass by four different filters
         # The output of the four filters must have the same size
         # For this reason, S must be a multiple of 12
-        if (series_len - 32) % 96 != 0:
-            s = round((series_len - 32) / 96)
-            raise ValueError(f"series_len {series_len} is not valid.\nClosest"
-                             f" valid value is {96 * s + 32}")
+        if seq_len % 96 != 0:
+            s = round(seq_len / 96)
+            raise ValueError(f"seq_len {seq_len} is not valid.\nClosest"
+                             f" valid value is {96 * s}")
 
         self.border = border
 
