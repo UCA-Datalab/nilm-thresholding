@@ -29,8 +29,8 @@ dates = {1: ('2013-04-12', '2014-12-15'),
 train_size = 0.8
 valid_size = 0.1
 
-input_len = 510
-output_len = 480
+input_len = 320
+output_len = 288
 period = '1min'
 power_scale = 2000.
 

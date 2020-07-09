@@ -171,7 +171,6 @@ class TPNILMModel(TorchModel):
         self.border = border
 
         self.model = _PTPNet(seq_len=seq_len,
-                             border=border,
                              out_channels=out_channels,
                              init_features=init_features,
                              dropout=dropout).cuda()
