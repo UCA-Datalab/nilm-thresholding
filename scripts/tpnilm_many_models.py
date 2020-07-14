@@ -53,7 +53,7 @@ from better_nilm.model.architecture.tpnilm import TPNILMModel
 
 model_name = 'TPNILMModel'
 model_params = {'seq_len': seq_len,
-                'border': border,
+                # 'border': border,
                 'out_channels': num_appliances,
                 'init_features': 32,
                 'learning_rate': learning_rate,
