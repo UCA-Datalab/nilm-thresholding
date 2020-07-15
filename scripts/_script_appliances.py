@@ -13,29 +13,7 @@ from better_nilm.plot_utils import plot_informative_sample
 
 # Set default variables
 
-path_h5 = None
-path_data = None
-path_main = None
-buildings = None
-appliances = None
-class_w = 0
-reg_w = 0
-dates = None
-train_size = 0
-valid_size = 0
-seq_len = 480
-border = 16
-period = '1min'
-power_scale = 2000.
-batch_size = 32
-learning_rate = 0
-dropout = 0
-epochs = 0
-patience = 0
-num_models = 0
-num_appliances = 0
-model_name = None
-model_params = None
+from _default_params import *
 
 # Import from other scripts
 
@@ -63,7 +41,12 @@ for building in buildings:
                                   train_size=train_size, valid_size=valid_size,
                                   batch_size=batch_size, seq_len=seq_len,
                                   border=border, power_scale=power_scale,
-                                  return_kmeans=True)
+                                  return_kmeans=True,
+                                  threshold_method=threshold_method,
+                                  threshold_std=threshold_std,
+                                  thresholds=thresholds,
+                                  min_off=min_off, min_on=min_on
+                                  )
 
         dl_train, dl_valid, dl_test, kmeans = params
         thresholds, means = kmeans
@@ -146,7 +129,7 @@ for building in buildings:
             os.mkdir(path_app)
 
         name = f"seq_{str(seq_len)}_{period}_clas_{str(class_w)}" \
-               f"_reg_{str(reg_w)}"
+               f"_reg_{str(reg_w)}_{threshold_method}"
         path_app = os.path.join(path_app, name)
         if not os.path.isdir(path_app):
             os.mkdir(path_app)

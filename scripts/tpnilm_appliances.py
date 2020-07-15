@@ -17,6 +17,8 @@ path_data = os.path.join(path_main, '../nilm/data/ukdale')
 buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
+threshold_method = 'vs'
+
 class_w = 0
 reg_w = 1
 

@@ -9,16 +9,12 @@ from pandas.io.pytables import HDFStore
 from torch.utils.data import DataLoader
 
 from better_nilm.format_utils import to_list
+from better_nilm.str_utils import APPLIANCE_NAMES
 from better_nilm.str_utils import homogenize_string
 from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
-
-APPLIANCE_NAMES = {
-    "freezer": "fridge",
-    "fridgefreezer": "fridge",
-    "washerdryer": "washingmachine"
-}
+from better_nilm.threshold import get_threshold_method
 
 
 def load_ukdale_datastore(path_h5):
@@ -435,6 +431,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
                      seq_len=480, border=16, power_scale=2000.,
+                     threshold_method='vs',
                      thresholds=None, min_off=None, min_on=None,
                      threshold_std=True, return_kmeans=False):
     """
@@ -477,23 +474,36 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
         changed to this one
     power_scale : float, default=2000.
         Value by which we divide the power load values, to normalize them
+    threshold_method : str, default='vs'
+        Thresholding method to use:
+        'vs': Variance-Sensitive. Applies k-means and uses the std of each
+        cluster to move the threshold accordingly.
+        'mp': Middle-Point. Applies k-means and sets the threshold in the
+        middle of the two cluster centroids.
+        'at': Activation-Time. Takes the thresholds and activation times
+        defined by Jack Kelly.
+        'custom': Use custom thresholding, by providing the (!) parameters.
     thresholds : numpy.array, default=None
+        (!) Only used when threshold_method is 'custom'.
         shape = (num_meters,)
-        Thresholds per appliance, in watts. If not provided, thresholds are 
-        computed using k-means
+        Thresholds per appliance, in watts.
+        If not provided, thresholds are computed using k-means.
     min_off : numpy.array, default=None
+        (!) Only used when threshold_method is 'custom'.
         shape = (num_meters,)
         Number of records that an appliance must be below the threshold to 
-        be considered turned OFF. If not provided, thresholds are 
-        computed using k-means
+        be considered turned OFF.
+        If not provided, thresholds are computed using k-means.
     min_on : numpy.array, default=None
+        (!) Only used when threshold_method is 'custom'.
         shape = (num_meters,)
         Number of records that an appliance must be above the threshold to 
-        be considered turned ON. If not provided, thresholds are 
-        computed using k-means
+        be considered turned ON.
+        If not provided, thresholds are computed using k-means.
     threshold_std : bool, default=True
-        If the threshold is computed by k-means, use the standard deviation 
-        of each cluster to move the threshold
+        (!) Only used when threshold_method is 'custom'.
+        If the threshold is computed by k-means, use the standard deviation
+        of each cluster to move the threshold.
     return_kmeans : bool, default=False
         If True, return as last argument the computed thresholds
 
@@ -511,6 +521,11 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     build_idx_valid, \
     build_idx_test = _buildings_to_idx(buildings, build_id_train,
                                        build_id_valid, build_id_test)
+
+    # Set the parameters according to given threshold method
+    if threshold_method is not 'custom':
+        thresholds, min_off, min_on,\
+        threshold_std = get_threshold_method(threshold_method, appliances)
 
     # Load the different datastores
     params = load_ukdale_series(path_h5, path_labels, buildings, appliances,

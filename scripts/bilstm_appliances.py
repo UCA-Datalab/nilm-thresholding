@@ -17,6 +17,8 @@ path_data = os.path.join(path_main, '../nilm/data/ukdale')
 buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
+threshold_method = 'vs'
+
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
          5: ('2014-04-29', '2014-09-01')}

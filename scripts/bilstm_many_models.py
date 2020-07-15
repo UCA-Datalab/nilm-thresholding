@@ -19,6 +19,8 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
+threshold_method = 'vs'
+
 class_w = 1
 reg_w = 1
 

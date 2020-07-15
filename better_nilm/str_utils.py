@@ -2,6 +2,12 @@ import re
 from unicodedata import normalize
 import numpy as np
 
+APPLIANCE_NAMES = {
+    "freezer": "fridge",
+    "fridgefreezer": "fridge",
+    "washerdryer": "washingmachine"
+}
+
 
 def deaccent(string, remove_dieresis_u=True):
     """
