@@ -288,6 +288,12 @@ def get_thresholds(ser, use_std=True, return_mean=False):
     # Add threshold
     threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
 
+    # Compute the new mean of each cluster
+    for idx in range(mean.shape[0]):
+        mask_on = ser[idx, :] >= threshold[idx]
+        mean[idx, 0] = ser[idx, ~mask_on].mean()
+        mean[idx, 1] = ser[idx, mask_on].mean()
+
     if return_mean:
         return threshold, np.sort(mean)
     else:
