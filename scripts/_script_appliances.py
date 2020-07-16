@@ -41,7 +41,7 @@ for building in buildings:
                                   train_size=train_size, valid_size=valid_size,
                                   batch_size=batch_size, seq_len=seq_len,
                                   border=border, power_scale=power_scale,
-                                  return_kmeans=True,
+                                  return_means=True,
                                   threshold_method=threshold_method,
                                   threshold_std=threshold_std,
                                   thresholds=thresholds,

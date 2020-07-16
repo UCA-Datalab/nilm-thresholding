@@ -15,6 +15,7 @@ from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.threshold import get_threshold_method
+from better_nilm.threshold import get_activation_time_means
 
 
 def load_ukdale_datastore(path_h5):
@@ -141,7 +142,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
 def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
                        dates=None, period='1min', max_power=10000.,
                        thresholds=None, min_off=None, min_on=None,
-                       threshold_std=True, return_kmeans=False):
+                       threshold_std=True, return_means=False):
     """
     
     Parameters
@@ -178,7 +179,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     threshold_std : bool, default=True
         If the threshold is computed by k-means, use the standard deviation 
         of each cluster to move the threshold
-    return_kmeans : bool, default=False
+    return_means : bool, default=False
         If True, also return the computed thresholds and means
 
     Returns
@@ -253,8 +254,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
             status = get_status(arr_apps, thresholds)
         else:
-            means = np.array([[0] * len(thresholds), thresholds])
-            print(means)
+            means = get_activation_time_means(list_appliances)
             status = get_status_by_duration(arr_apps, thresholds,
                                             min_off, min_on)
         status = status.reshape(status.shape[0], len(list_appliances))
@@ -270,7 +270,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         list_df_status.append(status)
 
     return_params = (list_df_meter, list_df_appliance, list_df_status)
-    if return_kmeans:
+    if return_means:
         return_params += ((thresholds, means), )
 
     return return_params
@@ -434,7 +434,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                      seq_len=480, border=16, power_scale=2000.,
                      threshold_method='vs',
                      thresholds=None, min_off=None, min_on=None,
-                     threshold_std=True, return_kmeans=False):
+                     threshold_std=True, return_means=False):
     """
     Load the UKDALE dataloaders from the raw data.
     
@@ -505,8 +505,8 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
         (!) Only used when threshold_method is 'custom'.
         If the threshold is computed by k-means, use the standard deviation
         of each cluster to move the threshold.
-    return_kmeans : bool, default=False
-        If True, return as last argument the computed thresholds
+    return_means : bool, default=False
+        If True, return as last argument the computed means of each status
 
     Returns
     -------
@@ -534,9 +534,9 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                 max_power=max_power, thresholds=thresholds,
                                 min_off=min_off, min_on=min_on,
                                 threshold_std=threshold_std,
-                                return_kmeans=return_kmeans)
+                                return_means=return_means)
     
-    if return_kmeans:
+    if return_means:
         list_df_meter, \
         list_df_appliance, \
         list_df_status, kmeans = params
@@ -562,7 +562,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                         power_scale=power_scale)
 
     return_params = (dl_train, dl_valid, dl_test)
-    if return_kmeans:
+    if return_means:
         return_params += (kmeans,)
 
     return return_params
