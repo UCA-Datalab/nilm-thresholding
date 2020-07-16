@@ -253,7 +253,8 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
             status = get_status(arr_apps, thresholds)
         else:
-            means = None
+            means = np.array([[0] * len(thresholds), thresholds])
+            print(means)
             status = get_status_by_duration(arr_apps, thresholds,
                                             min_off, min_on)
         status = status.reshape(status.shape[0], len(list_appliances))
@@ -269,7 +270,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         list_df_status.append(status)
 
     return_params = (list_df_meter, list_df_appliance, list_df_status)
-    if return_kmeans and (means is not None):
+    if return_kmeans:
         return_params += ((thresholds, means), )
 
     return return_params
@@ -534,6 +535,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                 min_off=min_off, min_on=min_on,
                                 threshold_std=threshold_std,
                                 return_kmeans=return_kmeans)
+    
     if return_kmeans:
         list_df_meter, \
         list_df_appliance, \
@@ -542,6 +544,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
         list_df_meter, \
         list_df_appliance, \
         list_df_status = params
+        kmeans = (None, None)
 
     num_buildings = len(buildings)
 

@@ -14,7 +14,7 @@ MIN_OFF = {
 }
 
 MIN_ON = {
-    'diswasher': 30,
+    'dishwasher': 30,
     'fridge': 1,
     'washingmachine': 30
 }

@@ -19,7 +19,7 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-threshold_method = 'vs'
+threshold_method = 'at'
 
 class_w = 1
 reg_w = 0
@@ -42,7 +42,7 @@ dropout = 0.1
 epochs = 300
 patience = 300
 
-num_models = 5
+num_models = 1
 
 # Other parameters (no need to modify these)
 
