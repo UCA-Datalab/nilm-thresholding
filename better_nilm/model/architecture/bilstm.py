@@ -12,7 +12,7 @@ class _Dense(nn.Module):
         self.linear = nn.Linear(in_features, out_features)
 
     def forward(self, x):
-        return F.relu(self.linear(x))
+        return self.linear(x)
 
 
 class _BiLSTM(nn.Module):
@@ -50,7 +50,7 @@ class _BiLSTM(nn.Module):
         dense = self.dense(self.drop(gru2))
 
         power = self.regressor(self.drop(dense)).permute(0, 2, 1)
-        status = self.activation(self.drop(dense.permute(0, 2, 1)))
+        status = self.activation(self.drop(F.relu(dense).permute(0, 2, 1)))
 
         return power, status
 

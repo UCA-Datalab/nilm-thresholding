@@ -58,18 +58,6 @@ class _Decoder(nn.Module):
         self.bn = nn.BatchNorm1d(out_features)
 
     def forward(self, x):
-        return F.relu(self.conv(x))
-
-
-class _Regressor(nn.Module):
-    def __init__(self, in_features=3, out_features=1, kernel_size=2, stride=2):
-        super(_Regressor, self).__init__()
-        self.conv = nn.ConvTranspose1d(in_features, out_features,
-                                       kernel_size=kernel_size, stride=stride,
-                                       bias=False)
-        self.bn = nn.BatchNorm1d(out_features)
-
-    def forward(self, x):
         return self.conv(x)
 
 
@@ -121,9 +109,6 @@ class _PTPNet(nn.Module):
         self.activation = nn.Conv1d(features * 1 ** k, out_channels,
                                     kernel_size=1, padding=0)
 
-        self.regressor = _Regressor(2 * features * 8 ** k, features * 1 ** k,
-                                    kernel_size=p ** 3, stride=p ** 3)
-
         self.power = nn.Conv1d(features * 1 ** k, out_channels,
                                kernel_size=1, padding=0)
 
@@ -137,14 +122,11 @@ class _PTPNet(nn.Module):
         tp2 = self.tpool2(enc4)
         tp3 = self.tpool3(enc4)
         tp4 = self.tpool4(enc4)
-
-        reg = self.regressor(torch.cat([enc4, tp1, tp2, tp3, tp4], dim=1))
-
-        pw = self.power(reg)
-
+        
         dec = self.decoder(torch.cat([enc4, tp1, tp2, tp3, tp4], dim=1))
 
-        act = self.activation(dec)
+        pw = self.power(dec)
+        act = self.activation(F.relu(dec))
 
         return pw, act
 
