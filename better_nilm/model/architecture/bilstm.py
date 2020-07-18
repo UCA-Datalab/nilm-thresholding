@@ -36,7 +36,7 @@ class _BiLSTM(nn.Module):
                            bidirectional=True)
 
         self.dense = _Dense(256, 64)
-        self.regressor = nn.Linear(64, out_channels)
+        self.regressor = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
         self.activation = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
 
     def forward(self, x):
