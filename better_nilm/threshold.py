@@ -1,5 +1,6 @@
 import numpy as np
 
+from better_nilm.format_utils import to_list
 from better_nilm.str_utils import APPLIANCE_NAMES
 from better_nilm.str_utils import homogenize_string
 
@@ -29,6 +30,9 @@ MAX_POWER = {
 
 
 def get_threshold_method(threshold_method, appliances):
+    # Ensure appliances is list
+    appliances = to_list(appliances)
+    
     if threshold_method is 'vs':
         # Variance-Sensitive threshold
         threshold_std = True

@@ -19,10 +19,10 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-threshold_method = 'vs'
+threshold_method = 'at'
 
 class_w = 1
-reg_w = 1
+reg_w = 0
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
@@ -67,4 +67,5 @@ model_params = {'input_len': input_len,
 
 path_scripts = os.path.join(path_main, 'scripts')
 sys.path.insert(0, path_scripts)
+
 import _script_many_models
