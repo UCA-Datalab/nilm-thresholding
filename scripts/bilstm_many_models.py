@@ -1,6 +1,8 @@
 import os
 import sys
 
+from better_nilm._script._script_many_models import run_many_models
+
 path_main = os.path.realpath(__file__)
 path_main = path_main.rsplit('/', 2)[0]
 sys.path.insert(0, path_main)
@@ -52,8 +54,6 @@ num_appliances = len(appliances)
 
 # Model
 
-from better_nilm.model.architecture.bilstm import BiLSTMModel
-
 model_name = 'BiLSTMModel'
 model_params = {'input_len': input_len,
                 'output_len': output_len,
@@ -65,6 +65,16 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
-path_scripts = os.path.join(path_main, 'scripts')
-sys.path.insert(0, path_scripts)
-import _script_many_models
+run_many_models(path_h5=path_h5, path_data=path_data, path_main=path_main,
+                buildings=buildings, build_id_train=build_id_train,
+                build_id_valid=build_id_valid,
+                build_id_test=build_id_test, appliances=appliances,
+                class_w=class_w, reg_w=reg_w, dates=dates,
+                train_size=train_size, valid_size=valid_size,
+                seq_len=output_len, border=border, period=period,
+                power_scale=power_scale,
+                batch_size=batch_size, learning_rate=learning_rate,
+                dropout=dropout,
+                epochs=epochs, patience=patience, num_models=num_models,
+                model_name=model_name, model_params=model_params,
+                threshold_method=threshold_method)
