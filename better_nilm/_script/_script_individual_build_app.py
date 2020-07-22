@@ -4,6 +4,7 @@ from better_nilm.ukdale.ukdale_data import load_dataloaders
 
 from better_nilm._script._script_utils import get_model_scores
 from better_nilm._script._script_utils import list_scores
+from better_nilm._script._script_utils import get_path_plots
 from better_nilm._script._script_utils import plot_store_results
 
 from better_nilm.model.architecture.bilstm import BiLSTMModel
@@ -26,14 +27,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
     Train models for each combination of building and appliances.
     """
     # Set output path
-
-    path_plots = os.path.join(path_main, 'outputs')
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
-
-    path_plots = os.path.join(path_plots, model_name)
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
+    path_plots = get_path_plots(path_main, model_name)
 
     # Load data
 
