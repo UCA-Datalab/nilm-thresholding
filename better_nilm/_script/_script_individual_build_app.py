@@ -94,5 +94,5 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                                class_w, reg_w,
                                threshold_method, train_size, valid_size,
                                num_models, batch_size, learning_rate, dropout,
-                               epochs, patience, scores, appliances,
+                               epochs, patience, scores, [appliance],
                                model, dl_test, power_scale, means, thresholds)
