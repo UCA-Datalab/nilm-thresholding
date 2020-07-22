@@ -81,7 +81,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
 
                 # List scores
 
-                scores = list_scores(appliances, act_scores, pow_scores,
+                scores = list_scores([appliance], act_scores, pow_scores,
                                      num_models)
 
             # Plot
