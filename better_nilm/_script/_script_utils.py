@@ -3,6 +3,7 @@ import numpy as np
 import os
 
 from better_nilm.model.preprocessing import get_status
+from better_nilm.model.preprocessing import get_status_by_duration
 
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
@@ -11,14 +12,19 @@ from better_nilm.plot_utils import plot_informative_sample
 
 
 def process_model_outputs(p_true, p_hat, s_hat,
-                          power_scale, means, thresholds):
+                          power_scale, means, thresholds, min_off, min_on):
     # Denormalize power values
     p_true = np.multiply(p_true, power_scale)
     p_hat = np.multiply(p_hat, power_scale)
     p_hat[p_hat < 0.] = 0.
 
-    s_hat[s_hat >= .5] = 1
-    s_hat[s_hat < 0.5] = 0
+    # Get status
+    if (min_on is None) or (min_off is None):
+        s_hat[s_hat >= .5] = 1
+        s_hat[s_hat < 0.5] = 0
+    else:
+        thresh = [0.5] * len(min_on)
+        s_hat = get_status_by_duration(s_hat, thresh, min_off, min_on)
 
     # Get power values from status
     sp_hat = np.multiply(np.ones(s_hat.shape), means[:, 0])
@@ -32,7 +38,7 @@ def process_model_outputs(p_true, p_hat, s_hat,
 
 
 def get_model_scores(model, dl_test, power_scale, means, thresholds,
-                     appliances):
+                     appliances, min_off, min_on):
     """
     Trains and test a model. Returns its activation and power scores.
     """
@@ -42,7 +48,8 @@ def get_model_scores(model, dl_test, power_scale, means, thresholds,
 
     p_true, p_hat, s_hat, \
     sp_hat, ps_hat = process_model_outputs(p_true, p_hat, s_hat,
-                                           power_scale, means, thresholds)
+                                           power_scale, means, thresholds,
+                                           min_off, min_on)
 
     # classification scores
 
@@ -91,32 +98,43 @@ def list_scores(appliances, act_scores, pow_scores, num_models):
     return scores
 
 
-def get_path_plots(path_main, model_name):
+def generate_path_output(path_main, model_name):
+    """
+    Generates outputs folder.
+    """
+    path_output = os.path.join(path_main, 'outputs')
+    if not os.path.isdir(path_output):
+        os.mkdir(path_output)
 
-    path_plots = os.path.join(path_main, 'outputs')
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
+    path_output = os.path.join(path_output, model_name)
+    if not os.path.isdir(path_output):
+        os.mkdir(path_output)
 
-    path_plots = os.path.join(path_plots, model_name)
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
-
-    return path_plots
+    return path_output
 
 
-def plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
-                       threshold_method, train_size, valid_size, num_models,
-                       batch_size, learning_rate, dropout, epochs, patience,
-                       scores, appliances,
-                       model, dl_test, power_scale, means, thresholds):
-
+def generate_folder_name(path_output, seq_len, period, class_w, reg_w,
+                         threshold_method):
+    """
+    Generates specific folder inside outputs.
+    """
     name = f"seq_{str(seq_len)}_{period}_clas_{str(class_w)}" \
            f"_reg_{str(reg_w)}_{threshold_method}"
-    path_plots = os.path.join(path_plots, name)
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
+    path_output = os.path.join(path_output, name)
+    if not os.path.isdir(path_output):
+        os.mkdir(path_output)
 
-    path_scores = os.path.join(path_plots, 'scores.txt')
+    return path_output
+
+
+def store_scores(path_output, seq_len, period, class_w, reg_w,
+                 threshold_method, train_size, valid_size, num_models,
+                 batch_size, learning_rate, dropout, epochs, patience,
+                 scores):
+    path_output = generate_folder_name(path_output, seq_len, period, class_w,
+                                       reg_w, threshold_method)
+
+    path_scores = os.path.join(path_output, 'scores.txt')
 
     with open(path_scores, "w") as text_file:
         text_file.write(f"Train size: {train_size}\n"
@@ -129,6 +147,13 @@ def plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
                         f"Patience: {patience}\n"
                         f"=============================================\n")
         for key, dic1 in scores.items():
+
+            # Skip scores if weight is zero
+            if (class_w == 0) and (key.startswith('class')):
+                continue
+            if (reg_w == 0) and (key.startswith('reg')):
+                continue
+
             text_file.write(
                 f"{key}\n------------------------------------------\n")
             for app, dic2 in dic1.items():
@@ -139,6 +164,13 @@ def plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
                     '----------------------------------------------\n')
             text_file.write(
                 '==================================================\n')
+
+
+def store_plots(path_output, seq_len, period, class_w, reg_w,
+                threshold_method, appliances, model, dl_test,
+                power_scale, means, thresholds):
+    path_output = generate_folder_name(path_output, seq_len, period, class_w,
+                                       reg_w, threshold_method)
 
     # Compute period of x axis
     if period.endswith('min'):
@@ -155,16 +187,18 @@ def plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
                                            power_scale, means, thresholds)
 
     for idx, app in enumerate(appliances):
-        savefig = os.path.join(path_plots, f"{app}_classification.png")
-        plot_informative_sample(p_true, s_true, sp_hat, s_hat,
-                                records=seq_len,
-                                app_idx=idx, scale=1., period=period_x,
-                                dpi=180,
-                                savefig=savefig)
-
-        savefig = os.path.join(path_plots, f"{app}_regression.png")
-        plot_informative_sample(p_true, s_true, p_hat, ps_hat,
-                                records=seq_len,
-                                app_idx=idx, scale=1., period=period_x,
-                                dpi=180,
-                                savefig=savefig)
+        # Skip plots if weight is zero
+        if class_w > 0:
+            savefig = os.path.join(path_output, f"{app}_classification.png")
+            plot_informative_sample(p_true, s_true, sp_hat, s_hat,
+                                    records=seq_len,
+                                    app_idx=idx, scale=1., period=period_x,
+                                    dpi=180,
+                                    savefig=savefig)
+        if reg_w > 0:
+            savefig = os.path.join(path_output, f"{app}_regression.png")
+            plot_informative_sample(p_true, s_true, p_hat, ps_hat,
+                                    records=seq_len,
+                                    app_idx=idx, scale=1., period=period_x,
+                                    dpi=180,
+                                    savefig=savefig)

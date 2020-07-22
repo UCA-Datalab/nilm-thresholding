@@ -4,8 +4,9 @@ from better_nilm.ukdale.ukdale_data import load_dataloaders
 
 from better_nilm._script._script_utils import get_model_scores
 from better_nilm._script._script_utils import list_scores
-from better_nilm._script._script_utils import get_path_plots
-from better_nilm._script._script_utils import plot_store_results
+from better_nilm._script._script_utils import generate_path_output
+from better_nilm._script._script_utils import store_scores
+from better_nilm._script._script_utils import store_plots
 
 from better_nilm.model.architecture.bilstm import BiLSTMModel
 from better_nilm.model.architecture.tpnilm import TPNILMModel
@@ -27,7 +28,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
     Train models for each combination of building and appliances.
     """
     # Set output path
-    path_plots = get_path_plots(path_main, model_name)
+    path_output = generate_path_output(path_main, model_name)
 
     # Load data
 
@@ -68,7 +69,8 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                 act_scr, pow_scr = get_model_scores(model, dl_test,
                                                     power_scale,
                                                     means, thresholds,
-                                                    [appliance])
+                                                    [appliance],
+                                                    min_off, min_on)
 
                 act_scores += act_scr
                 pow_scores += pow_scr
@@ -79,14 +81,16 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                                      num_models)
 
             # Plot
-            path_app = os.path.join(path_plots,
+            path_app = os.path.join(path_output,
                                     f"house_{building}_{appliance}")
             if not os.path.isdir(path_app):
                 os.mkdir(path_app)
 
-            plot_store_results(path_app, model_name, seq_len, period,
-                               class_w, reg_w,
-                               threshold_method, train_size, valid_size,
-                               num_models, batch_size, learning_rate, dropout,
-                               epochs, patience, scores, [appliance],
-                               model, dl_test, power_scale, means, thresholds)
+            store_scores(path_output, seq_len, period, class_w, reg_w,
+                         threshold_method, train_size, valid_size, num_models,
+                         batch_size, learning_rate, dropout, epochs, patience,
+                         scores)
+
+            store_plots(path_output, seq_len, period, class_w, reg_w,
+                        threshold_method, appliances, model, dl_test,
+                        power_scale, means, thresholds)
