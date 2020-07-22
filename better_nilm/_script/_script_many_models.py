@@ -61,7 +61,7 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
                                     patience=patience)
 
         act_scr, pow_scr = get_model_scores(model, dl_test, power_scale,
-                                            means, thresholds)
+                                            means, thresholds, appliances)
 
         act_scores += act_scr
         pow_scores += pow_scr

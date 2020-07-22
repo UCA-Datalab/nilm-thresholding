@@ -31,7 +31,8 @@ def process_model_outputs(p_true, p_hat, s_hat,
     return p_true, p_hat, s_hat, sp_hat, ps_hat
 
 
-def get_model_scores(model, dl_test, power_scale, means, thresholds):
+def get_model_scores(model, dl_test, power_scale, means, thresholds,
+                     appliances):
     """
     Trains and test a model. Returns its activation and power scores.
     """
