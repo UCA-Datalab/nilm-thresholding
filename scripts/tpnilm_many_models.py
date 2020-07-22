@@ -1,7 +1,6 @@
 import os
 import sys
 
-from better_nilm._script._script_many_models import run_many_models
 path_main = os.path.realpath(__file__)
 path_main = path_main.rsplit('/', 2)[0]
 sys.path.insert(0, path_main)
@@ -64,6 +63,11 @@ model_params = {'seq_len': seq_len,
 
 
 # Run main script
+
+path_scripts = os.path.join(path_main, 'scripts')
+sys.path.insert(0, path_scripts)
+
+from better_nilm._script._script_many_models import run_many_models
 
 run_many_models(path_h5=path_h5, path_data=path_data, path_main=path_main,
                 buildings=buildings, build_id_train=build_id_train,
