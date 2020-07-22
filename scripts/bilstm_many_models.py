@@ -63,8 +63,7 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
-path_scripts = os.path.join(path_main, 'scripts')
-sys.path.insert(0, path_scripts)
+sys.path.insert(0, path_main)
 
 from better_nilm._script._script_many_models import run_many_models
 

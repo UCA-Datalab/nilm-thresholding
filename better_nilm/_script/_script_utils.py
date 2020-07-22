@@ -90,15 +90,11 @@ def list_scores(appliances, act_scores, pow_scores, num_models):
     return scores
 
 
-def plot_store_results(path_main, model_name, seq_len, period, class_w, reg_w,
+def plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
                        threshold_method, train_size, valid_size, num_models,
                        batch_size, learning_rate, dropout, epochs, patience,
                        scores, appliances,
                        model, dl_test, power_scale, means, thresholds):
-
-    path_plots = os.path.join(path_main, 'outputs')
-    if not os.path.isdir(path_plots):
-        os.mkdir(path_plots)
 
     path_plots = os.path.join(path_plots, model_name)
     if not os.path.isdir(path_plots):

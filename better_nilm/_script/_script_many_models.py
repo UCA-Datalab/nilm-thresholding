@@ -1,3 +1,5 @@
+import os
+
 from better_nilm.ukdale.ukdale_data import load_dataloaders
 
 from better_nilm._script._script_utils import get_model_scores
@@ -70,7 +72,11 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
 
     # Plot
 
-    plot_store_results(path_main, model_name, seq_len, period, class_w, reg_w,
+    path_plots = os.path.join(path_main, 'outputs')
+    if not os.path.isdir(path_plots):
+        os.mkdir(path_plots)
+
+    plot_store_results(path_plots, model_name, seq_len, period, class_w, reg_w,
                        threshold_method, train_size, valid_size, num_models,
                        batch_size, learning_rate, dropout, epochs, patience,
                        scores, appliances,
