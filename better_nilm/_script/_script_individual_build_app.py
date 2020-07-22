@@ -22,6 +22,9 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                              threshold_method='custom',
                              threshold_std=True, thresholds=None,
                              min_off=None, min_on=None):
+    """
+    Train models for each combination of building and appliances.
+    """
     # Set output path
 
     path_plots = os.path.join(path_main, 'outputs')
