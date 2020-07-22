@@ -31,7 +31,7 @@ dates = {1: ('2013-04-12', '2014-12-15'),
 train_size = 0.8
 valid_size = 0.1
 
-seq_len = 384
+seq_len = 480
 border = 16
 period = '1min'
 power_scale = 2000.
@@ -42,7 +42,7 @@ dropout = 0.1
 epochs = 300
 patience = 300
 
-num_models = 1
+num_models = 5
 
 # Other parameters (no need to modify these)
 

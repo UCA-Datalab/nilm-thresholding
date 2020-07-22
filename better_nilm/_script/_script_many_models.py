@@ -4,6 +4,9 @@ from better_nilm._script._script_utils import get_model_scores
 from better_nilm._script._script_utils import list_scores
 from better_nilm._script._script_utils import plot_store_results
 
+from better_nilm.model.architecture.bilstm import BiLSTMModel
+from better_nilm.model.architecture.tpnilm import TPNILMModel
+
 
 def run_many_models(path_h5=None, path_data=None, path_main=None,
                     buildings=None, build_id_train=None, build_id_valid=None,

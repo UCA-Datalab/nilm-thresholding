@@ -22,7 +22,7 @@ appliances = ['fridge', 'dish_washer', 'washing_machine']
 threshold_method = 'vs'
 
 class_w = 1
-reg_w = 1
+reg_w = 0
 
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
@@ -31,8 +31,8 @@ dates = {1: ('2013-04-12', '2014-12-15'),
 train_size = 0.8
 valid_size = 0.1
 
-input_len = 320
-output_len = 288
+input_len = 510
+output_len = 480
 period = '1min'
 power_scale = 2000.
 
