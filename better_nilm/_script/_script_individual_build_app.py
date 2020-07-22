@@ -74,7 +74,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                 act_scr, pow_scr = get_model_scores(model, dl_test,
                                                     power_scale,
                                                     means, thresholds,
-                                                    appliances)
+                                                    [appliance])
 
                 act_scores += act_scr
                 pow_scores += pow_scr
