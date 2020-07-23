@@ -59,21 +59,3 @@ def get_threshold_method(threshold_method, appliances):
               f"Use one of the following: vs, mp, at")
 
     return thresholds, min_off, min_on, threshold_std
-
-
-def get_status_means(ser, status):
-    """
-    Get means of both status.
-    """
-
-    means = np.zeros((ser.shape[2], 2))
-
-    # Compute the new mean of each cluster
-    for idx in range(ser.shape[2]):
-        # Flatten the series
-        meter = ser[:, :, idx].flatten()
-        mask_on = status[:, :, idx].flatten() > 0
-        means[idx, 0] = meter[~mask_on].mean()
-        means[idx, 1] = meter[mask_on].mean()
-
-    return means

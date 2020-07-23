@@ -14,8 +14,8 @@ from better_nilm.str_utils import homogenize_string
 from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
+from better_nilm.model.preprocessing import get_status_means
 from better_nilm.threshold import get_threshold_method
-from better_nilm.threshold import get_status_means
 
 
 def load_ukdale_datastore(path_h5):
