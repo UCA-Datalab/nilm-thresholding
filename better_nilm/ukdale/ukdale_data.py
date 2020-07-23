@@ -15,7 +15,7 @@ from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.threshold import get_threshold_method
-from better_nilm.threshold import get_activation_time_means
+from better_nilm.threshold import get_status_means
 
 
 def load_ukdale_datastore(path_h5):
@@ -254,9 +254,9 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
             status = get_status(arr_apps, thresholds)
         else:
-            means = get_activation_time_means(list_appliances)
             status = get_status_by_duration(arr_apps, thresholds,
                                             min_off, min_on)
+            means = get_status_means(arr_apps, status)
         status = status.reshape(status.shape[0], len(list_appliances))
         status = pd.DataFrame(status, columns=list_appliances,
                               index=appliances.index)

@@ -61,16 +61,19 @@ def get_threshold_method(threshold_method, appliances):
     return thresholds, min_off, min_on, threshold_std
 
 
-def get_activation_time_means(list_appliances):
+def get_status_means(ser, status):
     """
-    Load means of both status when AT method is used for thresholding.
+    Get means of both status.
     """
-    means = []
-    for app in list_appliances:
-        # Homogenize input label
-        label = homogenize_string(app)
-        label = APPLIANCE_NAMES.get(label, label)
-        means += [[0, MAX_POWER[label]]]
+    means = np.zeros((ser.shape[2], 2))
+
+    # Compute the new mean of each cluster
+    for idx in range(ser.shape[0]):
+        # Flatten the series
+        meter = ser[:, :, idx].flatten()
+        mask_on = status > 0
+        means[idx, 0] = meter[~mask_on].mean()
+        means[idx, 1] = meter[mask_on].mean()
 
     means = np.array(means)
     return means
