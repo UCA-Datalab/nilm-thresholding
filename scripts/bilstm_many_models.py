@@ -19,8 +19,6 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-threshold_method = 'vs'
-
 class_w = 1
 reg_w = 0
 
@@ -42,7 +40,7 @@ dropout = 0.1
 epochs = 300
 patience = 300
 
-num_models = 5
+num_models = 10
 
 # Other parameters (no need to modify these)
 
@@ -63,20 +61,23 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
+print("BiLSTM Many Models\n")
+
 sys.path.insert(0, path_main)
 
 from better_nilm._script._script_many_models import run_many_models
 
-run_many_models(path_h5=path_h5, path_data=path_data, path_main=path_main,
-                buildings=buildings, build_id_train=build_id_train,
-                build_id_valid=build_id_valid,
-                build_id_test=build_id_test, appliances=appliances,
-                class_w=class_w, reg_w=reg_w, dates=dates,
-                train_size=train_size, valid_size=valid_size,
-                seq_len=output_len, border=border, period=period,
-                power_scale=power_scale,
-                batch_size=batch_size, learning_rate=learning_rate,
-                dropout=dropout,
-                epochs=epochs, patience=patience, num_models=num_models,
-                model_name=model_name, model_params=model_params,
-                threshold_method=threshold_method)
+for threshold_method in ['vs', 'at', 'mp']:
+    run_many_models(path_h5=path_h5, path_data=path_data, path_main=path_main,
+                    buildings=buildings, build_id_train=build_id_train,
+                    build_id_valid=build_id_valid,
+                    build_id_test=build_id_test, appliances=appliances,
+                    class_w=class_w, reg_w=reg_w, dates=dates,
+                    train_size=train_size, valid_size=valid_size,
+                    seq_len=output_len, border=border, period=period,
+                    power_scale=power_scale,
+                    batch_size=batch_size, learning_rate=learning_rate,
+                    dropout=dropout,
+                    epochs=epochs, patience=patience, num_models=num_models,
+                    model_name=model_name, model_params=model_params,
+                    threshold_method=threshold_method)
