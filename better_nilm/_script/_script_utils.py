@@ -168,7 +168,7 @@ def store_scores(path_output, seq_len, period, class_w, reg_w,
 
 def store_plots(path_output, seq_len, period, class_w, reg_w,
                 threshold_method, appliances, model, dl_test,
-                power_scale, means, thresholds):
+                power_scale, means, thresholds, min_off, min_on):
     path_output = generate_folder_name(path_output, seq_len, period, class_w,
                                        reg_w, threshold_method)
 
@@ -184,7 +184,8 @@ def store_plots(path_output, seq_len, period, class_w, reg_w,
 
     p_true, p_hat, s_hat, \
     sp_hat, ps_hat = process_model_outputs(p_true, p_hat, s_hat,
-                                           power_scale, means, thresholds)
+                                           power_scale, means, thresholds,
+                                           min_off, min_on)
 
     for idx, app in enumerate(appliances):
         # Skip plots if weight is zero

@@ -84,4 +84,4 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
 
     store_plots(path_output, seq_len, period, class_w, reg_w,
                 threshold_method, appliances, model, dl_test,
-                power_scale, means, thresholds)
+                power_scale, means, thresholds, min_off, min_on)
