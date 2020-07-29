@@ -9,51 +9,61 @@ sys.path.insert(0, path_main)
 Trains several Bi-GRU models under the same conditions
 """
 
-# Parameters to modify
+# PARAMETERS TO MODIFY
 
+# Path to the original UKDALE h5 data, relative to the script route
 path_h5 = os.path.join(path_main, 'data/ukdale.h5')
+# Path to the folder containing meter info, relative to the script route
 path_data = os.path.join(path_main, '../nilm/data/ukdale')
 
+# List of buildings (houses)
 build_id_train = [1, 2, 5]
 build_id_valid = [1]
 build_id_test = [1]
+# List of appliances
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
-<<<<<<< HEAD:scripts/bigru_many_models.py
-=======
-threshold_method = 'at'
+# Threshold methods. See README
+threshold_methods = ['vs', 'at', 'mp']
 
->>>>>>> develop:scripts/bilstm_many_models.py
-class_w = 1
-reg_w = 0
-
+# Date range for each building
 dates = {1: ('2013-04-12', '2014-12-15'),
          2: ('2013-05-22', '2013-10-03 6:16'),
          5: ('2014-04-29', '2014-09-01')}
 
+# Classification and regression weights
+class_w = 1
+reg_w = 0
+
+# Train and validation size, relative to 1
 train_size = 0.8
 valid_size = 0.1
 
+# Length of both input and output sequences of the model
 input_len = 510
 output_len = 480
+# Time period of the sequence
 period = '1min'
+# Power value by which we divide the load, normalizing it
 power_scale = 2000.
 
+# Training parameters
 batch_size = 32
 learning_rate = 1.E-4
 dropout = 0.1
 epochs = 300
 patience = 300
 
+# Number of models to train. Their scores are then normalized
 num_models = 10
 
-# Other parameters (no need to modify these)
+# OTHER PARAMETERS (no need to modify these)
 
 buildings = sorted(set(build_id_train + build_id_valid + build_id_test))
 border = int((input_len - output_len) / 2)
 num_appliances = len(appliances)
 
-# Model
+# MODEL
 
 model_name = 'BiGRUModel'
 model_params = {'input_len': input_len,
@@ -66,30 +76,23 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
-<<<<<<< HEAD:scripts/bigru_many_models.py
 print("BiGRU Many Models\n")
 
 sys.path.insert(0, path_main)
 
 from better_nilm._script._script_many_models import run_many_models
 
-for threshold_method in ['vs', 'at', 'mp']:
+for threshold_method in threshold_methods:
     run_many_models(path_h5=path_h5, path_data=path_data, path_main=path_main,
                     buildings=buildings, build_id_train=build_id_train,
                     build_id_valid=build_id_valid,
                     build_id_test=build_id_test, appliances=appliances,
                     class_w=class_w, reg_w=reg_w, dates=dates,
                     train_size=train_size, valid_size=valid_size,
-                    seq_len=output_len, border=border, period=period,
+                    output_len=output_len, border=border, period=period,
                     power_scale=power_scale,
                     batch_size=batch_size, learning_rate=learning_rate,
                     dropout=dropout,
                     epochs=epochs, patience=patience, num_models=num_models,
                     model_name=model_name, model_params=model_params,
                     threshold_method=threshold_method)
-=======
-path_scripts = os.path.join(path_main, 'scripts')
-sys.path.insert(0, path_scripts)
-
-import _script_many_models
->>>>>>> develop:scripts/bilstm_many_models.py

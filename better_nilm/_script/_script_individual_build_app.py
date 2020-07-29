@@ -16,7 +16,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                              buildings=None, appliances=None,
                              class_w=0, reg_w=0, dates=None,
                              train_size=0, valid_size=0,
-                             seq_len=480, border=16, period='1min',
+                             output_len=480, border=16, period='1min',
                              power_scale=2000.,
                              batch_size=32, learning_rate=0, dropout=0,
                              epochs=1, patience=1, num_models=1,
@@ -41,7 +41,7 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                                       dates=dates, period=period,
                                       train_size=train_size,
                                       valid_size=valid_size,
-                                      batch_size=batch_size, seq_len=seq_len,
+                                      batch_size=batch_size, output_len=output_len,
                                       border=border, power_scale=power_scale,
                                       return_means=True,
                                       threshold_method=threshold_method,
@@ -86,11 +86,11 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
             if not os.path.isdir(path_app):
                 os.mkdir(path_app)
 
-            store_scores(path_output, seq_len, period, class_w, reg_w,
+            store_scores(path_output, output_len, period, class_w, reg_w,
                          threshold_method, train_size, valid_size, num_models,
                          batch_size, learning_rate, dropout, epochs, patience,
                          scores)
 
-            store_plots(path_output, seq_len, period, class_w, reg_w,
+            store_plots(path_output, output_len, period, class_w, reg_w,
                         threshold_method, appliances, model, dl_test,
                         power_scale, means, thresholds, min_off, min_on)
