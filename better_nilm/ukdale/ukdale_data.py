@@ -15,7 +15,7 @@ from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.model.preprocessing import get_status_means
-from better_nilm.threshold import get_threshold_method
+from better_nilm.threshold import _get_threshold_params
 
 
 def load_ukdale_datastore(path_h5):
@@ -190,6 +190,12 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
         List of dataframes.
     list_df_status : list
         List of dataframes.
+    (thresholds, means) : tuple
+        (!) Optional output: Only returned when return_means = True
+        thresholds : list
+            Threshold of each appliance
+        means : list
+            OFF and ON power load mean of each appliance.
     """
     # Load datastore
     datastore = load_ukdale_datastore(path_h5)
@@ -208,6 +214,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
     list_df_meter = []
     list_df_appliance = []
     list_df_status = []
+    means = []
 
     for house in buildings:
         meters = []
@@ -271,7 +278,7 @@ def load_ukdale_series(path_h5, path_labels, buildings, list_appliances,
 
     return_params = (list_df_meter, list_df_appliance, list_df_status)
     if return_means:
-        return_params += ((thresholds, means), )
+        return_params += ((thresholds, means),)
 
     return return_params
 
@@ -513,6 +520,12 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     dl_train
     dl_valid
     dl_test
+    (thresholds, means) : tuple
+        (!) Optional output: Only returned when return_means = True
+        thresholds : list
+            Threshold of each appliance
+        means : list
+            OFF and ON power load mean of each appliance.
 
     """
 
@@ -525,8 +538,8 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
 
     # Set the parameters according to given threshold method
     if threshold_method is not 'custom':
-        thresholds, min_off, min_on,\
-        threshold_std = get_threshold_method(threshold_method, appliances)
+        thresholds, min_off, min_on, \
+        threshold_std = _get_threshold_params(threshold_method, appliances)
 
     # Load the different datastores
     params = load_ukdale_series(path_h5, path_labels, buildings, appliances,
@@ -535,7 +548,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                 min_off=min_off, min_on=min_on,
                                 threshold_std=threshold_std,
                                 return_means=return_means)
-    
+
     if return_means:
         list_df_meter, \
         list_df_appliance, \

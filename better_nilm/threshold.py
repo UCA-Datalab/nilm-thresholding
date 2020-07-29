@@ -29,7 +29,25 @@ MAX_POWER = {
 }
 
 
-def get_threshold_method(threshold_method, appliances):
+def _get_threshold_params(threshold_method, appliances):
+    """
+    Given the method name and list of appliances,
+    this function outputs the necessary parameters to use the method in
+    ukdale_data.load_ukdale_meter
+
+    Parameters
+    ----------
+    threshold_method : str
+    appliances : list
+
+    Returns
+    -------
+    thresholds
+    min_off
+    min_on
+    threshold_std
+
+    """
     # Ensure appliances is list
     appliances = to_list(appliances)
     
@@ -55,6 +73,10 @@ def get_threshold_method(threshold_method, appliances):
             # Homogenize input label
             label = homogenize_string(app)
             label = APPLIANCE_NAMES.get(label, label)
+            if label not in THRESHOLDS.keys():
+                msg = f"Appliance {app} has no AT info.\n"\
+                      f"Available appliances: {', '.join(THRESHOLDS.keys())}"
+                raise ValueError(msg)
             thresholds += [THRESHOLDS[label]]
             min_off += [MIN_OFF[label]]
             min_on += [MIN_ON[label]]
