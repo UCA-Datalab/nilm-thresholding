@@ -6,7 +6,7 @@ path_main = path_main.rsplit('/', 2)[0]
 sys.path.insert(0, path_main)
 
 """
-Trains several TP-NILM models for different appliances and buildings
+Trains several Bi-GRU models for different appliances and buildings
 """
 
 # Parameters to modify
@@ -50,7 +50,7 @@ seq_len = output_len
 
 # Model
 
-model_name = 'BiLSTMModel'
+model_name = 'BiGRUModel'
 model_params = {'input_len': input_len,
                 'output_len': output_len,
                 'out_channels': num_appliances,

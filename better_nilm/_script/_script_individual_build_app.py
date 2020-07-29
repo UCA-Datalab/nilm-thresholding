@@ -8,7 +8,7 @@ from better_nilm._script._script_utils import generate_path_output
 from better_nilm._script._script_utils import store_scores
 from better_nilm._script._script_utils import store_plots
 
-from better_nilm.model.architecture.bilstm import BiLSTMModel
+from better_nilm.model.architecture.bigru import BiGRUModel
 from better_nilm.model.architecture.tpnilm import TPNILMModel
 
 

@@ -6,7 +6,7 @@ path_main = path_main.rsplit('/', 2)[0]
 sys.path.insert(0, path_main)
 
 """
-Trains several Bi-LSTM models under the same conditions
+Trains several Bi-GRU models under the same conditions
 """
 
 # Parameters to modify
@@ -50,7 +50,7 @@ num_appliances = len(appliances)
 
 # Model
 
-model_name = 'BiLSTMModel'
+model_name = 'BiGRUModel'
 model_params = {'input_len': input_len,
                 'output_len': output_len,
                 'out_channels': num_appliances,
@@ -61,7 +61,7 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
-print("BiLSTM Many Models\n")
+print("BiGRU Many Models\n")
 
 sys.path.insert(0, path_main)
 
