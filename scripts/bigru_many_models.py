@@ -19,6 +19,11 @@ build_id_valid = [1]
 build_id_test = [1]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
+<<<<<<< HEAD:scripts/bigru_many_models.py
+=======
+threshold_method = 'at'
+
+>>>>>>> develop:scripts/bilstm_many_models.py
 class_w = 1
 reg_w = 0
 
@@ -61,6 +66,7 @@ model_params = {'input_len': input_len,
 
 # Run main script
 
+<<<<<<< HEAD:scripts/bigru_many_models.py
 print("BiGRU Many Models\n")
 
 sys.path.insert(0, path_main)
@@ -81,3 +87,9 @@ for threshold_method in ['vs', 'at', 'mp']:
                     epochs=epochs, patience=patience, num_models=num_models,
                     model_name=model_name, model_params=model_params,
                     threshold_method=threshold_method)
+=======
+path_scripts = os.path.join(path_main, 'scripts')
+sys.path.insert(0, path_scripts)
+
+import _script_many_models
+>>>>>>> develop:scripts/bilstm_many_models.py
