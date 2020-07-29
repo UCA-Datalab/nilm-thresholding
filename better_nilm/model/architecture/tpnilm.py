@@ -63,7 +63,7 @@ class _Decoder(nn.Module):
 
 class _PTPNet(nn.Module):
 
-    def __init__(self, seq_len=480, out_channels=1,
+    def __init__(self, output_len=480, out_channels=1,
                  init_features=32, dropout=0.1):
         super(_PTPNet, self).__init__()
 
@@ -91,7 +91,7 @@ class _PTPNet(nn.Module):
 
         # Compute the output size of the encoder4 layer
         # (batch, S, 256)
-        s = seq_len / 8
+        s = output_len / 8
 
         self.tpool1 = _TemporalPooling(features * 8 ** k, features * 2 ** k,
                                        kernel_size=int(s / 12),
@@ -133,7 +133,7 @@ class _PTPNet(nn.Module):
 
 class TPNILMModel(TorchModel):
 
-    def __init__(self, seq_len=480, border=16, out_channels=1,
+    def __init__(self, output_len=480, border=16, out_channels=1,
                  init_features=32,
                  learning_rate=0.001, dropout=0.1,
                  classification_w=1, regression_w=0):
@@ -141,18 +141,18 @@ class TPNILMModel(TorchModel):
 
         # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
-        # Where S = seq_len / 8
+        # Where S = output_len / 8
         # That series will them pass by four different filters
         # The output of the four filters must have the same size
         # For this reason, S must be a multiple of 12
-        if seq_len % 96 != 0:
-            s = round(seq_len / 96)
-            raise ValueError(f"seq_len {seq_len} is not valid.\nClosest"
+        if output_len % 96 != 0:
+            s = round(output_len / 96)
+            raise ValueError(f"output_len {output_len} is not valid.\nClosest"
                              f" valid value is {96 * s}")
 
         self.border = border
 
-        self.model = _PTPNet(seq_len=seq_len,
+        self.model = _PTPNet(output_len=output_len,
                              out_channels=out_channels,
                              init_features=init_features,
                              dropout=dropout).cuda()

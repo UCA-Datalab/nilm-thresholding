@@ -29,7 +29,7 @@ dates = {1: ('2013-04-12', '2014-12-15'),
 train_size = 0.8
 valid_size = 0.1
 
-seq_len = 480
+output_len = 480
 border = 16
 period = '1min'
 power_scale = 2000.
@@ -50,7 +50,7 @@ num_appliances = len(appliances)
 # Model
 
 model_name = 'TPNILMModel'
-model_params = {'seq_len': seq_len,
+model_params = {'output_len': output_len,
                 # 'border': border,
                 'out_channels': num_appliances,
                 'init_features': 32,
@@ -75,7 +75,7 @@ for threshold_method in ['vs', 'at', 'mp']:
                     build_id_test=build_id_test, appliances=appliances,
                     class_w=class_w, reg_w=reg_w, dates=dates,
                     train_size=train_size, valid_size=valid_size,
-                    seq_len=seq_len, border=border, period=period,
+                    output_len=output_len, border=border, period=period,
                     power_scale=power_scale,
                     batch_size=batch_size, learning_rate=learning_rate,
                     dropout=dropout,

@@ -74,7 +74,7 @@ for threshold_method in ['vs', 'at', 'mp']:
                     build_id_test=build_id_test, appliances=appliances,
                     class_w=class_w, reg_w=reg_w, dates=dates,
                     train_size=train_size, valid_size=valid_size,
-                    seq_len=output_len, border=border, period=period,
+                    output_len=output_len, border=border, period=period,
                     power_scale=power_scale,
                     batch_size=batch_size, learning_rate=learning_rate,
                     dropout=dropout,

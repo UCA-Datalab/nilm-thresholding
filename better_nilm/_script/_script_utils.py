@@ -113,12 +113,12 @@ def generate_path_output(path_main, model_name):
     return path_output
 
 
-def generate_folder_name(path_output, seq_len, period, class_w, reg_w,
+def generate_folder_name(path_output, output_len, period, class_w, reg_w,
                          threshold_method):
     """
     Generates specific folder inside outputs.
     """
-    name = f"seq_{str(seq_len)}_{period}_clas_{str(class_w)}" \
+    name = f"seq_{str(output_len)}_{period}_clas_{str(class_w)}" \
            f"_reg_{str(reg_w)}_{threshold_method}"
     path_output = os.path.join(path_output, name)
     if not os.path.isdir(path_output):
@@ -127,11 +127,11 @@ def generate_folder_name(path_output, seq_len, period, class_w, reg_w,
     return path_output
 
 
-def store_scores(path_output, seq_len, period, class_w, reg_w,
+def store_scores(path_output, output_len, period, class_w, reg_w,
                  threshold_method, train_size, valid_size, num_models,
                  batch_size, learning_rate, dropout, epochs, patience,
                  scores):
-    path_output = generate_folder_name(path_output, seq_len, period, class_w,
+    path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
 
     path_scores = os.path.join(path_output, 'scores.txt')
@@ -166,10 +166,10 @@ def store_scores(path_output, seq_len, period, class_w, reg_w,
                 '==================================================\n')
 
 
-def store_plots(path_output, seq_len, period, class_w, reg_w,
+def store_plots(path_output, output_len, period, class_w, reg_w,
                 threshold_method, appliances, model, dl_test,
                 power_scale, means, thresholds, min_off, min_on):
-    path_output = generate_folder_name(path_output, seq_len, period, class_w,
+    path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
 
     # Compute period of x axis
@@ -192,14 +192,14 @@ def store_plots(path_output, seq_len, period, class_w, reg_w,
         if class_w > 0:
             savefig = os.path.join(path_output, f"{app}_classification.png")
             plot_informative_sample(p_true, s_true, sp_hat, s_hat,
-                                    records=seq_len,
+                                    records=output_len,
                                     app_idx=idx, scale=1., period=period_x,
                                     dpi=180,
                                     savefig=savefig)
         if reg_w > 0:
             savefig = os.path.join(path_output, f"{app}_regression.png")
             plot_informative_sample(p_true, s_true, p_hat, ps_hat,
-                                    records=seq_len,
+                                    records=output_len,
                                     app_idx=idx, scale=1., period=period_x,
                                     dpi=180,
                                     savefig=savefig)

@@ -5,7 +5,6 @@ appliance in a household only by knowing the aggregated load of that house.
 
 # Module's scripts
 
-Take a look at [test/](tests) scripts to get a good idea about how the
-library scripts work. Specially look at
-[test_model_train](tests/test_model_train.py) to see a full implementation
-of the data load and training phase.
+The folder [scripts](/scripts) contains executable scripts. All their
+parameters can be tunned by editing the code, which is easily understandable
+and well explained inside each of them.

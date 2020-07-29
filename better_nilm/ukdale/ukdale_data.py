@@ -312,7 +312,7 @@ class Power(data.Dataset):
 def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
                       num_buildings,
                       train_size=0.8, valid_size=0.1,
-                      seq_len=512, border=16, power_scale=2000.):
+                      output_len=512, border=16, power_scale=2000.):
     """
     Splits data store data into train, validation and tests.
     """
@@ -321,7 +321,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
     ds_train = [Power(list_df_meter[i][:int(train_size * df_len[i])],
                       list_df_appliance[i][:int(train_size * df_len[i])],
                       list_df_status[i][:int(train_size * df_len[i])],
-                      seq_len, border, power_scale, train=True) for i in
+                      output_len, border, power_scale, train=True) for i in
                 range(num_buildings)]
 
     ds_valid = [
@@ -331,7 +331,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
                   (train_size + valid_size) * df_len[i])],
               list_df_status[i][int(train_size * df_len[i]):int(
                   (train_size + valid_size) * df_len[i])],
-              seq_len, border, power_scale, train=False) for i in
+              output_len, border, power_scale, train=False) for i in
         range(num_buildings)]
 
     ds_test = [
@@ -339,7 +339,7 @@ def _train_valid_test(list_df_meter, list_df_appliance, list_df_status,
               list_df_appliance[i][
               int((train_size + valid_size) * df_len[i]):],
               list_df_status[i][int((train_size + valid_size) * df_len[i]):],
-              seq_len, border, power_scale, train=False) for i in
+              output_len, border, power_scale, train=False) for i in
         range(num_buildings)]
 
     return ds_train, ds_valid, ds_test
@@ -362,7 +362,7 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
                               num_buildings,
                               build_id_train, build_id_valid, build_id_test,
                               train_size=0.8, valid_size=0.1, batch_size=64,
-                              seq_len=512, border=16, power_scale=2000.):
+                              output_len=512, border=16, power_scale=2000.):
     """
     Turns datastores into dataloaders.
     """
@@ -371,7 +371,7 @@ def datastores_to_dataloaders(list_df_meter, list_df_appliance, list_df_status,
     ds_test = _train_valid_test(
         list_df_meter, list_df_appliance, list_df_status, num_buildings,
         train_size=train_size, valid_size=valid_size,
-        seq_len=seq_len, border=border, power_scale=power_scale)
+        output_len=output_len, border=border, power_scale=power_scale)
 
     dl_train = _datastore_to_dataloader(ds_train, build_id_train,
                                         batch_size, True)
@@ -431,7 +431,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                      build_id_train=None, build_id_valid=None,
                      build_id_test=None,
                      train_size=0.8, valid_size=0.1, batch_size=64,
-                     seq_len=480, border=16, power_scale=2000.,
+                     output_len=480, border=16, power_scale=2000.,
                      threshold_method='vs',
                      thresholds=None, min_off=None, min_on=None,
                      threshold_std=True, return_means=False):
@@ -462,12 +462,12 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
     valid_size : float
         Train proportion. Must be between 0 and 1
     batch_size : int
-    seq_len : int
+    output_len : int
         Length of the sequence to output
-        len(output) = seq_len
+        len(output) = output_len
     border : int
         Borders of the input sequence, that will be lost in the output.
-        len(input) = seq_len + 2 * border
+        len(input) = output_len + 2 * border
     period : float, default='1min'
         Record frequency
     max_power : float, default=10000.
@@ -558,7 +558,7 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                         train_size=train_size,
                                         valid_size=valid_size,
                                         batch_size=batch_size,
-                                        seq_len=seq_len, border=border,
+                                        output_len=output_len, border=border,
                                         power_scale=power_scale)
 
     return_params = (dl_train, dl_valid, dl_test)
