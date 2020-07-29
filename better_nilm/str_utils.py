@@ -2,6 +2,12 @@ import re
 from unicodedata import normalize
 import numpy as np
 
+APPLIANCE_NAMES = {
+    "freezer": "fridge",
+    "fridgefreezer": "fridge",
+    "washerdryer": "washingmachine"
+}
+
 
 def deaccent(string, remove_dieresis_u=True):
     """
@@ -59,7 +65,9 @@ def homogenize_string(string, remove_dieresis_u=True):
     if string is np.nan:
         string = "NaN"
     assert isinstance(string, str), f"{string} is not a str object"
-    string_low = string.strip().lower().replace(" ", "")
+    string_low = string.strip().lower()
+    string_low = string_low.replace("_", " ")
+    string_low = string_low.replace(" ", "")
     string_low_deaccent = deaccent(
         string_low, remove_dieresis_u=remove_dieresis_u)
     return string_low_deaccent

@@ -1,4 +1,10 @@
+notebooks/
 plots/
+outputs/
+output/
+
+# Log
+log.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -39,7 +45,7 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit tests / coverage reports
 htmlcov/
 .tox/
 .nox/
@@ -131,3 +137,5 @@ dmypy.json
 .pyre/
 /data/
 /.idea/
+
+*.pth

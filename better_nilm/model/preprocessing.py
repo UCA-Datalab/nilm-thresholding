@@ -21,6 +21,7 @@ def train_test_split(ser, train_size, shuffle=True, random_seed=0):
     shuffle : bool, default=True
         Shuffle the data before splitting it
     random_seed : int, default=0
+    If < 0, data is not shuffled
 
     Returns
     -------
@@ -43,11 +44,11 @@ def train_test_split(ser, train_size, shuffle=True, random_seed=0):
         raise ValueError(f"train_size {train_size} returns the 100% of series")
 
     # Shuffle our time series array
-    if shuffle:
+    if shuffle and random_seed > 0:
         np.random.seed(random_seed)
         np.random.shuffle(ser)
 
-    # Split the shuffled array into train and test
+    # Split the shuffled array into train and tests
     ser_train = ser[:num_train, :, :]
     ser_test = ser[num_train:, :, :]
 
@@ -101,7 +102,7 @@ def feature_target_split(ser, meters, main="_main"):
     return x, y
 
 
-def normalize_meters(ser, max_values=None):
+def normalize_meters(ser, max_values=None, subtract_mean=False):
     """
     Normalize the meters values for the ser data array.
 
@@ -116,6 +117,8 @@ def normalize_meters(ser, max_values=None):
         shape = (num_meters, )
         Maximum value expected for each meter. If None is supplied, the array
         is created based on the given ser array.
+    subtract_mean : bool, default=False
+        If True, subtract the mean of each sequence, to center it around 0.
 
     Returns
     -------
@@ -143,6 +146,13 @@ def normalize_meters(ser, max_values=None):
 
     # Fill NaNs in case one max value is 0
     ser = np.nan_to_num(ser)
+
+    if subtract_mean:
+        # Make every sequence have mean 0
+        ser_mean = ser.mean(axis=1)
+        ser -= np.repeat(ser_mean[:, :, np.newaxis], ser.shape[1], axis=1)
+        assert (ser.mean(axis=1).round(3)).sum() == 0, "Mean of sequences is" \
+                                                       "not 0"
 
     return ser, max_values
 
@@ -217,16 +227,16 @@ def _get_cluster_centroids(ser):
     # Initialize mean and std arrays
     mean = np.zeros((num_meters, 2))
     std = np.zeros((num_meters, 2))
-    
+
     for idx in range(num_meters):
         # Take one meter record
         meter = ser[:, :, idx].flatten()
         meter = meter.reshape((len(meter), -1))
         kmeans = KMeans(n_clusters=2).fit(meter)
-        
+
         # The mean of a cluster is the cluster centroid
         mean[idx, :] = kmeans.cluster_centers_.reshape(2)
-        
+
         # Compute the standard deviation of the points in
         # each cluster
         labels = kmeans.labels_
@@ -234,11 +244,11 @@ def _get_cluster_centroids(ser):
         lab1 = meter[labels == 1]
         std[idx, 0] = lab0.std()
         std[idx, 1] = lab1.std()
-    
+
     return mean, std
 
 
-def get_thresholds(ser):
+def get_thresholds(ser, use_std=True, return_mean=False):
     """
     Returns the estimated thresholds that splits ON and OFF appliances states.
 
@@ -249,26 +259,50 @@ def get_thresholds(ser):
         - num_series : Amount of time series.
         - series_len : Length of each time series.
         - num_meters : Meters contained in the array.
+    use_std : bool, default=True
+        Consider the standard deviation of each cluster when computing the
+        threshold. If not, the threshold is set in the middle point between
+        cluster centroids.
+    return_mean : bool, default=False
+        If True, return the means as second parameter.
 
     Returns
     -------
     threshold : numpy.array
         shape = (num_meters,)
+    mean : numpy.array
+        shape = (num_meters,)
+        Only returned when return_mean is True (default False)
 
     """
     mean, std = _get_cluster_centroids(ser)
 
     # Sigma is a value between 0 and 1
     # sigma = the distance from OFF to ON at which we set the threshold
-    sigma = std[:, 0] / (std.sum(axis=1))
-    sigma = np.nan_to_num(sigma)
+    if use_std:
+        sigma = std[:, 0] / (std.sum(axis=1))
+        sigma = np.nan_to_num(sigma)
+    else:
+        sigma = np.ones(mean.shape[0]) * .5
 
     # Add threshold
     threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
-    return threshold
+
+    # Compute the new mean of each cluster
+    for idx in range(mean.shape[0]):
+        # Flatten the series
+        meter = ser[:, :, idx].flatten()
+        mask_on = meter >= threshold[idx]
+        mean[idx, 0] = meter[~mask_on].mean()
+        mean[idx, 1] = meter[mask_on].mean()
+
+    if return_mean:
+        return threshold, np.sort(mean)
+    else:
+        return threshold
 
 
-def binarize(ser, thresholds):
+def get_status(ser, thresholds):
     """
 
     Parameters
@@ -291,12 +325,16 @@ def binarize(ser, thresholds):
     ser = ser.copy()
 
     ser_bin = np.zeros(ser.shape)
-    num_app = ser.shape[2]
+    num_app = ser.shape[-1]
 
     # Iterate through all the appliances
     for idx in range(num_app):
-        mask_on = ser[:, :, idx] > thresholds[idx]
-        ser_bin[:, :, idx] = mask_on.astype(int)
+        if len(ser.shape) == 3:
+            mask_on = ser[:, :, idx] > thresholds[idx]
+            ser_bin[:, :, idx] = mask_on.astype(int)
+        else:
+            mask_on = ser[:, idx] > thresholds[idx]
+            ser_bin[:, idx] = mask_on.astype(int)
 
     ser_bin = ser_bin.astype(int)
 
@@ -305,10 +343,11 @@ def binarize(ser, thresholds):
 
 def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                                 main="_main", shuffle=True, random_seed=0,
+                                thresholds=None,
                                 normalize=True):
     """
     This function serves as a pipeline for preprocessing. It takes the whole
-    array of data, splits it into train-validation-test, normalize its values
+    array of data, splits it into train-validation-tests, normalize its values
     and computes the binary classification for Y data.
 
     Parameters
@@ -329,6 +368,8 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
     shuffle : bool, default=True
         Shuffles the data before splitting it
     random_seed : int, default=0
+    thresholds : list, default=None
+        If not provided, they are computed.
     normalize : bool, default=True
         Normalize the data. Please bear in mind that the thresholds stored
         for binarization depend on whether you have applied normalization
@@ -345,15 +386,15 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
         raise ValueError(f"Train size: {train_size} is too low for the given "
                          f"amount of series: {num_series}")
     if floor(num_series * validation_size) <= 0:
-        raise ValueError(f"Validation size: {validation_size} is too low for"
+        raise ValueError(f"Validation size: {validation_size} is too low for "
                          f"the given amount of series: {num_series}")
 
-    # Split data intro train and validation+test
+    # Split data intro train and validation+tests
     ser_train, ser_test = train_test_split(ser, train_size,
                                            random_seed=random_seed,
                                            shuffle=shuffle)
 
-    # Re-escale validation size. Split remaining data into validation and test
+    # Re-escale validation size. Split remaining data into validation and tests
     validation_size /= (1 - train_size)
     ser_val, ser_test = train_test_split(ser_test, validation_size,
                                          random_seed=random_seed,
@@ -381,10 +422,11 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
         y_max = None
 
     # Get the binary meter status of each Y series
-    thresholds = get_thresholds(y_train)
-    bin_train = binarize(y_train, thresholds)
-    bin_val = binarize(y_val, thresholds)
-    bin_test = binarize(y_test, thresholds)
+    if thresholds is None:
+        thresholds = get_thresholds(y_train)
+    bin_train = get_status(y_train, thresholds)
+    bin_val = get_status(y_val, thresholds)
+    bin_test = get_status(y_test, thresholds)
 
     # Appliance info
     appliances = meters.copy()
@@ -398,7 +440,7 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                    "validation": {"x": x_val,
                                   "y": y_val,
                                   "bin": bin_val},
-                   "test": {"x": x_test,
+                   "tests": {"x": x_test,
                             "y": y_test,
                             "bin": bin_test},
                    "max_values": {"x": x_max,
@@ -408,3 +450,143 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                    "num_appliances": num_appliances}
 
     return dict_prepro
+
+
+def _get_app_status_by_duration(y, threshold, min_off, min_on):
+    """
+
+    Parameters
+    ----------
+    y : numpy.array
+        shape = (num_series, series_len)
+        - num_series : Amount of time series.
+        - series_len : Length of each time series.
+    threshold : float
+    min_off : int
+    min_on : int
+
+    Returns
+    -------
+    s : numpy.array
+        shape = (num_series, series_len)
+        With binary values indicating ON (1) and OFF (0) states.
+    """
+    shape_original = y.shape
+    y = y.flatten().copy()
+
+    condition = y > threshold
+    # Find the indicies of changes in "condition"
+    d = np.diff(condition)
+    idx = d.nonzero()[0]
+
+    # We need to start things after the change in "condition". Therefore,
+    # we'll shift the index by 1 to the right.
+    idx += 1
+
+    if condition[0]:
+        # If the start of condition is True prepend a 0
+        idx = np.r_[0, idx]
+
+    if condition[-1]:
+        # If the end of condition is True, append the length of the array
+        idx = np.r_[idx, condition.size]  # Edit
+
+    # Reshape the result into two columns
+    idx.shape = (-1, 2)
+    on_events = idx[:, 0].copy()
+    off_events = idx[:, 1].copy()
+    assert len(on_events) == len(off_events)
+
+    if len(on_events) > 0:
+        off_duration = on_events[1:] - off_events[:-1]
+        off_duration = np.insert(off_duration, 0, 1000.)
+        on_events = on_events[off_duration > min_off]
+        off_events = off_events[np.roll(off_duration, -1) > min_off]
+        assert len(on_events) == len(off_events)
+
+        on_duration = off_events - on_events
+        on_events = on_events[on_duration > min_on]
+        off_events = off_events[on_duration > min_on]
+
+    s = y.copy()
+    s[:] = 0.
+
+    for on, off in zip(on_events, off_events):
+        s[on:off] = 1.
+
+    s = np.reshape(s, shape_original)
+
+    return s
+
+
+def get_status_by_duration(ser, thresholds, min_off, min_on):
+    """
+
+    Parameters
+    ----------
+    ser : numpy.array
+        shape = (num_series, series_len, num_meters)
+        - num_series : Amount of time series.
+        - series_len : Length of each time series.
+        - num_meters : Meters contained in the array.
+    thresholds : numpy.array
+        shape = (num_meters,)
+    min_off : numpy.array
+        shape = (num_meters,)
+    min_on : numpy.array
+        shape = (num_meters,)
+
+    Returns
+    -------
+    ser_bin : numpy.array
+        shape = (num_series, series_len, num_meters)
+        With binary values indicating ON (1) and OFF (0) states.
+    """
+    num_apps = ser.shape[-1]
+    ser_bin = ser.copy()
+
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and number of appliances ({num_apps}) doesn't match\n"
+    assert len(thresholds) ==num_apps, msg
+
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and min_on ({len(min_on)}) doesn't match\n"
+    assert len(thresholds) == len(min_on), msg
+
+    msg = f"Length of thresholds ({len(thresholds)})\n" \
+          f"and min_off ({len(min_off)}) doesn't match\n"
+    assert len(thresholds) == len(min_off), msg
+
+    for idx in range(num_apps):
+        if ser.ndim == 3:
+            y = ser[:, :, idx]
+            ser_bin[:, :, idx] = _get_app_status_by_duration(y,
+                                                             thresholds[idx],
+                                                             min_off[idx],
+                                                             min_on[idx])
+        elif ser.ndim == 2:
+            y = ser[:, idx]
+            ser_bin[:, idx] = _get_app_status_by_duration(y,
+                                                          thresholds[idx],
+                                                          min_off[idx],
+                                                          min_on[idx])
+
+    return ser_bin
+
+
+def get_status_means(ser, status):
+    """
+    Get means of both status.
+    """
+
+    means = np.zeros((ser.shape[2], 2))
+
+    # Compute the new mean of each cluster
+    for idx in range(ser.shape[2]):
+        # Flatten the series
+        meter = ser[:, :, idx].flatten()
+        mask_on = status[:, :, idx].flatten() > 0
+        means[idx, 0] = meter[~mask_on].mean()
+        means[idx, 1] = meter[mask_on].mean()
+
+    return means
