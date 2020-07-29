@@ -59,18 +59,3 @@ def get_threshold_method(threshold_method, appliances):
               f"Use one of the following: vs, mp, at")
 
     return thresholds, min_off, min_on, threshold_std
-
-
-def get_activation_time_means(list_appliances):
-    """
-    Load means of both status when AT method is used for thresholding.
-    """
-    means = []
-    for app in list_appliances:
-        # Homogenize input label
-        label = homogenize_string(app)
-        label = APPLIANCE_NAMES.get(label, label)
-        means += [[0, MAX_POWER[label]]]
-
-    means = np.array(means)
-    return means

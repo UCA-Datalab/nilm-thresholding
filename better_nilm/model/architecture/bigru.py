@@ -15,11 +15,11 @@ class _Dense(nn.Module):
         return self.linear(x)
 
 
-class _BiLSTM(nn.Module):
+class _BiGRU(nn.Module):
 
     def __init__(self, input_len=510, output_len=480, out_channels=1,
                  dropout=0.1):
-        super(_BiLSTM, self).__init__()
+        super(_BiGRU, self).__init__()
 
         padding = 2
         kernel_size = int((input_len - output_len + 4 * padding + 2) / 2)
@@ -55,7 +55,7 @@ class _BiLSTM(nn.Module):
         return power, status
 
 
-class BiLSTMModel(TorchModel):
+class BiGRUModel(TorchModel):
 
     def __init__(self, input_len=510, output_len=480, out_channels=1,
                  learning_rate=1E-4, dropout=0.1,
@@ -65,9 +65,9 @@ class BiLSTMModel(TorchModel):
         msg = "Difference between input and output lens must be even"
         assert (input_len - output_len) % 2 == 0, msg
 
-        self.model = _BiLSTM(input_len=input_len, output_len=output_len,
-                             out_channels=out_channels,
-                             dropout=dropout).cuda()
+        self.model = _BiGRU(input_len=input_len, output_len=output_len,
+                            out_channels=out_channels,
+                            dropout=dropout).cuda()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.pow_criterion = nn.MSELoss()
         self.act_criterion = nn.BCEWithLogitsLoss()

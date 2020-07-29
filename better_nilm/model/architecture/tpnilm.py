@@ -122,7 +122,7 @@ class _PTPNet(nn.Module):
         tp2 = self.tpool2(enc4)
         tp3 = self.tpool3(enc4)
         tp4 = self.tpool4(enc4)
-        
+
         dec = self.decoder(torch.cat([enc4, tp1, tp2, tp3, tp4], dim=1))
 
         pw = self.power(dec)

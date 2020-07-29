@@ -48,8 +48,6 @@ num_appliances = 1
 
 # Model
 
-from better_nilm.model.architecture.tpnilm import TPNILMModel
-
 model_name = 'TPNILMModel'
 model_params = {'seq_len': seq_len,
                 # 'border': border,
@@ -63,6 +61,21 @@ model_params = {'seq_len': seq_len,
 
 # Run main script
 
-path_scripts = os.path.join(path_main, 'scripts')
-sys.path.insert(0, path_scripts)
-import _script_appliances
+sys.path.insert(0, path_main)
+
+from better_nilm._script._script_individual_build_app import \
+    run_individual_build_app
+
+run_individual_build_app(path_h5=path_h5, path_data=path_data,
+                         path_main=path_main,
+                         buildings=buildings, appliances=appliances,
+                         class_w=class_w, reg_w=reg_w, dates=dates,
+                         train_size=train_size, valid_size=valid_size,
+                         seq_len=seq_len, border=border, period=period,
+                         power_scale=power_scale,
+                         batch_size=batch_size, learning_rate=learning_rate,
+                         dropout=dropout,
+                         epochs=epochs, patience=patience,
+                         num_models=num_models,
+                         model_name=model_name, model_params=model_params,
+                         threshold_method=threshold_method)
