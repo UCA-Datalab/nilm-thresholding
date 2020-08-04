@@ -10,6 +10,8 @@ from better_nilm.model.scores import regression_scores_dict
 
 from better_nilm.plot_utils import plot_informative_sample
 
+from better_nilm.format_utils import to_list
+
 
 def process_model_outputs(p_true, p_hat, s_hat,
                           power_scale, means, thresholds, min_off, min_on):
@@ -171,6 +173,9 @@ def store_plots(path_output, output_len, period, class_w, reg_w,
                 power_scale, means, thresholds, min_off, min_on):
     path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
+    
+    # Ensure appliances is a list
+    appliances = to_list(appliances)
 
     # Compute period of x axis
     if period.endswith('min'):

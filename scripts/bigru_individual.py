@@ -22,7 +22,7 @@ buildings = [1, 2, 5]
 appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 # Threshold method. See README
-threshold_method = 'at'
+threshold_methods = ['at', 'mp', 'vs']
 
 # Date range for each building
 dates = {1: ('2013-04-12', '2014-12-15'),
@@ -53,7 +53,7 @@ epochs = 300
 patience = 300
 
 # Number of models to train. Their scores are then normalized
-num_models = 5
+num_models = 10
 
 # OTHER PARAMETERS (no need to modify these)
 
@@ -79,16 +79,17 @@ sys.path.insert(0, path_main)
 from better_nilm._script._script_individual_build_app import \
     run_individual_build_app
 
-run_individual_build_app(path_h5=path_h5, path_data=path_data,
-                         path_main=path_main,
-                         buildings=buildings, appliances=appliances,
-                         class_w=class_w, reg_w=reg_w, dates=dates,
-                         train_size=train_size, valid_size=valid_size,
-                         output_len=output_len, border=border, period=period,
-                         power_scale=power_scale,
-                         batch_size=batch_size, learning_rate=learning_rate,
-                         dropout=dropout,
-                         epochs=epochs, patience=patience,
-                         num_models=num_models,
-                         model_name=model_name, model_params=model_params,
-                         threshold_method=threshold_method)
+for threshold_method in threshold_methods:
+    run_individual_build_app(path_h5=path_h5, path_data=path_data,
+                             path_main=path_main,
+                             buildings=buildings, appliances=appliances,
+                             class_w=class_w, reg_w=reg_w, dates=dates,
+                             train_size=train_size, valid_size=valid_size,
+                             output_len=output_len, border=border, period=period,
+                             power_scale=power_scale,
+                             batch_size=batch_size, learning_rate=learning_rate,
+                             dropout=dropout,
+                             epochs=epochs, patience=patience,
+                             num_models=num_models,
+                             model_name=model_name, model_params=model_params,
+                             threshold_method=threshold_method)

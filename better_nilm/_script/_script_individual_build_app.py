@@ -92,5 +92,5 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
                          scores)
 
             store_plots(path_output, output_len, period, class_w, reg_w,
-                        threshold_method, appliances, model, dl_test,
+                        threshold_method, appliance, model, dl_test,
                         power_scale, means, thresholds, min_off, min_on)
