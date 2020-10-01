@@ -89,8 +89,8 @@ def run_individual_build_app(path_h5=None, path_data=None, path_main=None,
             store_scores(path_output, output_len, period, class_w, reg_w,
                          threshold_method, train_size, valid_size, num_models,
                          batch_size, learning_rate, dropout, epochs, patience,
-                         scores)
+                         scores, 0)
 
             store_plots(path_output, output_len, period, class_w, reg_w,
-                        threshold_method, appliances, model, dl_test,
+                        threshold_method, appliance, model, dl_test,
                         power_scale, means, thresholds, min_off, min_on)

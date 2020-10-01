@@ -1,3 +1,5 @@
+import time
+
 from better_nilm.ukdale.ukdale_data import load_dataloaders
 
 from better_nilm._script._script_utils import get_model_scores
@@ -49,6 +51,7 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
 
     act_scores = []
     pow_scores = []
+    time_ellapsed = 0
 
     for i in range(num_models):
         print(f"\nModel {i + 1}\n")
@@ -56,9 +59,11 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
         model = eval(model_name)(**model_params)
 
         # Train
+        time_start = time.time()
         model.train_with_dataloader(dl_train, dl_valid,
                                     epochs=epochs,
                                     patience=patience)
+        time_ellapsed += time.time() - time_start
 
         act_scr, pow_scr = get_model_scores(model, dl_test, power_scale,
                                             means, thresholds, appliances,
@@ -70,6 +75,8 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
     # List scores
 
     scores = list_scores(appliances, act_scores, pow_scores, num_models)
+    
+    time_ellapsed /= num_models
 
     # Plot
 
@@ -78,7 +85,7 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
     store_scores(path_output, output_len, period, class_w, reg_w,
                  threshold_method, train_size, valid_size, num_models,
                  batch_size, learning_rate, dropout, epochs, patience,
-                 scores)
+                 scores, time_ellapsed)
 
     store_plots(path_output, output_len, period, class_w, reg_w,
                 threshold_method, appliances, model, dl_test,

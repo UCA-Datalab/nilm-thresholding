@@ -93,6 +93,11 @@ class TorchModel:
             # train the model #
             ###################
             self.model.train()  # prep model for training
+            
+            # Initialize ON activation frequency
+            #on = np.zeros(3) 
+            #total = 0
+            
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
                 data = data.unsqueeze(1).cuda()
@@ -117,7 +122,13 @@ class TorchModel:
                 self.optimizer.step()
                 # record training loss
                 train_losses.append(loss.item())
-
+                # Compute ON activation frequency
+                #on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
+                #total += target_status.size()[0] * target_status.size()[1]
+            
+            # Display ON activation frequency
+            #print('Train ON frequency', on / total)
+            
             ######################
             # validate the model #
             ######################

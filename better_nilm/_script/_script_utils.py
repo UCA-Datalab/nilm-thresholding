@@ -1,5 +1,6 @@
 import collections
 import numpy as np
+import pandas as pd
 import os
 
 from better_nilm.model.preprocessing import get_status
@@ -8,7 +9,15 @@ from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.model.scores import classification_scores_dict
 from better_nilm.model.scores import regression_scores_dict
 
-from better_nilm.plot_utils import plot_informative_sample
+from better_nilm.plot_utils import plot_informative_classification
+from better_nilm.plot_utils import plot_informative_regression
+
+from better_nilm.format_utils import to_list
+
+
+DICT_THRESH_COLOR = {'at': 'b',
+                    'mp': 'g',
+                    'vs': 'r'}
 
 
 def process_model_outputs(p_true, p_hat, s_hat,
@@ -130,7 +139,7 @@ def generate_folder_name(path_output, output_len, period, class_w, reg_w,
 def store_scores(path_output, output_len, period, class_w, reg_w,
                  threshold_method, train_size, valid_size, num_models,
                  batch_size, learning_rate, dropout, epochs, patience,
-                 scores):
+                 scores, time_ellapsed):
     path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
 
@@ -145,6 +154,7 @@ def store_scores(path_output, output_len, period, class_w, reg_w,
                         f"Dropout: {dropout}\n"
                         f"Epochs: {epochs}\n"
                         f"Patience: {patience}\n"
+                        f"Time per model (seconds): {time_ellapsed}\n"
                         f"=============================================\n")
         for key, dic1 in scores.items():
 
@@ -171,6 +181,9 @@ def store_plots(path_output, output_len, period, class_w, reg_w,
                 power_scale, means, thresholds, min_off, min_on):
     path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
+    
+    # Ensure appliances is a list
+    appliances = to_list(appliances)
 
     # Compute period of x axis
     if period.endswith('min'):
@@ -180,26 +193,64 @@ def store_plots(path_output, output_len, period, class_w, reg_w,
 
     # Model values
 
-    x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+    x, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
 
     p_true, p_hat, s_hat, \
     sp_hat, ps_hat = process_model_outputs(p_true, p_hat, s_hat,
                                            power_scale, means, thresholds,
                                            min_off, min_on)
-
+    
+    thresh_color = DICT_THRESH_COLOR.get(threshold_method, 'grey')
+    
     for idx, app in enumerate(appliances):
-        # Skip plots if weight is zero
-        if class_w > 0:
-            savefig = os.path.join(path_output, f"{app}_classification.png")
-            plot_informative_sample(p_true, s_true, sp_hat, s_hat,
-                                    records=output_len,
-                                    app_idx=idx, scale=1., period=period_x,
-                                    dpi=180,
-                                    savefig=savefig)
-        if reg_w > 0:
-            savefig = os.path.join(path_output, f"{app}_regression.png")
-            plot_informative_sample(p_true, s_true, p_hat, ps_hat,
-                                    records=output_len,
-                                    app_idx=idx, scale=1., period=period_x,
-                                    dpi=180,
-                                    savefig=savefig)
+        
+        # Store results
+        df = pd.DataFrame({'x':x,
+                           'y_true':p_true[:,idx], 'y_hat':p_hat[:,idx],
+                           's_true':s_true[:,idx], 's_hat':s_hat[:,idx]})
+        save_csv = os.path.join(path_output, f"{app}_data.csv")
+        df.to_csv(save_csv)
+        
+        # Plot a certain number of sequences per appliance
+        idx_start = 0
+        num_plots = 0
+        while (num_plots < 10) and ((idx_start + output_len) < p_true.shape[0]):
+            idx_end = idx_start + output_len
+            p_t = p_true[idx_start:idx_end, idx]
+            if p_t.sum() > 0:
+                s_t = s_true[idx_start:idx_end, idx]
+                sp_h = sp_hat[idx_start:idx_end, idx]
+                s_h = s_hat[idx_start:idx_end, idx]
+                p_h = p_hat[idx_start:idx_end, idx]
+                ps_h = ps_hat[idx_start:idx_end, idx]
+                num_plots += 1
+                
+                # Add aggregate load. Try to de-normalize it
+                p_agg = np.multiply(x[idx_start:idx_end], power_scale)
+                p_agg -= p_agg.min()
+                # It may need further denormalization if one of its values
+                # is lower than the appliance load
+                factor = (p_agg - p_t).min()
+                if factor < 0:
+                    p_agg -= factor
+                
+                idx_start += output_len
+            else:
+                idx_start += output_len
+                continue
+            # Skip plots if weight is zero
+            if class_w > 0:
+                savefig = os.path.join(path_output,
+                                       f"{app}_classification_{num_plots}.png")
+                plot_informative_classification(s_t, s_h, p_agg,
+                                            records=output_len,
+                                            period=period_x, pw_max=p_agg.max(),
+                                            dpi=180, thresh_color=thresh_color,
+                                            savefig=savefig, title=app)
+            if reg_w > 0:
+                savefig = os.path.join(path_output,
+                                       f"{app}_regression_{num_plots}.png")
+                plot_informative_regression(p_t, p_h, p_agg,
+                                        records=output_len,
+                                        scale=1., period=period_x,
+                                        dpi=180, savefig=savefig, title=app)
