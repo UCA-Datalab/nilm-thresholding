@@ -6,9 +6,8 @@ appliance in a household by knowing the aggregated load of that house.
 ## Module's scripts
 
 The folder [scripts](/scripts) contains executable scripts. All their
-parameters can be tuned by editing the code, which is easily understandable
-and well explained inside each of them. In this version, the scripts only
-work on UKDALE dataset.
+parameters can be tuned by editing the code, which is well explained inside
+ each of them. In this version, the scripts only work on UKDALE dataset.
 
 Once you run the script, it performs the following tasks:
 1. Load the UKDALE dataset and preprocess it. The functions used in this part
@@ -22,8 +21,6 @@ are contained in the folder [ukdale](/better_nilm/ukdale).
 7. Plot some sample sequences and predictions, using the functions in
 [plot_utils](/better_nilm/plot_utils.py)
 Store them in the outputs folder.
-
-
 
 ### Thresholding methods
 
