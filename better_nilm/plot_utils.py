@@ -3,6 +3,9 @@ import numpy as np
 
 
 def _flatten_series(y_a, y_b, idx, num_series):
+    """
+    Flat tensor of 3-dims into 2-d matrix
+    """
     # Take just one appliance
     if num_series is None:
         if len(y_a.shape) == 3:
@@ -152,7 +155,7 @@ def plot_load_and_state(load, state, idx=0,
 def plot_informative_sample(p_true, s_true, p_hat, s_hat, p_agg=None,
                             records=480, app_idx=0, scale=1.,
                             period=1., dpi=100, savefig=None,
-                           thresh_color='grey'):
+                            thresh_color='grey'):
     """
 
     Parameters
@@ -180,6 +183,8 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat, p_agg=None,
         Dots per inch, image quality
     savefig : str, default=None
         Path where the figure is stored.
+    thresh_color : str, default='grey'
+        Color of the threshold bars, when appliance state is ON
     """
     # We dont want to modify the originals
     p_true = p_true.copy()
@@ -204,7 +209,6 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat, p_agg=None,
 
     mask_on = s_hat == 1
     s_hat = s_hat[mask_on].copy()
-    s_true_on = s_true[mask_on].copy()
     t_on = t[mask_on].copy()
 
     # Distinguish between correct and incorrect guesses
@@ -218,37 +222,42 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat, p_agg=None,
 
     # Plot the figure
     plt.figure(dpi=dpi)
-    
+
     plt.bar(t, np.multiply(s_true, pw_max * 2),
             color=thresh_color, alpha=.2, width=1,
-           label='Appliance status')
-    
+            label='Appliance status')
+
     if p_agg is not None:
         plt.plot(t, p_agg, '--', color='grey',
                  label='Aggregate power')
-        
+
     plt.plot(t, pw, color='black', label='Appliance power')
     plt.plot(t, pw_pred, color='blue', label='Predicted power')
-    
+
     plt.scatter(t_on, s_hat, color='blue', s=.8,
                 label='Predicted ON activation')
-    
+
     plt.legend()
-    
+
     plt.ylim([0, pw_max * 1.1])
     plt.ylabel('Power (watts)')
     plt.xlabel('Time (minutes)')
-    
+
     if savefig is not None:
         plt.savefig(savefig)
         plt.close()
 
 
 def plot_informative_classification(s_true, s_hat, p_agg,
-                                   records=480, pw_max=1.,
-                                   period=1., dpi=100, savefig=None,
-                                   thresh_color='grey', title=None):
-
+                                    records=480, pw_max=1.,
+                                    period=1., dpi=100, savefig=None,
+                                    thresh_color='grey', title=None):
+    """
+    Plots the following:
+    - Predicted appliance state (s_hat) as dots
+    - Real appliance state (s_true) as bars when ON
+    - Real aggregated load (p_agg) as a grey line, in watts
+    """
     # We dont want to modify the originals
     s_true = s_true.copy()
     s_hat = s_hat.copy()
@@ -257,7 +266,7 @@ def plot_informative_classification(s_true, s_hat, p_agg,
     # Define time
     t = np.array([i for i in range(records)])
     t = np.multiply(t, period)
-    
+
     # Get ON activations
     mask_on = s_hat == 1
     s_hat = s_hat[mask_on].copy() * pw_max * .75
@@ -265,31 +274,37 @@ def plot_informative_classification(s_true, s_hat, p_agg,
 
     # Plot the figure
     plt.figure(dpi=dpi)
-    
+
     plt.fill_between(t, p_agg, color='grey', alpha=.4, label='Aggregate power')
     plt.bar(t, np.multiply(s_true, pw_max * 2),
             color=thresh_color, alpha=.2, width=1, label='Appliance status')
     plt.scatter(t_on, s_hat, color=thresh_color, s=.6,
                 label='Predicted ON activation')
-    
+
     plt.legend()
-    
+
     plt.ylim([0, pw_max])
     plt.ylabel('Power (watts)')
     plt.xlabel('Time (minutes)')
-    
+
     if title is not None:
         plt.title(title)
-    
+
     if savefig is not None:
         plt.savefig(savefig)
         plt.close()
-        
+
 
 def plot_informative_regression(p_true, p_hat, p_agg,
-                            records=480, scale=1.,
-                            period=1., dpi=100, savefig=None,
-                           color='purple', title=None):
+                                records=480, scale=1.,
+                                period=1., dpi=100, savefig=None,
+                                color='purple', title=None):
+    """
+    Plots the following:
+    - Predicted appliance power (p_hat) as a line, in watts
+    - Real appliance power (p_true) as a line, in watts
+    - Real aggregated load (p_agg) as a grey line, in watts
+    """
     # We dont want to modify the originals
     p_true = p_true.copy()
     p_hat = p_hat.copy()
@@ -308,21 +323,20 @@ def plot_informative_regression(p_true, p_hat, p_agg,
 
     # Plot the figure
     plt.figure(dpi=dpi)
-    
+
     plt.fill_between(t, p_agg, color='grey', alpha=.4, label='Aggregate power')
     plt.fill_between(t, pw, color=color, alpha=.3, label='Appliance power')
     plt.plot(t, pw_pred, color=color, label='Predicted power')
-    
+
     plt.legend()
-    
+
     plt.ylim([0, pw_max * 1.1])
     plt.ylabel('Power (watts)')
     plt.xlabel('Time (minutes)')
-    
+
     if title is not None:
         plt.title(title)
-    
+
     if savefig is not None:
         plt.savefig(savefig)
         plt.close()
-    
