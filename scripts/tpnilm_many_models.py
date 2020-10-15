@@ -25,9 +25,11 @@ appliances = ['fridge', 'dish_washer', 'washing_machine']
 
 # Threshold and weights combination
 # thresh:[(clas, reg)]
-dict_thresh_weights = {'mp': [(1,0), (0,1)],
-                     'vs': [(1,0)],
-                     'at': [(1,0)]}
+w_clas = [.1, .3, .5, .7, .9]
+w_reg = [round(1 - w, 2) for w in w_clas]
+dict_thresh_weights = {'mp': list(zip(w_clas, w_reg)),
+                     'vs': [],
+                     'at': []}
 
 # Date range for each building
 dates = {1: ('2013-04-12', '2014-12-15'),
@@ -56,7 +58,7 @@ epochs = 300
 patience = 300
 
 # Number of models to train. Their scores are then normalized
-num_models = 1
+num_models = 5
 
 # OTHER PARAMETERS (no need to modify these)
 
@@ -76,6 +78,8 @@ sys.path.insert(0, path_main)
 from better_nilm._script._script_many_models import run_many_models
 
 for threshold_method, weights in dict_thresh_weights.items():
+    if len(weights) == 0:
+        continue
     print(f"\n++++++++++++\n{threshold_method}\n+++++++++++++")
     for class_w, reg_w in weights:
         

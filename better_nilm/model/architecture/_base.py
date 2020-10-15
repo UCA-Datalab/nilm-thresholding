@@ -61,6 +61,8 @@ class TorchModel:
         self.pow_w = 1
         self.act_w = 1
         self.border = 0
+        self.pow_loss_avg = 0.0045
+        self.act_loss_avg = 0.68
 
     def _get_dataloader(self, x, y, y_bin):
         tensor_x = torch.Tensor(x)
@@ -114,7 +116,8 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = self.pow_w * pow_loss + self.act_w * act_loss
+                loss = (self.pow_w * pow_loss / self.pow_loss_avg
+                        + self.act_w * act_loss / self.act_loss_avg)
                 # backward pass: compute gradient of the loss with respect
                 # to model parameters
                 loss.backward()
@@ -146,7 +149,8 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = self.pow_w * pow_loss + self.act_w * act_loss
+                loss = (self.pow_w * pow_loss / self.pow_loss_avg
+                        + self.act_w * act_loss / self.act_loss_avg)
                 # record validation loss
                 valid_losses.append(loss.item())
 

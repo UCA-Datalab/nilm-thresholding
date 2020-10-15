@@ -139,11 +139,11 @@ def generate_folder_name(path_output, output_len, period, class_w, reg_w,
 def store_scores(path_output, output_len, period, class_w, reg_w,
                  threshold_method, train_size, valid_size, num_models,
                  batch_size, learning_rate, dropout, epochs, patience,
-                 scores, time_ellapsed):
+                 scores, time_ellapsed, filename='scores.txt'):
     path_output = generate_folder_name(path_output, output_len, period, class_w,
                                        reg_w, threshold_method)
 
-    path_scores = os.path.join(path_output, 'scores.txt')
+    path_scores = os.path.join(path_output, filename)
 
     with open(path_scores, "w") as text_file:
         text_file.write(f"Train size: {train_size}\n"
@@ -159,10 +159,10 @@ def store_scores(path_output, output_len, period, class_w, reg_w,
         for key, dic1 in scores.items():
 
             # Skip scores if weight is zero
-            if (class_w == 0) and (key.startswith('class')):
-                continue
-            if (reg_w == 0) and (key.startswith('reg')):
-                continue
+            #if (class_w == 0) and (key.startswith('class')):
+            #    continue
+            #if (reg_w == 0) and (key.startswith('reg')):
+            #    continue
 
             text_file.write(
                 f"{key}\n------------------------------------------\n")
