@@ -7,7 +7,8 @@ import re
 from itertools import groupby
 from operator import itemgetter
 
-plt.style.use('seaborn-darkgrid')
+import seaborn as sns
+sns.set_style('white')
 
 
 PATH_DATA = '../data'
@@ -19,7 +20,7 @@ assert os.path.isdir(PATH_OUTPUT)
 DICT_APPLIANCES = {'dish_washer': 'Dishwasher',
                   'fridge': 'Fridge',
                   'washing_machine': 'Washing machine'}
-DICT_MODEL = {'TPNILM': 'TP-NILM',
+DICT_MODEL = {'TPNILM': 'CONV',
              'BiGRU': 'GRU'}
 DICT_MAE = {'Dishwasher': [5, 25],
            'Fridge': [20, 35],
@@ -140,13 +141,15 @@ def subplot_f1(ax, w, y, std, ignore_extreme):
         ax.errorbar(w[0], y[0], std[0], color=color,
                     linestyle='None', marker='.')
     ax.tick_params(axis='y', labelcolor=color)
+    ax.grid(axis='y')
+    ax.grid(axis='x')
     ax.set_ylim([.5, 1])
     return ax
 
 
 def subplot_mae(ax, w, y, std, ignore_extreme, app):
     color = 'tab:blue'
-    ax.set_ylabel('MAE', color=color)  # we already handled the x-label with ax1
+    ax.set_ylabel('MAE (watts)', color=color)  # we already handled the x-label with ax1
     up = y + std
     down = y - std
     if ignore_extreme or w.max() != 1:
@@ -166,13 +169,14 @@ def subplot_mae(ax, w, y, std, ignore_extreme, app):
 
 def plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
                 app, model,
-                movavg=1, ignore_extreme=True):
+                movavg=1, ignore_extreme=True, figsize=(6, 4),
+               savefig=None):
     app = DICT_APPLIANCES.get(app, app)
     if movavg > 1:
         f1 = moving_average(f1, n=movavg)
         mae = moving_average(mae, n=movavg)
 
-    fig, ax1 = plt.subplots(figsize=(8, 4))
+    fig, ax1 = plt.subplots(figsize=figsize)
 
     ax1 = subplot_f1(ax1, w_f1, f1, f1_std, ignore_extreme)
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
@@ -181,12 +185,16 @@ def plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
 
     ax1.set_title(model + ' ' + app)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.show()
+    if savefig is None:
+        plt.show()
+    else:
+        plt.savefig(savefig)
 
 
 def plot_weights(path_input: str, app: str,
                  model: str='seq_480_1min', movavg: int=1,
-                ignore_extreme: bool=False):
+                ignore_extreme: bool=False, figsize=(8, 4),
+                savefig=None):
     assert os.path.isdir(path_input)
     
     # List files and sort by class weight
@@ -213,5 +221,5 @@ def plot_weights(path_input: str, app: str,
     model = DICT_MODEL.get(model, model)
     plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
                 app, model,
-                movavg=movavg, ignore_extreme=ignore_extreme)
-    
+                movavg=movavg, ignore_extreme=ignore_extreme,
+               figsize=figsize, savefig=savefig)    
