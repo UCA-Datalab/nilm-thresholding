@@ -131,7 +131,7 @@ class _PTPNet(nn.Module):
         return pw, act
 
 
-class TPNILMModel(TorchModel):
+class ConvModel(TorchModel):
 
     def __init__(self, output_len=480, border=16, out_channels=1,
                  init_features=32,
@@ -162,3 +162,5 @@ class TPNILMModel(TorchModel):
         self.act_criterion = nn.BCEWithLogitsLoss()
         self.pow_w = regression_w
         self.act_w = classification_w
+        self.pow_loss_avg = 0.0045
+        self.act_loss_avg = 0.68

@@ -25,7 +25,7 @@ def store_model_json(model, path_model, path_weights=None):
                          f"route:\n{path_model}")
 
     if path_weights is None:
-        path_weights = path_model.rsplit(".")[0]
+        path_weights = path_model.rsplit(".", 1)[0]
         path_weights = path_weights + ".h5"
     elif not path_weights.endswith(".h5"):
         raise ValueError("path_weights must end in a h5 file. Current "
@@ -61,7 +61,7 @@ def load_model_json(path_model, path_weights=None):
                          f"route:\n{path_model}")
 
     if path_weights is None:
-        path_weights = path_model.rsplit(".")[0]
+        path_weights = path_model.rsplit(".", 1)[0]
         path_weights = path_weights + ".h5"
     elif not path_weights.endswith(".h5"):
         raise ValueError("path_weights must end in a h5 file. Current "

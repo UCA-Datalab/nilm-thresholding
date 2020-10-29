@@ -3,6 +3,9 @@ import numpy as np
 
 
 def _flatten_series(y_a, y_b, idx, num_series):
+    """
+    Flat tensor of 3-dims into 2-d matrix
+    """
     # Take just one appliance
     if num_series is None:
         if len(y_a.shape) == 3:
@@ -149,9 +152,10 @@ def plot_load_and_state(load, state, idx=0,
         fig.savefig(savefig)
 
 
-def plot_informative_sample(p_true, s_true, p_hat, s_hat,
+def plot_informative_sample(p_true, s_true, p_hat, s_hat, p_agg=None,
                             records=480, app_idx=0, scale=1.,
-                            period=1., dpi=100, savefig=None):
+                            period=1., dpi=100, savefig=None,
+                            thresh_color='grey'):
     """
 
     Parameters
@@ -160,8 +164,13 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
         shape = (total_records, num_appliances)
     s_true : numpy.array
         shape = (total_records, num_appliances)
+    p_hat : numpy.array
+        shape = (total_records, num_appliances)
     s_hat : numpy.array
         shape = (total_records, num_appliances)
+    p_agg : numpy.array
+        shape = (total_records)
+        Aggregate power
     records : int, default=480
         Number of records to plot
     app_idx : int, default = 0
@@ -174,6 +183,8 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
         Dots per inch, image quality
     savefig : str, default=None
         Path where the figure is stored.
+    thresh_color : str, default='grey'
+        Color of the threshold bars, when appliance state is ON
     """
     # We dont want to modify the originals
     p_true = p_true.copy()
@@ -188,33 +199,22 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
     # Take appliance power and scale it
     pw = p_true[:, app_idx] * scale
     pw_pred = p_hat[:, app_idx] * scale
-    
-    # Ensure that the plot shows activations
-    idx0 = 0
-    while pw[idx0] <= pw.max() * .25:
-        idx0 += 1
-    idx1 = idx0 + records
 
     # Take power in given interval and get the maximum value
-    pw = pw[idx0:idx1]
-    pw_pred = pw_pred[idx0:idx1]
     pw_max = max(pw.max(), pw_pred.max())
 
     # Take status in given interval, only ON activations
-    s_hat = s_hat[idx0:idx1, app_idx]
-    s_true = s_true[idx0:idx1, app_idx]
+    s_hat = s_hat[:, app_idx]
+    s_true = s_true[:, app_idx]
 
     mask_on = s_hat == 1
     s_hat = s_hat[mask_on].copy()
-    s_true_on = s_true[mask_on].copy()
     t_on = t[mask_on].copy()
 
     # Distinguish between correct and incorrect guesses
     # Scale status to power, to see it properly
     s_scaled = s_hat.copy() + .01
     s_scaled = np.multiply(s_scaled, pw_max)
-    mask_good = np.array(s_hat == s_true_on)
-    mask_bad = np.array(s_hat != s_true_on)
 
     # Show all ON guesses in the same color
     s_hat = s_hat.copy() + .05
@@ -222,20 +222,121 @@ def plot_informative_sample(p_true, s_true, p_hat, s_hat,
 
     # Plot the figure
     plt.figure(dpi=dpi)
+
     plt.bar(t, np.multiply(s_true, pw_max * 2),
-            color='grey', alpha=.2, width=1)
+            color=thresh_color, alpha=.2, width=1,
+            label='Appliance status')
 
-    plt.plot(t, pw, color='black')
-    plt.plot(t, pw_pred, color='blue', alpha=.8)
-    plt.legend(['True', 'Prediction'])
+    if p_agg is not None:
+        plt.plot(t, p_agg, '--', color='grey',
+                 label='Aggregate power')
 
-    plt.scatter(t_on[mask_bad], s_scaled[mask_bad], color='red', s=.6)
-    plt.scatter(t_on[mask_good], s_scaled[mask_good], color='green', s=.6)
-    plt.scatter(t_on, s_hat, color='blue', s=.6)
+    plt.plot(t, pw, color='black', label='Appliance power')
+    plt.plot(t, pw_pred, color='blue', label='Predicted power')
+
+    plt.scatter(t_on, s_hat, color='blue', s=.8,
+                label='Predicted ON activation')
+
+    plt.legend()
 
     plt.ylim([0, pw_max * 1.1])
-    plt.ylabel('Load (watts)')
+    plt.ylabel('Power (watts)')
     plt.xlabel('Time (minutes)')
 
     if savefig is not None:
         plt.savefig(savefig)
+        plt.close()
+
+
+def plot_informative_classification(s_true, s_hat, p_agg,
+                                    records=480, pw_max=1.,
+                                    period=1., dpi=100, savefig=None,
+                                    thresh_color='grey', title=None):
+    """
+    Plots the following:
+    - Predicted appliance state (s_hat) as dots
+    - Real appliance state (s_true) as bars when ON
+    - Real aggregated load (p_agg) as a grey line, in watts
+    """
+    # We dont want to modify the originals
+    s_true = s_true.copy()
+    s_hat = s_hat.copy()
+    p_agg = p_agg.copy()
+
+    # Define time
+    t = np.array([i for i in range(records)])
+    t = np.multiply(t, period)
+
+    # Get ON activations
+    mask_on = s_hat == 1
+    s_hat = s_hat[mask_on].copy() * pw_max * .75
+    t_on = t[mask_on].copy()
+
+    # Plot the figure
+    plt.figure(dpi=dpi)
+
+    plt.fill_between(t, p_agg, color='grey', alpha=.4, label='Aggregate power')
+    plt.bar(t, np.multiply(s_true, pw_max * 2),
+            color=thresh_color, alpha=.2, width=1, label='Appliance status')
+    plt.scatter(t_on, s_hat, color=thresh_color, s=.6,
+                label='Predicted ON activation')
+
+    plt.legend()
+
+    plt.ylim([0, pw_max])
+    plt.ylabel('Power (watts)')
+    plt.xlabel('Time (minutes)')
+
+    if title is not None:
+        plt.title(title)
+
+    if savefig is not None:
+        plt.savefig(savefig)
+        plt.close()
+
+
+def plot_informative_regression(p_true, p_hat, p_agg,
+                                records=480, scale=1.,
+                                period=1., dpi=100, savefig=None,
+                                color='purple', title=None):
+    """
+    Plots the following:
+    - Predicted appliance power (p_hat) as a line, in watts
+    - Real appliance power (p_true) as a line, in watts
+    - Real aggregated load (p_agg) as a grey line, in watts
+    """
+    # We dont want to modify the originals
+    p_true = p_true.copy()
+    p_hat = p_hat.copy()
+    p_agg = p_agg.copy()
+
+    # Define time
+    t = np.array([i for i in range(records)])
+    t = np.multiply(t, period)
+
+    # Take appliance power and scale it
+    pw = p_true * scale
+    pw_pred = p_hat * scale
+
+    # Take power in given interval and get the maximum value
+    pw_max = max(pw.max(), pw_pred.max())
+
+    # Plot the figure
+    plt.figure(dpi=dpi)
+
+    plt.fill_between(t, p_agg, color='grey', alpha=.4, label='Aggregate power')
+    plt.fill_between(t, pw, color=color, alpha=.3, label='Appliance power')
+    plt.plot(t, pw_pred, color=color, label='Predicted power')
+
+    plt.legend()
+
+    plt.ylim([0, pw_max * 1.1])
+    plt.ylabel('Power (watts)')
+    plt.xlabel('Time (minutes)')
+
+    if title is not None:
+        plt.title(title)
+
+    if savefig is not None:
+        plt.savefig(savefig)
+        plt.close()

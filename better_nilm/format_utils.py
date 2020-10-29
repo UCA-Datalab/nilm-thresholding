@@ -15,7 +15,7 @@ def to_tuple(x):
     If not, turns X into a tuple of one element
     """
     if type(x) is not tuple:
-        return (x,)
+        return x,
     else:
         return x
 

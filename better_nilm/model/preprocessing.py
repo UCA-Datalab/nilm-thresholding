@@ -1,7 +1,7 @@
-import numpy as np
-
 from math import ceil
 from math import floor
+
+import numpy as np
 from sklearn.cluster import KMeans
 
 
@@ -441,8 +441,8 @@ def preprocessing_pipeline_dict(ser, meters, train_size=.6, validation_size=.2,
                                   "y": y_val,
                                   "bin": bin_val},
                    "tests": {"x": x_test,
-                            "y": y_test,
-                            "bin": bin_test},
+                             "y": y_test,
+                             "bin": bin_test},
                    "max_values": {"x": x_max,
                                   "y": y_max},
                    "thresholds": thresholds,
@@ -547,7 +547,7 @@ def get_status_by_duration(ser, thresholds, min_off, min_on):
 
     msg = f"Length of thresholds ({len(thresholds)})\n" \
           f"and number of appliances ({num_apps}) doesn't match\n"
-    assert len(thresholds) ==num_apps, msg
+    assert len(thresholds) == num_apps, msg
 
     msg = f"Length of thresholds ({len(thresholds)})\n" \
           f"and min_on ({len(min_on)}) doesn't match\n"

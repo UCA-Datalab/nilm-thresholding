@@ -1,20 +1,20 @@
-import numpy as np
 import os
+
+import numpy as np
 import pandas as pd
 import torch
 import torch.utils.data as data
-
 from pandas import Series
 from pandas.io.pytables import HDFStore
 from torch.utils.data import DataLoader
 
 from better_nilm.format_utils import to_list
-from better_nilm.str_utils import APPLIANCE_NAMES
-from better_nilm.str_utils import homogenize_string
-from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.model.preprocessing import get_status_means
+from better_nilm.model.preprocessing import get_thresholds
+from better_nilm.str_utils import APPLIANCE_NAMES
+from better_nilm.str_utils import homogenize_string
 from better_nilm.threshold import _get_threshold_params
 
 
@@ -98,8 +98,8 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
     s : pandas.Series
     """
     # Load the meter labels
-    assert os.path.isdir(path_labels), "Input path is not a directory:" \
-                                       f"\n{path_labels}"
+    msg = f"Input path is not a directory:\n{path_labels}"
+    assert os.path.isdir(path_labels), msg
     filename = f"{path_labels}/house_%1d/labels.dat" % house
     assert os.path.isfile(filename), f"Path not found:\n{filename}"
 
@@ -531,15 +531,15 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
 
     buildings = to_list(buildings)
 
-    build_idx_train, \
-    build_idx_valid, \
-    build_idx_test = _buildings_to_idx(buildings, build_id_train,
-                                       build_id_valid, build_id_test)
+    (build_idx_train,
+     build_idx_valid,
+     build_idx_test) = _buildings_to_idx(buildings, build_id_train,
+                                         build_id_valid, build_id_test)
 
     # Set the parameters according to given threshold method
     if threshold_method is not 'custom':
-        thresholds, min_off, min_on, \
-        threshold_std = _get_threshold_params(threshold_method, appliances)
+        (thresholds, min_off, min_on,
+         threshold_std) = _get_threshold_params(threshold_method, appliances)
 
     # Load the different datastores
     params = load_ukdale_series(path_h5, path_labels, buildings, appliances,
@@ -550,29 +550,25 @@ def load_dataloaders(path_h5, path_labels, buildings, appliances,
                                 return_means=return_means)
 
     if return_means:
-        list_df_meter, \
-        list_df_appliance, \
-        list_df_status, kmeans = params
+        (list_df_meter, list_df_appliance, list_df_status, kmeans) = params
     else:
-        list_df_meter, \
-        list_df_appliance, \
-        list_df_status = params
+        (list_df_meter, list_df_appliance, list_df_status) = params
         kmeans = (None, None)
 
     num_buildings = len(buildings)
 
     # Load the data loaders
-    dl_train, \
-    dl_valid, \
-    dl_test = datastores_to_dataloaders(list_df_meter, list_df_appliance,
-                                        list_df_status,
-                                        num_buildings, build_idx_train,
-                                        build_idx_valid, build_idx_test,
-                                        train_size=train_size,
-                                        valid_size=valid_size,
-                                        batch_size=batch_size,
-                                        output_len=output_len, border=border,
-                                        power_scale=power_scale)
+    (dl_train,
+     dl_valid,
+     dl_test) = datastores_to_dataloaders(list_df_meter, list_df_appliance,
+                                          list_df_status,
+                                          num_buildings, build_idx_train,
+                                          build_idx_valid, build_idx_test,
+                                          train_size=train_size,
+                                          valid_size=valid_size,
+                                          batch_size=batch_size,
+                                          output_len=output_len, border=border,
+                                          power_scale=power_scale)
 
     return_params = (dl_train, dl_valid, dl_test)
     if return_means:

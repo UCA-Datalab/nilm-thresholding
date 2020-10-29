@@ -40,7 +40,6 @@ class _BiGRU(nn.Module):
         self.activation = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
 
     def forward(self, x):
-
         conv1 = self.conv1(x)
         conv2 = self.conv2(self.drop(conv1))
 
@@ -55,7 +54,7 @@ class _BiGRU(nn.Module):
         return power, status
 
 
-class BiGRUModel(TorchModel):
+class GRUModel(TorchModel):
 
     def __init__(self, input_len=510, output_len=480, out_channels=1,
                  learning_rate=1E-4, dropout=0.1,
@@ -73,4 +72,6 @@ class BiGRUModel(TorchModel):
         self.act_criterion = nn.BCEWithLogitsLoss()
         self.pow_w = regression_w
         self.act_w = classification_w
+        self.pow_loss_avg = 0.0045
+        self.act_loss_avg = 0.68
         self.border = int((input_len - output_len) / 2)

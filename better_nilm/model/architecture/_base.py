@@ -1,6 +1,7 @@
+import os
+
 import numpy as np
 import torch
-import os
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -61,6 +62,8 @@ class TorchModel:
         self.pow_w = 1
         self.act_w = 1
         self.border = 0
+        self.pow_loss_avg = 0.0045
+        self.act_loss_avg = 0.68
 
     def _get_dataloader(self, x, y, y_bin):
         tensor_x = torch.Tensor(x)
@@ -93,6 +96,11 @@ class TorchModel:
             # train the model #
             ###################
             self.model.train()  # prep model for training
+
+            # Initialize ON activation frequency
+            # on = np.zeros(3)
+            # total = 0
+
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
                 data = data.unsqueeze(1).cuda()
@@ -109,7 +117,8 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = self.pow_w * pow_loss + self.act_w * act_loss
+                loss = (self.pow_w * pow_loss / self.pow_loss_avg
+                        + self.act_w * act_loss / self.act_loss_avg)
                 # backward pass: compute gradient of the loss with respect
                 # to model parameters
                 loss.backward()
@@ -117,6 +126,12 @@ class TorchModel:
                 self.optimizer.step()
                 # record training loss
                 train_losses.append(loss.item())
+                # Compute ON activation frequency
+                # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
+                # total += target_status.size()[0] * target_status.size()[1]
+
+            # Display ON activation frequency
+            # print('Train ON frequency', on / total)
 
             ######################
             # validate the model #
@@ -135,7 +150,8 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = self.pow_w * pow_loss + self.act_w * act_loss
+                loss = (self.pow_w * pow_loss / self.pow_loss_avg
+                        + self.act_w * act_loss / self.act_loss_avg)
                 # record validation loss
                 valid_losses.append(loss.item())
 
@@ -219,7 +235,7 @@ class TorchModel:
                 sh = sh.permute(0, 2, 1)
                 sh = sh.detach().cpu().numpy()
                 s_hat.append(sh.reshape(-1, sh.shape[-1]))
-                
+
                 pw = pw.permute(0, 2, 1)
                 pw = pw.detach().cpu().numpy()
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))

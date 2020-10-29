@@ -1,13 +1,28 @@
-from better_nilm.ukdale.ukdale_data import load_dataloaders
+import time
+from collections import defaultdict
 
+from better_nilm._script._script_utils import generate_path_output
 from better_nilm._script._script_utils import get_model_scores
 from better_nilm._script._script_utils import list_scores
-from better_nilm._script._script_utils import generate_path_output
-from better_nilm._script._script_utils import store_scores
 from better_nilm._script._script_utils import store_plots
+from better_nilm._script._script_utils import store_scores
+from better_nilm.ukdale.ukdale_data import load_dataloaders
 
-from better_nilm.model.architecture.bigru import BiGRUModel
-from better_nilm.model.architecture.tpnilm import TPNILMModel
+from better_nilm.model.architecture.conv import ConvModel
+from better_nilm.model.architecture.gru import GRUModel
+
+"""
+Train the same architecture many times, using random weight initializations
+"""
+
+
+def _merge_dict_list(dict_list):
+    d = defaultdict(dict)
+    for l in dict_list:
+        for elem in l:
+            d[elem].update(l[elem])
+
+    return d
 
 
 def run_many_models(path_h5=None, path_data=None, path_main=None,
@@ -15,7 +30,8 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
                     build_id_test=None, appliances=None,
                     class_w=0, reg_w=0, dates=None,
                     train_size=0, valid_size=0,
-                    output_len=480, border=16, period='1min', power_scale=2000.,
+                    output_len=480, border=16, period='1min',
+                    power_scale=2000.,
                     batch_size=32, learning_rate=0, dropout=0,
                     epochs=1, patience=1, num_models=1,
                     model_name=None, model_params=None,
@@ -26,6 +42,10 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
+
+    # Set output path
+    path_output = generate_path_output(path_main, model_name)
+
     # Load data
 
     params = load_dataloaders(path_h5, path_data, buildings, appliances,
@@ -49,6 +69,7 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
 
     act_scores = []
     pow_scores = []
+    time_ellapsed = 0
 
     for i in range(num_models):
         print(f"\nModel {i + 1}\n")
@@ -56,9 +77,11 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
         model = eval(model_name)(**model_params)
 
         # Train
+        time_start = time.time()
         model.train_with_dataloader(dl_train, dl_valid,
                                     epochs=epochs,
                                     patience=patience)
+        time_ellapsed += time.time() - time_start
 
         act_scr, pow_scr = get_model_scores(model, dl_test, power_scale,
                                             means, thresholds, appliances,
@@ -67,18 +90,32 @@ def run_many_models(path_h5=None, path_data=None, path_main=None,
         act_scores += act_scr
         pow_scores += pow_scr
 
+        # Store individual scores
+        act_dict = _merge_dict_list(act_scr)
+        pow_dict = _merge_dict_list(pow_scr)
+
+        scores = {'classification': act_dict,
+                  'regression': pow_dict}
+
+        filename = "scores_{}.txt".format(i)
+
+        store_scores(path_output, output_len, period, class_w, reg_w,
+                     threshold_method, train_size, valid_size, num_models,
+                     batch_size, learning_rate, dropout, epochs, patience,
+                     scores, time_ellapsed, filename=filename)
+
     # List scores
 
     scores = list_scores(appliances, act_scores, pow_scores, num_models)
 
-    # Plot
+    time_ellapsed /= num_models
 
-    path_output = generate_path_output(path_main, model_name)
+    # Store scores and plot
 
     store_scores(path_output, output_len, period, class_w, reg_w,
                  threshold_method, train_size, valid_size, num_models,
                  batch_size, learning_rate, dropout, epochs, patience,
-                 scores)
+                 scores, time_ellapsed)
 
     store_plots(path_output, output_len, period, class_w, reg_w,
                 threshold_method, appliances, model, dl_test,
