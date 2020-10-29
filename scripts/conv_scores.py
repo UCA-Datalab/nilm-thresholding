@@ -14,9 +14,7 @@ from better_nilm.plot_output import (plot_weights, PATH_OUTPUT,
 Parameters - They can be modified
 """
 
-# Path to the original UKDALE h5 data, relative to the script route
-PATH_H5 = os.path.join(path_main, 'data/ukdale.h5')
-# Path to the folder containing meter info, relative to the script route
+# Path to the folder containing UK-DALE data
 PATH_DATA = os.path.join(path_main, 'data/ukdale')
 # List of buildings (houses)
 BUILDING_TRAIN = [1, 2, 5]
@@ -56,8 +54,7 @@ Do not modify the script below this point
 """
 
 
-def main(path_h5: str = PATH_H5,
-         path_data: str = PATH_DATA,
+def main(path_data: str = PATH_DATA,
          path_output: str = PATH_OUTPUT,
          build_id_train=BUILDING_TRAIN,
          build_id_valid=BUILDING_VALID,
@@ -82,11 +79,39 @@ def main(path_h5: str = PATH_H5,
          plot_scores_lim: bool = False):
     """
     Trains several CONV models under the same conditions
+    Stores scores and plots on outputs folder
+
+    Parameters\n
+    ----------\n
+    path_data : Path to UK-DALE data\n
+    path_output : Path to the outputs folder\n
+    build_id_train : List of houses (IDs) to use in train step\n
+    build_id_valid : List of houses (IDs) to use in validation step\n
+    build_id_test : List of houses (IDs) to use in test step\n
+    dates : Dictionary of date ranges per household\n
+    appliances : List of appliances to monitor\n
+    class_w : Classification weight, from 0 to 1\n
+    threshold_method : Thresholding method to apply (mp, vs, at)\n
+    train_size : Proportion of train, from 0 to 1\n
+    valid_size : Proportion of validation: train + valid + test = 1\n
+    output_len : Length of output time series\n
+    border : Records lost on borders due to convolutions\n
+    period : Time period (1min, 1s...)\n
+    power_scale : Used to normalize input data, in watts\n
+    batch_size
+    learning_rate
+    dropout
+    epochs
+    patience : Early stopping
+    num_models : Number of random initializations to test
+    plot_scores : If True, plots the scores
+    plot_scores_lim : If True, applies some limits to the plots
     """
+
     assert os.path.isdir(path_data), ('path_data must lead to folder:\n{}'
                                       .format(path_data))
-    assert os.path.isfile(path_h5), ('path_h5 must lead to file_\n{}'
-                                     .format(path_h5))
+    path_h5 = path_data + '.h5'
+    assert os.path.isfile(path_h5), ('File not found:\n{}'.format(path_h5))
     reg_w = 1 - class_w
     buildings = sorted(set(build_id_train + build_id_valid + build_id_test))
     num_appliances = len(appliances)

@@ -45,15 +45,34 @@ Source: [see publications](#publications)
  
 ### Download UK-DALE
 
-Once the data is downloaded, Load the UK-DALE dataset and preprocess it. The
- functions used in
-this part are contained in the folder [ukdale](/better_nilm/ukdale).
+UK-DALE dataset is hosted on the following link:
+[https://data.ukedc.rl.ac.uk/browse/edc/efficiency/residential
+/EnergyConsumption/Domestic/UK-DALE-2017/UK-DALE-FULL-disaggregated](https://data.ukedc.rl.ac.uk/browse/edc/efficiency/residential/EnergyConsumption/Domestic/UK-DALE-2017/UK-DALE-FULL-disaggregated)
 
-## Module's scripts
+The files needed by this module are *ukdale.zip* and *ukdale.h5.zip*.
+Download both and unzip them in a folder named [data](/data) inside the root.
+Once you are done, your local directory should look like this:
+
+```
+better_nilm
+|_ better_nilm
+   |_ [python scripts and subfolders]
+|_ data
+   |_ ukdale
+      |_ [house_1 to house_5]
+   |_ ukdale.h5
+|_ scripts
+   |_ [python scripts]
+```
+
+Credit: [Jack Kelly](https://jack-kelly.com/data/)
+
+## Scripts
 
 The folder [scripts](/scripts) contains one executable script for each
-model. Both work the same way. To test, for instance, the CONV model, run the
-following line on the root folder (make sure to have the enviroment active):
+model. Both work the same way. For instance, to use the CONV model, run the
+following line on the root folder
+(make sure to have the enviroment active and the data downloaded):
 
 ```
 python scripts/conv_scores.py
@@ -101,9 +120,13 @@ to understand how each threshold works.
 - 'vs', Variance-Sensitive
 - 'at', Activation Time
 
-## Author
+## Contact information
 
-Daniel Precioso, [link to github](https://github.com/daniprec)
+Author: Daniel Precioso, PhD student at Universidad de Cádiz
+- Email: daniel.precioso@uca.es
+- [Github](https://github.com/daniprec)
+- [LinkedIn](https://www.linkedin.com/in/daniel-precioso-garcelan/)
+- [ResearchGate](https://www.researchgate.net/profile/Daniel_Precioso_Garcelan)
 
 ## Publications
 
