@@ -39,7 +39,7 @@ Source: [see publications](#publications)
      
        ```
        conda remove --name better-nilm --all
-       conda env create -f env.yml --force
+       conda env create -f environment.yml --force
        conda activate better-nilm
        ```
  
