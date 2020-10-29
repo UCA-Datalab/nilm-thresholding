@@ -16,9 +16,7 @@ certifi==2020.4.5.1
 cffi==1.14.0
 chardet==3.0.4
 click==7.1.2
-coverage==5.0.3
-coveralls==1.11.1
-cryptography==2.9.2
+cryptography==3.2
 cycler==0.10.0
 Cython==0.29.16
 decorator==4.4.2
@@ -120,7 +118,6 @@ sklearn==0.0
 statsmodels==0.11.1
 tables==3.6.1
 tensorboard==2.1.1
-tensorboard-plugin-wit==1.6.0.post3
 tensorflow==2.1.0
 tensorflow-estimator==2.1.0
 termcolor==1.1.0
