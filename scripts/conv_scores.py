@@ -10,7 +10,9 @@ from better_nilm._script._script_many_models import run_many_models
 from better_nilm.plot_output import (plot_weights, PATH_OUTPUT,
                                      DICT_MAE_LIM, F1_LIM)
 
-# PARAMETERS TO MODIFY
+"""
+Parameters - They can be modified
+"""
 
 # Path to the original UKDALE h5 data, relative to the script route
 PATH_H5 = os.path.join(path_main, 'data/ukdale.h5')
@@ -48,6 +50,10 @@ EPOCHS = 300
 PATIENCE = 300
 # Number of models to train. Their scores are then normalized
 NUM_MODELS = 5
+
+"""
+Do not modify the script below this point
+"""
 
 
 def main(path_h5: str = PATH_H5,

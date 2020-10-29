@@ -45,24 +45,52 @@ Source: [see publications](#publications)
  
 ### Download UK-DALE
 
+Once the data is downloaded, Load the UK-DALE dataset and preprocess it. The
+ functions used in
+this part are contained in the folder [ukdale](/better_nilm/ukdale).
+
 ## Module's scripts
 
-The folder [scripts](/scripts) contains executable scripts. All their
-parameters can be tuned by editing the code, which is well explained inside
- each of them. In this version, the scripts only work on UK-DALE dataset.
+The folder [scripts](/scripts) contains one executable script for each
+model. Both work the same way. To test, for instance, the CONV model, run the
+following line on the root folder (make sure to have the enviroment active):
 
-Once you run the script, it performs the following tasks:
-1. Load the UK-DALE dataset and preprocess it. The functions used in
-this part are contained in the folder [ukdale](/better_nilm/ukdale).
-2. Initialise the model and train it, using the functions in
-[model](/better_nilm/model).
-3. Test the model. Store its scores.
-4. Repeat steps 2 and 3 the number of times specified.
-5. Create an outputs folder.
-6. Average the scores. Store them in the outputs folder.
-7. Plot some sample sequences and predictions, using the functions in
-[plot_utils](/better_nilm/plot_utils.py)
-Store them in the outputs folder.
+```
+python scripts/conv_scores.py
+```
+
+This will train and score the CONV model using the default parameters.
+The script stores several outputs in the [outputs folder](/outputs),
+including:
+- .txt files with the model scores over the test data
+- .png files showing samples of the model's prediction.
+- .png files with the scores against the classification weight.
+
+A list with all the available parameters and their default values can be
+ seen by running:
+
+```
+python scripts/conv_scores.py  --help
+```
+
+If you want to use your own set of parameters, there are two options.
+
+1. The easiest way is to call the function with the new value.
+For example, if we want to reduce the number of training epochs to 100,
+and increase the bacth size to 64, we run:
+
+    ```
+    python scripts/conv_scores.py  --epochs 100 --batch-size 64
+    ```
+
+    The order and number of parameters does not matter as long as those
+    parameters exists on the script (use `--help` to check them out)
+    and their new values are of the proper type.
+
+2. Another way of choosing your own parameters is to modify them directly
+on the script (below the section Parameters, which is properly indicated).
+This is only recommended when modifying complex parameters,
+like lists or dictionaries.
 
 ### Thresholding methods
 
