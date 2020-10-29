@@ -1,6 +1,7 @@
+import os
+
 import numpy as np
 import torch
-import os
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset, DataLoader
 
@@ -95,11 +96,11 @@ class TorchModel:
             # train the model #
             ###################
             self.model.train()  # prep model for training
-            
+
             # Initialize ON activation frequency
-            #on = np.zeros(3) 
-            #total = 0
-            
+            # on = np.zeros(3)
+            # total = 0
+
             for batch, (data, target_power, target_status) in enumerate(
                     train_loader, 1):
                 data = data.unsqueeze(1).cuda()
@@ -126,12 +127,12 @@ class TorchModel:
                 # record training loss
                 train_losses.append(loss.item())
                 # Compute ON activation frequency
-                #on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
-                #total += target_status.size()[0] * target_status.size()[1]
-            
+                # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
+                # total += target_status.size()[0] * target_status.size()[1]
+
             # Display ON activation frequency
-            #print('Train ON frequency', on / total)
-            
+            # print('Train ON frequency', on / total)
+
             ######################
             # validate the model #
             ######################
@@ -234,7 +235,7 @@ class TorchModel:
                 sh = sh.permute(0, 2, 1)
                 sh = sh.detach().cpu().numpy()
                 s_hat.append(sh.reshape(-1, sh.shape[-1]))
-                
+
                 pw = pw.permute(0, 2, 1)
                 pw = pw.detach().cpu().numpy()
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))

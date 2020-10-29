@@ -1,7 +1,7 @@
-import numpy as np
 import re
 from unicodedata import normalize
 
+import numpy as np
 
 APPLIANCE_NAMES = {
     "freezer": "fridge",

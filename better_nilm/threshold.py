@@ -50,7 +50,7 @@ def _get_threshold_params(threshold_method, appliances):
     """
     # Ensure appliances is list
     appliances = to_list(appliances)
-    
+
     if threshold_method is 'vs':
         # Variance-Sensitive threshold
         threshold_std = True
@@ -74,7 +74,7 @@ def _get_threshold_params(threshold_method, appliances):
             label = homogenize_string(app)
             label = APPLIANCE_NAMES.get(label, label)
             if label not in THRESHOLDS.keys():
-                msg = f"Appliance {app} has no AT info.\n"\
+                msg = f"Appliance {app} has no AT info.\n" \
                       f"Available appliances: {', '.join(THRESHOLDS.keys())}"
                 raise ValueError(msg)
             thresholds += [THRESHOLDS[label]]

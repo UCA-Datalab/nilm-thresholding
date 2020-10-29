@@ -1,37 +1,34 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import os
-import pandas as pd
 import re
-
 from itertools import groupby
 from operator import itemgetter
 
+import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
+
 sns.set_style('white')
 
+path_main = os.path.realpath(__file__)
+path_main = path_main.rsplit('/', 2)[0]
 
-PATH_DATA = '../data'
-PATH_OUTPUT = '../outputs'
-
-assert os.path.isdir(PATH_DATA)
-assert os.path.isdir(PATH_OUTPUT)
+PATH_DATA = os.path.join(path_main, 'data')
+PATH_OUTPUT = os.path.join(path_main, 'outputs')
 
 DICT_APPLIANCES = {'dish_washer': 'Dishwasher',
-                  'fridge': 'Fridge',
-                  'washing_machine': 'Washing machine'}
-DICT_MODEL = {'TPNILM': 'CONV',
-             'BiGRU': 'GRU'}
-DICT_MAE = {'Dishwasher': [5, 25],
-           'Fridge': [20, 35],
-           'Washing machine': [10, 45]}
+                   'fridge': 'Fridge',
+                   'washing_machine': 'Washing machine'}
+DICT_MAE_LIM = {'Dishwasher': [5, 25],
+            'Fridge': [20, 35],
+            'Washing machine': [10, 45]}
+F1_LIM = [.5, 1]
 
 
 def list_dir_sorted(path_input, model):
     files = []
     for i in os.listdir(path_input):
         if (os.path.isdir(os.path.join(path_input, i))
-            and model in i):
+                and model in i):
             files.append((os.path.join(path_input, i),
                           float(re.search('clas_(.*)_reg', i).group(1))))
     files.sort(key=lambda tup: tup[1])
@@ -42,7 +39,7 @@ def list_scores(path_dir):
     list_scores_txt = []
     for i in os.listdir(path_dir):
         if (os.path.isfile(os.path.join(path_dir, i))
-            and 'scores_' in i):
+                and 'scores_' in i):
             list_scores_txt.append(os.path.join(path_dir, i))
     return list_scores_txt
 
@@ -117,14 +114,14 @@ def get_arrays(list_values):
     return w, mean, std
 
 
-def moving_average(a, n=3) :
+def moving_average(a, n=3):
     ret = np.cumsum(a)
     ret[n:] = ret[n:] - ret[:-n]
     ret[n - 1:] = ret[n - 1:] / n
     return ret
- 
 
-def subplot_f1(ax, w, y, std, ignore_extreme):
+
+def subplot_f1(ax, w, y, std, ignore_extreme, f1_lim=F1_LIM):
     color = 'tab:red'
     ax.set_xlabel('Classification weight')
     ax.set_ylabel('F1', color=color)
@@ -143,13 +140,16 @@ def subplot_f1(ax, w, y, std, ignore_extreme):
     ax.tick_params(axis='y', labelcolor=color)
     ax.grid(axis='y')
     ax.grid(axis='x')
-    ax.set_ylim([.5, 1])
+    if f1_lim is not None:
+        ax.set_ylim(f1_lim)
     return ax
 
 
-def subplot_mae(ax, w, y, std, ignore_extreme, app):
+def subplot_mae(ax, w, y, std, ignore_extreme, app,
+                dict_mae_lim=DICT_MAE_LIM):
     color = 'tab:blue'
-    ax.set_ylabel('MAE (watts)', color=color)  # we already handled the x-label with ax1
+    ax.set_ylabel('MAE (watts)',
+                  color=color)  # we already handled the x-label with ax1
     up = y + std
     down = y - std
     if ignore_extreme or w.max() != 1:
@@ -163,14 +163,16 @@ def subplot_mae(ax, w, y, std, ignore_extreme, app):
         ax.errorbar(w[-1], y[-1], std[-1], color=color,
                     linestyle='None', marker='.')
     ax.tick_params(axis='y', labelcolor=color)
-    ax.set_ylim(DICT_MAE[app])
+    mae_lim = dict_mae_lim.get(app, None)
+    if mae_lim is not None:
+        ax.set_ylim(dict_mae_lim[app])
     return ax
 
 
 def plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
-                app, model,
+                app, model, dict_mae_lim=DICT_MAE_LIM, f1_lim=F1_LIM,
                 movavg=1, ignore_extreme=True, figsize=(6, 4),
-               savefig=None):
+                savefig=None):
     app = DICT_APPLIANCES.get(app, app)
     if movavg > 1:
         f1 = moving_average(f1, n=movavg)
@@ -178,10 +180,10 @@ def plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
 
     fig, ax1 = plt.subplots(figsize=figsize)
 
-    ax1 = subplot_f1(ax1, w_f1, f1, f1_std, ignore_extreme)
+    ax1 = subplot_f1(ax1, w_f1, f1, f1_std, ignore_extreme, f1_lim=f1_lim)
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2 = subplot_mae(ax2, w_mae, mae, mae_std, ignore_extreme, app)
-    
+    ax2 = subplot_mae(ax2, w_mae, mae, mae_std, ignore_extreme, app,
+                      dict_mae_lim=dict_mae_lim)
 
     ax1.set_title(model + ' ' + app)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -192,34 +194,34 @@ def plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
 
 
 def plot_weights(path_input: str, app: str,
-                 model: str='seq_480_1min', movavg: int=1,
-                ignore_extreme: bool=False, figsize=(8, 4),
-                savefig=None):
+                 dict_mae_lim=DICT_MAE_LIM, f1_lim=F1_LIM,
+                 model: str = 'seq_480_1min', movavg: int = 1,
+                 ignore_extreme: bool = False, figsize=(8, 4),
+                 savefig=None):
     assert os.path.isdir(path_input)
-    
+
     # List files and sort by class weight
     files = list_dir_sorted(path_input, model)
-    
+
     list_f1 = []
     list_mae = []
-    
+
     for path_dir, clas_w in files:
         list_scores_txt = list_scores(path_dir)
         dict_f1, dict_mae = get_f1_mae_from_scores(list_scores_txt)
         if app in dict_f1.keys():
-            list_f1.append((clas_w, dict_f1[app]))
+            list_f1.append((clas_w / 100, dict_f1[app]))
         if app in dict_mae.keys():
-            list_mae.append((clas_w, dict_mae[app]))
-    
+            list_mae.append((clas_w / 100, dict_mae[app]))
+
     # Build arrays
     w_f1, f1, f1_std = get_arrays(list_f1)
     w_mae, mae, mae_std = get_arrays(list_mae)
-    
+
     # Plot arrays
     model = path_input.rsplit('/', 1)[1]
     model = model[:-5]
-    model = DICT_MODEL.get(model, model)
     plot_arrays(w_f1, f1, f1_std, w_mae, mae, mae_std,
-                app, model,
+                app, model, dict_mae_lim=dict_mae_lim, f1_lim=f1_lim,
                 movavg=movavg, ignore_extreme=ignore_extreme,
-               figsize=figsize, savefig=savefig)    
+                figsize=figsize, savefig=savefig)

@@ -1,20 +1,20 @@
-import numpy as np
 import os
+
+import numpy as np
 import pandas as pd
 import torch
 import torch.utils.data as data
-
 from pandas import Series
 from pandas.io.pytables import HDFStore
 from torch.utils.data import DataLoader
 
 from better_nilm.format_utils import to_list
-from better_nilm.str_utils import APPLIANCE_NAMES
-from better_nilm.str_utils import homogenize_string
-from better_nilm.model.preprocessing import get_thresholds
 from better_nilm.model.preprocessing import get_status
 from better_nilm.model.preprocessing import get_status_by_duration
 from better_nilm.model.preprocessing import get_status_means
+from better_nilm.model.preprocessing import get_thresholds
+from better_nilm.str_utils import APPLIANCE_NAMES
+from better_nilm.str_utils import homogenize_string
 from better_nilm.threshold import _get_threshold_params
 
 
@@ -129,7 +129,7 @@ def ukdale_datastore_to_series(path_labels, datastore, house, label,
         raise ValueError(f"Label {label} not found on house {house}\n"
                          f"Valid labels are: {list(labels.values())}")
 
-    msg = f"load_ukdale_meter() should output {Series}\n"\
+    msg = f"load_ukdale_meter() should output {Series}\n" \
           f"Received {type(s)} instead"
     assert type(s) is Series, msg
 
