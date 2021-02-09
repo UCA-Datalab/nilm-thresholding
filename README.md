@@ -120,6 +120,11 @@ to understand how each threshold works.
 - 'vs', Variance-Sensitive
 - 'at', Activation Time
 
+## Publications
+
+[NILM as a regression versus classification problem:
+the importance of thresholding](https://www.researchgate.net/project/Non-Intrusive-Load-Monitoring-6)
+
 ## Contact information
 
 Author: Daniel Precioso, PhD student at Universidad de Cádiz
@@ -127,9 +132,3 @@ Author: Daniel Precioso, PhD student at Universidad de Cádiz
 - [Github](https://github.com/daniprec)
 - [LinkedIn](https://www.linkedin.com/in/daniel-precioso-garcelan/)
 - [ResearchGate](https://www.researchgate.net/profile/Daniel_Precioso_Garcelan)
-
-## Publications
-
-NILM as a regression versus classification problem:
-the importance of thresholding
-
