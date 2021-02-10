@@ -209,6 +209,7 @@ def load_ukdale_series(
         means : list
             OFF and ON power load mean of each appliance.
     """
+
     # Load datastore
     datastore = load_ukdale_datastore(path_h5)
     msg = (
@@ -247,7 +248,7 @@ def load_ukdale_series(
         assert meters.shape[1] == len(list_meters), msg
 
         # Pick range of dates
-        if (type(dates) == dict) and (house in dates.keys()):
+        try:
             date_start = dates[house][0]
             date_start = pd.to_datetime(date_start).tz_localize("Etc/UCT")
             date_end = dates[house][1]
@@ -266,6 +267,8 @@ def load_ukdale_series(
                 f"Start date is {date_start}\nEnd date is {date_end}"
             )
             assert meters.shape[0] > 0, msg
+        except KeyError:
+            raise KeyError(f"House not found: {house}")
 
         meter = meters["aggregate"]
         appliances = meters.drop("aggregate", axis=1)

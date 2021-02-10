@@ -68,6 +68,11 @@ def load_conf_data(path: Union[str, Path]) -> Conf:
         )
     )
     config.update({"buildings": buildings})
+    # Dates keys to string
+    config_dates = config["dates"]
+    for k, v in config_dates.items():
+        config_dates.update({int(k): v})
+    config.update(config_dates)
     # If min_on of min_off are "None", change them to None
     config_threshold = config["threshold"]
     for k in ["min_on", "min_off"]:
