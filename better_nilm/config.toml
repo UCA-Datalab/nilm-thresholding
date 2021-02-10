@@ -65,7 +65,7 @@ dish_washer= "Dishwasher"
 fridge= "Fridge"
 washing_machine= "Washing machine"
 
-[plot.mae_lim]
+[plot.nde_lim]
 Dishwasher = [5, 25]
 Fridge = [20, 35]
 "Washing machine" = [10, 45]

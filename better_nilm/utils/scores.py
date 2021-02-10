@@ -82,11 +82,10 @@ def regression_scores_dict(y_pred, y_real, appliances):
         app_sae = (np.sum(app_pred) - np.sum(app_real)) / np.sum(app_real)
 
         # NDE (Normalized Disaggregation Error)
-        app_nde = np.mean(
-            np.sqrt(
-                np.divide(
-                    np.power((app_real - app_pred), 2), np.power(app_real, 2) + 1e-10
-                )
+        app_nde = np.sqrt(
+            np.divide(
+                np.sum(np.power((app_real - app_pred), 2)),
+                np.sum(np.power(app_pred, 2)),
             )
         )
 

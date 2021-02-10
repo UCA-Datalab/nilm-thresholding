@@ -168,10 +168,10 @@ def main(
     if config["plot"]["plot_scores"]:
         print("PLOT RESULTS!")
         if config["plot"]["plot_scores_lim"]:
-            dict_mae_lim = config["plot"]["mae_lim"]
+            dict_nde_lim = config["plot"]["nde_lim"]
             f1_lim = config["plot"]["f1_lim"]
         else:
-            dict_mae_lim = {}
+            dict_nde_lim = {}
             f1_lim = None
         for app in config["data"]["appliances"]:
             path_input = os.path.join(path_output, config["train"]["name"])
@@ -181,7 +181,7 @@ def main(
                 app,
                 figsize=(4, 3),
                 savefig=savefig,
-                dict_mae_lim=dict_mae_lim,
+                dict_nde_lim=dict_nde_lim,
                 f1_lim=f1_lim,
                 dict_appliances=config["plot"]["appliances"],
             )
