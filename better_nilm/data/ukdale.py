@@ -501,12 +501,7 @@ def _buildings_to_idx(buildings, build_id_train, build_id_valid, build_id_test):
     return build_idx_train, build_idx_valid, build_idx_test
 
 
-def load_dataloaders(
-    path_h5,
-    path_labels,
-    config_data,
-    config_model,
-):
+def load_dataloaders(path_h5, path_labels, config):
     """
     Load the UKDALE dataloaders from the raw data.
 
@@ -516,10 +511,8 @@ def load_dataloaders(
         Path to the original UKDALE h5 file
     path_labels : str
         Path to the directory that contains the csv of the meter labels.
-    config_data : dict
-        Contains parameters relative to data and preprocessing
-    config_model : dict
-        Contains parameters relative to the model build and train
+    config : dict
+        Contains parameters
 
     Returns
     -------
@@ -536,25 +529,25 @@ def load_dataloaders(
     """
 
     # Read parameters from config files
-    build_id_train = config_data["building_train"]
-    build_id_valid = config_data["building_valid"]
-    build_id_test = config_data["building_test"]
-    dates = config_data["dates"]
-    period = config_data["period"]
-    train_size = config_model["train_size"]
-    valid_size = config_model["valid_size"]
-    batch_size = config_model["batch_size"]
-    output_len = config_model["params"]["output_len"]
-    border = config_model["border"]
-    power_scale = config_data["power_scale"]
-    max_power = config_data["max_power"]
-    return_means = config_model["return_means"]
-    threshold_method = config_data["threshold"]["method"]
-    threshold_std = config_data["threshold"]["std"]
-    thresholds = config_data["threshold"]["list"]
-    min_off = config_data["threshold"]["min_off"]
-    min_on = config_data["theshold"]["min_on"]
-    buildings = to_list(config_data["buildings"])
+    build_id_train = config["data"]["building_train"]
+    build_id_valid = config["data"]["building_valid"]
+    build_id_test = config["data"]["building_test"]
+    dates = config["data"]["dates"]
+    period = config["data"]["period"]
+    train_size = config["model"]["train_size"]
+    valid_size = config["model"]["valid_size"]
+    batch_size = config["model"]["batch_size"]
+    output_len = config["model"]["params"]["output_len"]
+    border = config["model"]["border"]
+    power_scale = config["data"]["power_scale"]
+    max_power = config["data"]["max_power"]
+    return_means = config["model"]["return_means"]
+    threshold_method = config["data"]["threshold"]["method"]
+    threshold_std = config["data"]["threshold"]["std"]
+    thresholds = config["data"]["threshold"]["list"]
+    min_off = config["data"]["threshold"]["min_off"]
+    min_on = config["data"]["theshold"]["min_on"]
+    buildings = to_list(config["data"]["buildings"])
 
     (build_idx_train, build_idx_valid, build_idx_test) = _buildings_to_idx(
         buildings, build_id_train, build_id_valid, build_id_test
@@ -563,7 +556,7 @@ def load_dataloaders(
     # Set the parameters according to given threshold method
     if threshold_method is not "custom":
         (thresholds, min_off, min_on, threshold_std) = get_threshold_params(
-            threshold_method, config_data["appliances"]
+            threshold_method, config["data"]["appliances"]
         )
 
     # Load the different datastores
@@ -571,7 +564,7 @@ def load_dataloaders(
         path_h5,
         path_labels,
         buildings,
-        config_data["appliances"],
+        config["data"]["appliances"],
         dates=dates,
         period=period,
         max_power=max_power,

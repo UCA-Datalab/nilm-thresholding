@@ -39,9 +39,7 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
 
     # Load data
 
-    params = load_dataloaders(
-        path_h5, path_data, config["data"]["buildings"], config["data"]["appliances"]
-    )
+    params = load_dataloaders(path_h5, path_data, config)
 
     dl_train, dl_valid, dl_test, kmeans = params
     thresholds, means = kmeans
@@ -131,7 +129,7 @@ def main(
     path_data: str = "data/ukdale",
     path_output: str = "outputs",
     path_config: str = "better_nilm/config.toml",
-    model_name: str = "ConvModel"
+    model_name: str = "ConvModel",
 ):
     """
     Trains several CONV models under the same conditions
