@@ -32,7 +32,7 @@ MAX_POWER = {
 def get_threshold_params(threshold_method, appliances):
     """
     Given the method name and list of appliances,
-    this function outputs the necessary parameters to use the method in
+    this function results the necessary parameters to use the method in
     ukdale_data.load_ukdale_meter
 
     Parameters

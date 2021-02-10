@@ -109,7 +109,7 @@ class TorchModel:
 
                 # clear the gradients of all optimized variables
                 self.optimizer.zero_grad()
-                # forward pass: compute predicted outputs by passing inputs
+                # forward pass: compute predicted results by passing inputs
                 # to the model
                 output_power, output_status = self.model(data)
                 output_power = output_power.permute(0, 2, 1)
@@ -142,7 +142,7 @@ class TorchModel:
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
 
-                # forward pass: compute predicted outputs by passing inputs
+                # forward pass: compute predicted results by passing inputs
                 # to the model
                 output_power, output_status = self.model(data)
                 output_power = output_power.permute(0, 2, 1)

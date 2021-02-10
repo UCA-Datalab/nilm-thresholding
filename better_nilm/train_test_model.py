@@ -5,14 +5,14 @@ from collections import defaultdict
 import typer
 
 from better_nilm.data.ukdale import load_dataloaders
-from better_nilm.outputs.store_output import (
+from better_nilm.results.store_output import (
     generate_path_output,
     get_model_scores,
     list_scores,
     store_plots,
     store_scores,
 )
-from better_nilm.outputs.plot_output import plot_weights
+from better_nilm.results.plot_output import plot_weights
 from better_nilm.utils.conf import load_conf_full
 
 from better_nilm.model.architecture.conv import ConvModel
@@ -129,20 +129,20 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
 
 def main(
     path_data: str = "data/data",
-    path_output: str = "outputs",
+    path_output: str = "results",
     path_config: str = "better_nilm/config.toml",
     model_name: str = "ConvModel",
 ):
     """
     Trains several CONV models under the same conditions
-    Stores scores and plots on outputs folder
+    Stores scores and plots on results folder
 
     Parameters
     ----------
     path_data : str, optional
         Path to UK-DALE data
     path_output : str, optional
-        Path to the outputs folder
+        Path to the results folder
     path_config : str, optional
         Path to the config toml file
     model_name : str, optional
@@ -161,7 +161,7 @@ def main(
 
     config["model"].update({"name": model_name})
 
-    # Run main outputs
+    # Run main results
     print(f"{model_name}\n")
 
     run_many_models(path_h5, path_data, path_output, config)
