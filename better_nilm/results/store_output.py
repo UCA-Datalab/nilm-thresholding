@@ -105,7 +105,7 @@ def generate_path_output(path_main, model_name):
     """
     Generates results folder.
     """
-    path_output = os.path.join(path_main, "results")
+    path_output = os.path.join(path_main, "outputs")
     if not os.path.isdir(path_output):
         os.mkdir(path_output)
 
