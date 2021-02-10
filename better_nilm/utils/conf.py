@@ -105,7 +105,7 @@ def load_conf_train(path: Union[str, Path]) -> Conf:
     num_app = len(config["data"]["appliances"])
     model_params.update({"out_channels": num_app, "regression_w": reg_w})
     # Update model config
-    config_train.update({"params": model_params})
+    config_train.update({"model": model_params})
     return config_train
 
 
@@ -123,5 +123,5 @@ def load_conf_full(path: Union[str, Path]) -> Conf:
     config = load_conf(path)
     config_data = load_conf_data(path)
     config_train = load_conf_train(path)
-    config.update({"data": config_data, "model": config_train})
+    config.update({"data": config_data, "train": config_train})
     return config
