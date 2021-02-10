@@ -61,21 +61,19 @@ better_nilm
    |_ ukdale
       |_ [house_1 to house_5]
    |_ ukdale.h5
-|_ scripts
-   |_ [python scripts]
 ```
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
 ## Scripts
 
-The folder [scripts](/scripts) contains one executable script for each
+The folder [better_nilm](/better_nilm) contains one executable script for each
 model. Both work the same way. For instance, to use the CONV model, run the
 following line on the root folder
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python scripts/conv_scores.py
+python better_nilm/conv_scores.py
 ```
 
 This will train and score the CONV model using the default parameters.
@@ -89,7 +87,7 @@ A list with all the available parameters and their default values can be
  seen by running:
 
 ```
-python scripts/conv_scores.py  --help
+python better_nilm/conv_scores.py  --help
 ```
 
 If you want to use your own set of parameters, there are two options.
@@ -99,7 +97,7 @@ For example, if we want to reduce the number of training epochs to 100,
 and increase the bacth size to 64, we run:
 
     ```
-    python scripts/conv_scores.py  --epochs 100 --batch-size 64
+    python better_nilm/conv_scores.py  --epochs 100 --batch-size 64
     ```
 
     The order and number of parameters does not matter as long as those
