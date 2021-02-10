@@ -51,19 +51,19 @@ def get_threshold_params(threshold_method, appliances):
     # Ensure appliances is list
     appliances = to_list(appliances)
 
-    if threshold_method is 'vs':
+    if threshold_method == 'vs':
         # Variance-Sensitive threshold
         threshold_std = True
         thresholds = None
         min_off = None
         min_on = None
-    elif threshold_method is 'mp':
+    elif threshold_method == 'mp':
         # Middle-Point threshold
         threshold_std = False
         thresholds = None
         min_off = None
         min_on = None
-    elif threshold_method is 'at':
+    elif threshold_method == 'at':
         # Activation-Time threshold
         threshold_std = False
         thresholds = []

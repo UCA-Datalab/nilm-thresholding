@@ -13,7 +13,7 @@ max_power = 10000.0  # Maximum load power, in watts
 5 =["2014-04-29", "2014-09-01"]
 
 [data.threshold]
-method = "custom"  # Thresholding method to use:
+method = "mp"  # Thresholding method to use:
 # 'vs': Variance-Sensitive. Applies k-means and uses the std of each
 # cluster to move the threshold accordingly.
 # 'mp': Middle-Point. Applies k-means and sets the threshold in the
