@@ -160,11 +160,6 @@ def main(
     path_h5 = path_data + ".h5"
     assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
 
-    if not os.path.exists(path_output):
-        print(f"Output path not found. Creating: {path_output}")
-        os.mkdir(path_output)
-        print("Done\n")
-
     # Run main results
     print(f"{model_name}\n")
 

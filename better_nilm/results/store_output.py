@@ -101,11 +101,10 @@ def list_scores(appliances, act_scores, pow_scores, num_models):
     return scores
 
 
-def generate_path_output(path_main, model_name):
+def generate_path_output(path_output, model_name):
     """
     Generates results folder.
     """
-    path_output = os.path.join(path_main, "outputs")
     if not os.path.isdir(path_output):
         os.mkdir(path_output)
 
