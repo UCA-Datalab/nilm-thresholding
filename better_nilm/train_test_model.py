@@ -68,7 +68,7 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
         act_scr, pow_scr = get_model_scores(
             model,
             dl_test,
-            config["model"]["power_scale"],
+            config["data"]["power_scale"],
             means,
             thresholds,
             config["data"]["appliances"],
