@@ -98,7 +98,7 @@ def load_conf_model(path: Union[str, Path]) -> Conf:
         Config dictionary
     """
     config = load_conf(path)
-    config_model = config["model"]
+    config_model = config["train"]
     # Update model params
     model_params = config_model["params"]
     reg_w = 1 - model_params["classification_w"]

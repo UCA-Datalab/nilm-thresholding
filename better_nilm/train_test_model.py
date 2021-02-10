@@ -35,7 +35,7 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
     """
 
     # Set output path
-    path_output = generate_path_output(path_output, config["model"]["name"])
+    path_output = generate_path_output(path_output, config["train"]["name"])
 
     # Load data
 
@@ -50,18 +50,18 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
     pow_scores = []
     time_ellapsed = 0
 
-    for i in range(config["model"]["num_models"]):
+    for i in range(config["train"]["num_models"]):
         print(f"\nModel {i + 1}\n")
 
-        model = eval(config["model"]["name"])(**config["model"]["params"])
+        model = eval(config["train"]["name"])(**config["train"]["model"])
 
         # Train
         time_start = time.time()
         model.train_with_dataloader(
             dl_train,
             dl_valid,
-            epochs=config["model"]["epochs"],
-            patience=config["model"]["patience"],
+            epochs=config["train"]["epochs"],
+            patience=config["train"]["patience"],
         )
         time_ellapsed += time.time() - time_start
 
@@ -101,10 +101,10 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
         config["data"]["appliances"],
         act_scores,
         pow_scores,
-        config["model"]["num_models"],
+        config["train"]["num_models"],
     )
 
-    time_ellapsed /= config["model"]["num_models"]
+    time_ellapsed /= config["train"]["num_models"]
 
     # Store scores and plot
 
@@ -151,7 +151,7 @@ def main(
     print(f"\nLoading config file from {path_config}")
     # Load config file
     config = load_conf_full(path_config)
-    config["model"].update({"name": model_name})
+    config["train"].update({"name": model_name})
     print("Done\n")
 
     assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
@@ -179,7 +179,7 @@ def main(
             dict_mae_lim = {}
             f1_lim = None
         for app in config["data"]["appliances"]:
-            path_input = os.path.join(path_output, config["model"]["name"])
+            path_input = os.path.join(path_output, config["train"]["name"])
             savefig = os.path.join(path_output, "Conv_" + app + ".png")
             plot_weights(
                 path_input,

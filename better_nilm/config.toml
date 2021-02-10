@@ -37,19 +37,19 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # Number of records that an appliance must be above the threshold to be considered
 # turned ON. If not provided, thresholds are computed using k-means.]
 
-[model]
+[train]
 name = "model"
 train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
-border = 16  # Border added to input sequences, so that input = output + 2 * border
 batch_size = 32
 epochs = 300
 patience = 300
 num_models = 5  # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
 
-[model.params]
+[train.model]
 output_len = 480  # Output sequence of the model
+border = 16  # Border added to input sequences, so that input = output + 2 * border
 init_features = 32
 learning_rate = 1.0e-4
 dropout = 0.1
