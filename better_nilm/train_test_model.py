@@ -128,10 +128,10 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
 
 
 def main(
-    path_data: str = "data/data",
-    path_output: str = "results",
+    path_data: str = "data/ukdale",
+    path_output: str = "outputs",
     path_config: str = "better_nilm/config.toml",
-    model_name: str = "ConvModel",
+    model_name: str = "ConvModel"
 ):
     """
     Trains several CONV models under the same conditions
@@ -150,8 +150,11 @@ def main(
         Other option is "GRUModel"
     """
 
+    print(f"\nLoading config file from {path_config}")
     # Load config file
     config = load_conf_full(path_config)
+    config["model"].update({"name": model_name})
+    print("Done\n")
 
     assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
         path_data
@@ -159,7 +162,10 @@ def main(
     path_h5 = path_data + ".h5"
     assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
 
-    config["model"].update({"name": model_name})
+    if not os.path.exists(path_output):
+        print(f"Output path not found. Creating: {path_output}")
+        os.mkdir(path_output)
+        print("Done\n")
 
     # Run main results
     print(f"{model_name}\n")
