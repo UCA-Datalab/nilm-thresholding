@@ -61,7 +61,11 @@ def load_conf_data(path: Union[str, Path]) -> Conf:
     """
     config = load_conf(path, "data")
     buildings = sorted(
-        set(config["build_train"] + config["build_valid"] + config["build_test"])
+        set(
+            config["building_train"]
+            + config["building_valid"]
+            + config["building_test"]
+        )
     )
     config.update({"buildings": buildings})
     return config
