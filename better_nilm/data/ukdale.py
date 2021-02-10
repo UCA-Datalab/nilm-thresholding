@@ -546,7 +546,7 @@ def load_dataloaders(path_h5, path_labels, config):
     threshold_std = config["data"]["threshold"]["std"]
     thresholds = config["data"]["threshold"]["list"]
     min_off = config["data"]["threshold"]["min_off"]
-    min_on = config["data"]["theshold"]["min_on"]
+    min_on = config["data"]["threshold"]["min_on"]
     buildings = to_list(config["data"]["buildings"])
 
     (build_idx_train, build_idx_valid, build_idx_test) = _buildings_to_idx(
