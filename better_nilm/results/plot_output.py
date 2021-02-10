@@ -61,9 +61,9 @@ def extract_scores_from_file(path_file):
     return scores
 
 
-def get_f1_mae_from_scores(list_scores_txt):
+def get_f1_nde_from_scores(list_scores_txt):
     list_f1 = []
-    list_mae = []
+    list_nde = []
     for path_file in list_scores_txt:
         dict_scores = extract_scores_from_file(path_file)
         # Include F1 from classification
@@ -74,23 +74,23 @@ def get_f1_mae_from_scores(list_scores_txt):
         elif "regression" in dict_scores.keys():
             for app, dic in dict_scores["regression"].items():
                 list_f1.append((app, dic["f1"]))
-        # Include MAE from regression
-        # If missing, get MAE from classification
+        # Include NDE from regression
+        # If missing, get NDE from classification
         if "regression" in dict_scores.keys():
             for app, dic in dict_scores["regression"].items():
-                list_mae.append((app, dic["mae"]))
+                list_nde.append((app, dic["nde"]))
         elif "classification" in dict_scores.keys():
             for app, dic in dict_scores["classification"].items():
-                list_mae.append((app, dic["mae"]))
+                list_nde.append((app, dic["nde"]))
     list_f1.sort(key=lambda tup: tup[0])
     dict_f1 = dict(
         [(k, list(list(zip(*g))[1])) for k, g in groupby(list_f1, itemgetter(0))]
     )
-    list_mae.sort(key=lambda tup: tup[0])
-    dict_mae = dict(
-        [(k, list(list(zip(*g))[1])) for k, g in groupby(list_mae, itemgetter(0))]
+    list_nde.sort(key=lambda tup: tup[0])
+    dict_nde = dict(
+        [(k, list(list(zip(*g))[1])) for k, g in groupby(list_nde, itemgetter(0))]
     )
-    return dict_f1, dict_mae
+    return dict_f1, dict_nde
 
 
 def get_arrays(list_values):
@@ -132,9 +132,9 @@ def subplot_f1(ax, w, y, std, ignore_extreme, f1_lim=(0.5, 1)):
     return ax
 
 
-def subplot_mae(ax, w, y, std, ignore_extreme, app, dict_mae_lim={}):
+def subplot_nde(ax, w, y, std, ignore_extreme, app, dict_nde_lim={}):
     color = "tab:blue"
-    ax.set_ylabel("MAE (watts)", color=color)  # we already handled the x-label with ax1
+    ax.set_ylabel("NDE (watts)", color=color)  # we already handled the x-label with ax1
     up = y + std
     down = y - std
     if ignore_extreme or w.max() != 1:
@@ -145,9 +145,9 @@ def subplot_mae(ax, w, y, std, ignore_extreme, app, dict_mae_lim={}):
         ax.fill_between(w[:-1], down[:-1], up[:-1], color=color, alpha=0.2)
         ax.errorbar(w[-1], y[-1], std[-1], color=color, linestyle="None", marker=".")
     ax.tick_params(axis="y", labelcolor=color)
-    mae_lim = dict_mae_lim.get(app, None)
-    if mae_lim is not None:
-        ax.set_ylim(dict_mae_lim[app])
+    nde_lim = dict_nde_lim.get(app, None)
+    if nde_lim is not None:
+        ax.set_ylim(dict_nde_lim[app])
     return ax
 
 
@@ -155,12 +155,12 @@ def plot_arrays(
     w_f1,
     f1,
     f1_std,
-    w_mae,
-    mae,
-    mae_std,
+    w_nde,
+    nde,
+    nde_std,
     app,
     model,
-    dict_mae_lim={},
+    dict_nde_lim={},
     f1_lim=(0.5, 1),
     dict_appliances={},
     movavg=1,
@@ -171,14 +171,14 @@ def plot_arrays(
     app = dict_appliances.get(app, app)
     if movavg > 1:
         f1 = moving_average(f1, n=movavg)
-        mae = moving_average(mae, n=movavg)
+        nde = moving_average(nde, n=movavg)
 
     fig, ax1 = plt.subplots(figsize=figsize)
 
     ax1 = subplot_f1(ax1, w_f1, f1, f1_std, ignore_extreme, f1_lim=f1_lim)
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2 = subplot_mae(
-        ax2, w_mae, mae, mae_std, ignore_extreme, app, dict_mae_lim=dict_mae_lim
+    ax2 = subplot_nde(
+        ax2, w_nde, nde, nde_std, ignore_extreme, app, dict_nde_lim=dict_nde_lim
     )
 
     ax1.set_title(model + " " + app)
@@ -192,7 +192,7 @@ def plot_arrays(
 def plot_weights(
     path_input: str,
     app: str,
-    dict_mae_lim={},
+    dict_nde_lim={},
     f1_lim=(0.5, 1),
     dict_appliances={},
     model: str = "seq_480_1min",
@@ -207,19 +207,19 @@ def plot_weights(
     files = list_dir_sorted(path_input, model)
 
     list_f1 = []
-    list_mae = []
+    list_nde = []
 
     for path_dir, clas_w in files:
         list_scores_txt = list_scores(path_dir)
-        dict_f1, dict_mae = get_f1_mae_from_scores(list_scores_txt)
+        dict_f1, dict_nde = get_f1_nde_from_scores(list_scores_txt)
         if app in dict_f1.keys():
             list_f1.append((clas_w / 100, dict_f1[app]))
-        if app in dict_mae.keys():
-            list_mae.append((clas_w / 100, dict_mae[app]))
+        if app in dict_nde.keys():
+            list_nde.append((clas_w / 100, dict_nde[app]))
 
     # Build arrays
     w_f1, f1, f1_std = get_arrays(list_f1)
-    w_mae, mae, mae_std = get_arrays(list_mae)
+    w_nde, nde, nde_std = get_arrays(list_nde)
 
     # Plot arrays
     model = path_input.rsplit("/", 1)[1]
@@ -228,12 +228,12 @@ def plot_weights(
         w_f1,
         f1,
         f1_std,
-        w_mae,
-        mae,
-        mae_std,
+        w_nde,
+        nde,
+        nde_std,
         app,
         model,
-        dict_mae_lim=dict_mae_lim,
+        dict_nde_lim=dict_nde_lim,
         f1_lim=f1_lim,
         dict_appliances=dict_appliances,
         movavg=movavg,

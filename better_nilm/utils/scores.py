@@ -11,13 +11,17 @@ from better_nilm.utils.format_list import to_list
 
 def _assert_shape(y_pred, y_real, appliances):
     if not y_pred.shape == y_real.shape:
-        raise ValueError("Array shape mismatch.\n"
-                         f"y_pred shape: {y_pred.shape}\n"
-                         f"y_real_shape: {y_real.shape}")
+        raise ValueError(
+            "Array shape mismatch.\n"
+            f"y_pred shape: {y_pred.shape}\n"
+            f"y_real_shape: {y_real.shape}"
+        )
     if y_pred.shape[-1] != len(appliances):
-        raise ValueError("Number of appliances mismatch.\n"
-                         f"Appliances in y_pred array: {y_pred.shape[-1]}\n"
-                         f"Appliances in appliances list: {len(appliances)}")
+        raise ValueError(
+            "Number of appliances mismatch.\n"
+            f"Appliances in y_pred array: {y_pred.shape[-1]}\n"
+            f"Appliances in appliances list: {len(appliances)}"
+        )
 
 
 def regression_scores_dict(y_pred, y_real, appliances):
@@ -50,9 +54,11 @@ def regression_scores_dict(y_pred, y_real, appliances):
     _assert_shape(y_pred, y_real, appliances)
 
     if np.mean(y_real) <= 1:
-        print("Warning!\nThe predicted values appear to be normalized.\n"
-              "It is recommended to use the de-normalized values\n"
-              "when computing the regression errors")
+        print(
+            "Warning!\nThe predicted values appear to be normalized.\n"
+            "It is recommended to use the de-normalized values\n"
+            "when computing the regression errors"
+        )
 
     # Initialize dict
     scores = {}
@@ -75,15 +81,23 @@ def regression_scores_dict(y_pred, y_real, appliances):
         # SAE (Signal Aggregate Error)
         app_sae = (np.sum(app_pred) - np.sum(app_real)) / np.sum(app_real)
 
-        scores[app] = {"mse": round(app_mse, 2),
-                       "rmse": round(app_rmse, 2),
-                       "mae": round(app_mae, 2),
-                       "sae": round(app_sae, 2)}
+        # NDE (Normalized Disaggregation Error)
+        app_nde = np.sqrt(
+            np.divide(np.power((app_real - app_pred), 2), np.power(app_real, 2) + 1e-10)
+        )
+
+        scores[app] = {
+            "mse": round(app_mse, 2),
+            "rmse": round(app_rmse, 2),
+            "mae": round(app_mae, 2),
+            "sae": round(app_sae, 2),
+            "nde": round(app_nde, 2),
+        }
 
     return scores
 
 
-def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
+def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - Accuracy
@@ -116,8 +130,12 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
     appliances = to_list(appliances)
     _assert_shape(y_pred, y_real, appliances)
 
-    if ((y_pred.max() > 1).any() or (y_real > 1).any()
-            or (y_pred.min() < 0).any() or (y_real.min() < 0).any()):
+    if (
+        (y_pred.max() > 1).any()
+        or (y_real > 1).any()
+        or (y_pred.min() < 0).any()
+        or (y_real.min() < 0).any()
+    ):
         raise ValueError("Classification values must be between 0 and 1.")
 
     # Binarize the arrays
@@ -152,9 +170,11 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=.5):
         # Recall
         app_recall = recall_score(app_real, app_pred)
 
-        scores[app] = {"accuracy": round(app_accuracy, 4),
-                       "f1": round(app_f1, 4),
-                       "precision": round(app_precision, 4),
-                       "recall": round(app_recall, 4)}
+        scores[app] = {
+            "accuracy": round(app_accuracy, 4),
+            "f1": round(app_f1, 4),
+            "precision": round(app_precision, 4),
+            "recall": round(app_recall, 4),
+        }
 
     return scores
