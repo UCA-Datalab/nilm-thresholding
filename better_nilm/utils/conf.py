@@ -86,8 +86,8 @@ def load_conf_data(path: Union[str, Path]) -> Conf:
     return config
 
 
-def load_conf_model(path: Union[str, Path]) -> Conf:
-    """Load TOML model params as dict-like
+def load_conf_train(path: Union[str, Path]) -> Conf:
+    """Load TOML train params as dict-like
     Parameters
     ----------
     path : str
@@ -98,15 +98,15 @@ def load_conf_model(path: Union[str, Path]) -> Conf:
         Config dictionary
     """
     config = load_conf(path)
-    config_model = config["train"]
+    config_train = config["train"]
     # Update model params
-    model_params = config_model["params"]
+    model_params = config_train["model"]
     reg_w = 1 - model_params["classification_w"]
     num_app = len(config["data"]["appliances"])
     model_params.update({"out_channels": num_app, "regression_w": reg_w})
     # Update model config
-    config_model.update({"params": model_params})
-    return config_model
+    config_train.update({"params": model_params})
+    return config_train
 
 
 def load_conf_full(path: Union[str, Path]) -> Conf:
@@ -122,6 +122,6 @@ def load_conf_full(path: Union[str, Path]) -> Conf:
     """
     config = load_conf(path)
     config_data = load_conf_data(path)
-    config_model = load_conf_model(path)
-    config.update({"data": config_data, "model": config_model})
+    config_train = load_conf_train(path)
+    config.update({"data": config_data, "model": config_train})
     return config
