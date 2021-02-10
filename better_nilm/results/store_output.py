@@ -192,7 +192,7 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
         config["data"]["period"],
         config["train"]["model"]["classification_w"],
         config["train"]["model"]["regression_w"],
-        config["train"]["threshold_method"],
+        config["data"]["threshold"]["method"],
     )
 
     # Ensure appliances is a list
@@ -220,7 +220,7 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
     )
 
     thresh_color = config["plot"]["thresh_color"].get(
-        config["train"]["threshold_method"], "grey"
+        config["data"]["threshold"]["method"], "grey"
     )
 
     for idx, app in enumerate(appliances):
