@@ -4,7 +4,7 @@ import sys
 
 class HiddenPrints:
     """
-    Hides print outputs
+    Hides print results
     Credit: Alexander Chzhen, on StackOverflow
     """
 

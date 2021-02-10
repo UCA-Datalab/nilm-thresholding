@@ -1,6 +1,6 @@
-from better_nilm.format_utils import to_list
-from better_nilm.str_utils import APPLIANCE_NAMES
-from better_nilm.str_utils import homogenize_string
+from better_nilm.utils.format_list import to_list
+from better_nilm.utils.string import APPLIANCE_NAMES
+from better_nilm.utils.string import homogenize_string
 
 # Power load thresholds (in watts) applied by AT thresholding
 THRESHOLDS = {
@@ -29,10 +29,10 @@ MAX_POWER = {
 }
 
 
-def _get_threshold_params(threshold_method, appliances):
+def get_threshold_params(threshold_method, appliances):
     """
     Given the method name and list of appliances,
-    this function outputs the necessary parameters to use the method in
+    this function results the necessary parameters to use the method in
     ukdale_data.load_ukdale_meter
 
     Parameters
@@ -51,19 +51,19 @@ def _get_threshold_params(threshold_method, appliances):
     # Ensure appliances is list
     appliances = to_list(appliances)
 
-    if threshold_method is 'vs':
+    if threshold_method == 'vs':
         # Variance-Sensitive threshold
         threshold_std = True
         thresholds = None
         min_off = None
         min_on = None
-    elif threshold_method is 'mp':
+    elif threshold_method == 'mp':
         # Middle-Point threshold
         threshold_std = False
         thresholds = None
         min_off = None
         min_on = None
-    elif threshold_method is 'at':
+    elif threshold_method == 'at':
         # Activation-Time threshold
         threshold_std = False
         thresholds = []

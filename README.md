@@ -61,21 +61,18 @@ better_nilm
    |_ ukdale
       |_ [house_1 to house_5]
    |_ ukdale.h5
-|_ scripts
-   |_ [python scripts]
 ```
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
 ## Scripts
 
-The folder [scripts](/scripts) contains one executable script for each
-model. Both work the same way. For instance, to use the CONV model, run the
-following line on the root folder
+The folder [better_nilm](/better_nilm) contains an executable script to train the
+ models a plot their results. Run the following line on the root folder
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python scripts/conv_scores.py
+python better_nilm/train_test_model.py
 ```
 
 This will train and score the CONV model using the default parameters.
@@ -85,31 +82,22 @@ including:
 - .png files showing samples of the model's prediction.
 - .png files with the scores against the classification weight.
 
-A list with all the available parameters and their default values can be
- seen by running:
+The list with all the available parameters and their default values is stored in the
+ [configuration file](better_nilm/config.toml).
 
+If you want to use your own set of parameters, duplicate the aforementioned
+ configuration file and modify the paremeters you want to change (without deleting any
+  parameter). You can then use that config file with the following command:
+ 
+ ```
+python better_nilm/train_test_model.py  --path_config <path to your config file>
 ```
-python scripts/conv_scores.py  --help
+
+For more information about the script, run:
+
+ ```
+python better_nilm/train_test_model.py  --help
 ```
-
-If you want to use your own set of parameters, there are two options.
-
-1. The easiest way is to call the function with the new value.
-For example, if we want to reduce the number of training epochs to 100,
-and increase the bacth size to 64, we run:
-
-    ```
-    python scripts/conv_scores.py  --epochs 100 --batch-size 64
-    ```
-
-    The order and number of parameters does not matter as long as those
-    parameters exists on the script (use `--help` to check them out)
-    and their new values are of the proper type.
-
-2. Another way of choosing your own parameters is to modify them directly
-on the script (below the section Parameters, which is properly indicated).
-This is only recommended when modifying complex parameters,
-like lists or dictionaries.
 
 ### Thresholding methods
 

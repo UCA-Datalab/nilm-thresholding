@@ -10,8 +10,10 @@ dependencies:
   - python==3.7.9
   - scikit-learn==0.22.2.post1
   - seaborn==0.10.0
+  - toml==0.10.2
   - pip:
       - tables==3.6.1
       - torch==1.4.0
       - torchvision==0.5.0
       - typer==0.3.2
+      - -e .[dev]
