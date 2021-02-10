@@ -268,7 +268,7 @@ def load_ukdale_series(
             )
             assert meters.shape[0] > 0, msg
         except KeyError:
-            raise KeyError(f"House not found: {house}")
+            raise KeyError(f"House not found: {house}, of type {type(house)}")
 
         meter = meters["aggregate"]
         appliances = meters.drop("aggregate", axis=1)
