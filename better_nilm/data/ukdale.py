@@ -554,7 +554,7 @@ def load_dataloaders(path_h5, path_labels, config):
     )
 
     # Set the parameters according to given threshold method
-    if threshold_method is not "custom":
+    if threshold_method != "custom":
         (thresholds, min_off, min_on, threshold_std) = get_threshold_params(
             threshold_method, config["data"]["appliances"]
         )
