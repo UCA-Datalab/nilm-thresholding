@@ -188,10 +188,10 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
 def store_plots(path_output, config, model, dl_test, means, thresholds):
     path_output = generate_folder_name(
         path_output,
-        config["train"]["output_len"],
+        config["train"]["model"]["output_len"],
         config["data"]["period"],
-        config["train"]["classification_w"],
-        config["train"]["regression_w"],
+        config["train"]["model"]["classification_w"],
+        config["train"]["model"]["regression_w"],
         config["train"]["threshold_method"],
     )
 
@@ -242,9 +242,9 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
         idx_start = 0
         num_plots = 0
         while (num_plots < 10) and (
-            (idx_start + config["train"]["output_len"]) < p_true.shape[0]
+            (idx_start + config["train"]["model"]["output_len"]) < p_true.shape[0]
         ):
-            idx_end = idx_start + config["train"]["output_len"]
+            idx_end = idx_start + config["train"]["model"]["output_len"]
             p_t = p_true[idx_start:idx_end, idx]
             if p_t.sum() > 0:
                 s_t = s_true[idx_start:idx_end, idx]
@@ -263,12 +263,12 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                 if factor < 0:
                     p_agg -= factor
 
-                idx_start += config["train"]["output_len"]
+                idx_start += config["train"]["model"]["output_len"]
             else:
-                idx_start += config["train"]["output_len"]
+                idx_start += config["train"]["model"]["output_len"]
                 continue
             # Skip plots if weight is zero
-            if config["train"]["classification_w"] > 0:
+            if config["train"]["model"]["classification_w"] > 0:
                 savefig = os.path.join(
                     path_output, f"{app}_classification_{num_plots}.png"
                 )
@@ -276,7 +276,7 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                     s_t,
                     s_h,
                     p_agg,
-                    records=config["train"]["output_len"],
+                    records=config["train"]["model"]["output_len"],
                     period=period_x,
                     pw_max=p_agg.max(),
                     dpi=180,
@@ -284,13 +284,13 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                     savefig=savefig,
                     title=app,
                 )
-            if config["train"]["regression_w"] > 0:
+            if config["train"]["model"]["regression_w"] > 0:
                 savefig = os.path.join(path_output, f"{app}_regression_{num_plots}.png")
                 plot_informative_regression(
                     p_t,
                     p_h,
                     p_agg,
-                    records=config["train"]["output_len"],
+                    records=config["train"]["model"]["output_len"],
                     scale=1.0,
                     period=period_x,
                     dpi=180,
