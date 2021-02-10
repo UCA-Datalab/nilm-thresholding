@@ -144,8 +144,8 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
     valid_size = config["model"]["valid_size"]
     num_models = config["model"]["num_models"]
     batch_size = config["model"]["batch_size"]
-    learning_rate = config["model"]["learning_rate"]
-    dropout = config["model"]["dropout"]
+    learning_rate = config["model"]["params"]["learning_rate"]
+    dropout = config["model"]["params"]["dropout"]
     epochs = config["model"]["epochs"]
     patience = config["model"]["patience"]
 
