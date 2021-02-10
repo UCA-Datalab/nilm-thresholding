@@ -72,8 +72,8 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
             means,
             thresholds,
             config["data"]["appliances"],
-            config["model"]["min_off"],
-            config["model"]["min_on"],
+            config["data"]["threshold"]["min_off"],
+            config["data"]["threshold"]["min_on"],
         )
 
         act_scores += act_scr
