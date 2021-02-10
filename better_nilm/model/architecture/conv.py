@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from better_nilm.model.architecture._base import TorchModel
+from better_nilm.model.architecture.base import TorchModel
 
 """
 Source: https://github.com/lmssdd/TPNILM
