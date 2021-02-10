@@ -58,7 +58,7 @@ classification_w = 0.1
 [plot]
 plot_scores = true
 plot_scores_lim = false
-f1_lim = [0.5, 1]
+f1_lim = [0.5, 1.0]
 
 [plot.appliances]
 dish_washer= "Dishwasher"
