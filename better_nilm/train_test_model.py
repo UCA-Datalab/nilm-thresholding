@@ -129,7 +129,6 @@ def main(
     path_data: str = "data/ukdale",
     path_output: str = "outputs",
     path_config: str = "better_nilm/config.toml",
-    model_name: str = "ConvModel",
 ):
     """
     Trains several CONV models under the same conditions
@@ -143,15 +142,11 @@ def main(
         Path to the results folder
     path_config : str, optional
         Path to the config toml file
-    model_name : str, optional
-        Model to train, by default "ConvModel"
-        Other option is "GRUModel"
     """
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
     config = load_conf_full(path_config)
-    config["train"].update({"name": model_name})
     print("Done\n")
 
     assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
@@ -161,7 +156,7 @@ def main(
     assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
 
     # Run main results
-    print(f"{model_name}\n")
+    print(f"{config['train']['name']}\n")
 
     run_many_models(path_h5, path_data, path_output, config)
 
@@ -177,7 +172,7 @@ def main(
             path_input = os.path.join(path_output, config["train"]["name"])
             savefig = os.path.join(
                 path_output,
-                f"{model_name}_{config['threshold']['method']}_{app}.png",
+                f"{config['train']['name']}_{config['threshold']['method']}_{app}.png",
             )
             plot_weights(
                 path_input,
