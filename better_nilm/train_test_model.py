@@ -175,7 +175,10 @@ def main(
             f1_lim = None
         for app in config["data"]["appliances"]:
             path_input = os.path.join(path_output, config["train"]["name"])
-            savefig = os.path.join(path_output, "Conv_" + app + ".png")
+            savefig = os.path.join(
+                path_output,
+                f"{model_name}_{config['threshold']['method']}_{app}.png",
+            )
             plot_weights(
                 path_input,
                 app,

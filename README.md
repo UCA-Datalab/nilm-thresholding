@@ -99,6 +99,19 @@ For more information about the script, run:
 python better_nilm/train_test_model.py  --help
 ```
 
+#### Reproduce paper
+
+To reproduce the results shown in [our paper](#publications), activate the
+ environment and then run:
+
+```
+nohup sh train_test_sequential.sh > log.out & 
+```
+
+This will first create a folder named configs, where the different configurations of the
+models are stored. Then, the script `train_test_models.py` will be called, using each
+ configuration each. The outputs will be stored in another created folder named outputs.
+
 ### Thresholding methods
 
 There are three threshold methods available. Read [our paper](#publications)
