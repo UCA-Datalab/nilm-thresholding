@@ -172,7 +172,8 @@ def main(
             path_input = os.path.join(path_output, config["train"]["name"])
             savefig = os.path.join(
                 path_output,
-                f"{config['train']['name']}_{config['threshold']['method']}_{app}.png",
+                f"{config['train']['name']}_"
+                f"{config['data']['threshold']['method']}_{app}.png",
             )
             plot_weights(
                 path_input,
@@ -183,6 +184,7 @@ def main(
                 f1_lim=f1_lim,
                 dict_appliances=config["plot"]["appliances"],
             )
+            print(f"Stored scores-weight plot in {savefig}")
 
 
 if __name__ == "__main__":
