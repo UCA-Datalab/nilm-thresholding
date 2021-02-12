@@ -6,7 +6,6 @@ from better_nilm.model.architecture.base import TorchModel
 
 
 class _Dense(nn.Module):
-
     def __init__(self, in_features, out_features):
         super(_Dense, self).__init__()
         self.linear = nn.Linear(in_features, out_features)
@@ -16,9 +15,7 @@ class _Dense(nn.Module):
 
 
 class _BiGRU(nn.Module):
-
-    def __init__(self, input_len=510, output_len=480, out_channels=1,
-                 dropout=0.1):
+    def __init__(self, input_len=510, output_len=480, out_channels=1, dropout=0.1):
         super(_BiGRU, self).__init__()
 
         padding = 2
@@ -29,11 +26,8 @@ class _BiGRU(nn.Module):
         self.conv1 = nn.Conv1d(1, 16, kernel_size=kernel_size, padding=padding)
         self.conv2 = nn.Conv1d(16, 8, kernel_size=kernel_size, padding=padding)
 
-        self.gru1 = nn.GRU(8, 64, batch_first=True,
-                           bidirectional=True,
-                           dropout=dropout)
-        self.gru2 = nn.GRU(128, 128, batch_first=True,
-                           bidirectional=True)
+        self.gru1 = nn.GRU(8, 64, batch_first=True, bidirectional=True, dropout=dropout)
+        self.gru2 = nn.GRU(128, 128, batch_first=True, bidirectional=True)
 
         self.dense = _Dense(256, 64)
         self.regressor = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
@@ -55,18 +49,29 @@ class _BiGRU(nn.Module):
 
 
 class GRUModel(TorchModel):
-
-    def __init__(self, input_len=510, output_len=480, out_channels=1,
-                 learning_rate=1E-4, dropout=0.1,
-                 regression_w=1, classification_w=1):
+    def __init__(
+        self,
+        input_len=510,
+        output_len=480,
+        border=None,
+        out_channels=1,
+        init_features=None,
+        learning_rate=1e-4,
+        dropout=0.1,
+        classification_w=1,
+        regression_w=1,
+    ):
         super(TorchModel, self).__init__()
 
         msg = "Difference between input and output lens must be even"
         assert (input_len - output_len) % 2 == 0, msg
 
-        self.model = _BiGRU(input_len=input_len, output_len=output_len,
-                            out_channels=out_channels,
-                            dropout=dropout).cuda()
+        self.model = _BiGRU(
+            input_len=input_len,
+            output_len=output_len,
+            out_channels=out_channels,
+            dropout=dropout,
+        ).cuda()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.pow_criterion = nn.MSELoss()
         self.act_criterion = nn.BCEWithLogitsLoss()
