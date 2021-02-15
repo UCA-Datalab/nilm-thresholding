@@ -19,6 +19,20 @@ from better_nilm.model.architecture.conv import ConvModel
 from better_nilm.model.architecture.gru import GRUModel
 
 
+def update_config(config: dict) -> dict:
+    """Performs some corrections on the config dictionary"""
+    if config["train"]["name"] == "GRUModel":
+        border = int(
+            (
+                config["train"]["model"]["input_len"]
+                - config["train"]["model"]["output_len"]
+            )
+            / 2
+        )
+        config["train"]["model"].update({"border": border})
+    return config
+
+
 def _merge_dict_list(dict_list):
     d = defaultdict(dict)
     for l in dict_list:
@@ -147,6 +161,7 @@ def main(
     print(f"\nLoading config file from {path_config}")
     # Load config file
     config = load_conf_full(path_config)
+    config = update_config(config)
     print("Done\n")
 
     assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
