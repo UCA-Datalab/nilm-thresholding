@@ -2,10 +2,13 @@ import os
 import re
 from itertools import groupby
 from operator import itemgetter
+import typer
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+
+from better_nilm.utils.conf import load_conf_full
 
 sns.set_style("white")
 
@@ -132,9 +135,9 @@ def subplot_f1(ax, w, y, std, ignore_extreme, f1_lim=(0.5, 1)):
     return ax
 
 
-def subplot_nde(ax, w, y, std, ignore_extreme, app, dict_nde_lim={}):
+def subplot_nde(ax, w, y, std, ignore_extreme, nde_lim={}):
     color = "tab:blue"
-    ax.set_ylabel("NDE (watts)", color=color)  # we already handled the x-label with ax1
+    ax.set_ylabel("NDE", color=color)  # we already handled the x-label with ax1
     up = y + std
     down = y - std
     if ignore_extreme or w.max() != 1:
@@ -145,9 +148,8 @@ def subplot_nde(ax, w, y, std, ignore_extreme, app, dict_nde_lim={}):
         ax.fill_between(w[:-1], down[:-1], up[:-1], color=color, alpha=0.2)
         ax.errorbar(w[-1], y[-1], std[-1], color=color, linestyle="None", marker=".")
     ax.tick_params(axis="y", labelcolor=color)
-    nde_lim = dict_nde_lim.get(app, None)
     if nde_lim is not None:
-        ax.set_ylim(dict_nde_lim[app])
+        ax.set_ylim(nde_lim)
     return ax
 
 
@@ -160,8 +162,8 @@ def plot_arrays(
     nde_std,
     app,
     model,
-    dict_nde_lim={},
-    f1_lim=(0.5, 1),
+    nde_lim=(0, 1),
+    f1_lim=(0, 1),
     dict_appliances={},
     movavg=1,
     ignore_extreme=True,
@@ -177,9 +179,7 @@ def plot_arrays(
 
     ax1 = subplot_f1(ax1, w_f1, f1, f1_std, ignore_extreme, f1_lim=f1_lim)
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-    ax2 = subplot_nde(
-        ax2, w_nde, nde, nde_std, ignore_extreme, app, dict_nde_lim=dict_nde_lim
-    )
+    ax2 = subplot_nde(ax2, w_nde, nde, nde_std, ignore_extreme, nde_lim=nde_lim)
 
     ax1.set_title(model + " " + app)
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
@@ -192,8 +192,8 @@ def plot_arrays(
 def plot_weights(
     path_input: str,
     app: str,
-    dict_nde_lim={},
-    f1_lim=(0.5, 1),
+    nde_lim=(0, 1),
+    f1_lim=(0, 1),
     dict_appliances={},
     model: str = "seq_480_1min",
     movavg: int = 1,
@@ -233,7 +233,7 @@ def plot_weights(
         nde_std,
         app,
         model,
-        dict_nde_lim=dict_nde_lim,
+        nde_lim=nde_lim,
         f1_lim=f1_lim,
         dict_appliances=dict_appliances,
         movavg=movavg,
@@ -241,3 +241,43 @@ def plot_weights(
         figsize=figsize,
         savefig=savefig,
     )
+
+
+def main(
+    path_output: str = "outputs",
+    model: str = "ConvModel",
+    path_config: str = "better_nilm/config.toml",
+):
+    """Plots some model outputs"""
+    # Load config file
+    config = load_conf_full(path_config)
+    path_input = os.path.join(path_output, model)
+    # List all the different model configurations
+    list_confs = set([folder.rsplit("_", 4)[0] for folder in os.listdir(path_input)])
+    for config_name in list_confs:
+        for app in config["data"]["appliances"]:
+            try:
+                _, output_len, period, method = config_name.split("_", 4)
+            except ValueError:
+                print(f"Omitted {config_name}")
+                continue
+            # Store figures
+            savefig = os.path.join(
+                path_output,+
+                f"{model}" f"_{output_len}" f"_{period}" f"_{method}_{app}.png",
+            )
+            plot_weights(
+                path_input,
+                app,
+                model=config_name,
+                figsize=config["plot"]["figsize"],
+                savefig=savefig,
+                nde_lim=config["plot"]["nde_lim"],
+                f1_lim=config["plot"]["f1_lim"],
+                dict_appliances=config["plot"]["appliances"],
+            )
+            print(f"Stored scores-weight plot in {savefig}")
+
+
+if __name__ == "__main__":
+    typer.run(main)
