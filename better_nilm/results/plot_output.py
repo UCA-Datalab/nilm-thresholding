@@ -263,7 +263,7 @@ def main(
                 continue
             # Store figures
             savefig = os.path.join(
-                path_output,+
+                path_output,
                 f"{model}" f"_{output_len}" f"_{period}" f"_{method}_{app}.png",
             )
             plot_weights(
