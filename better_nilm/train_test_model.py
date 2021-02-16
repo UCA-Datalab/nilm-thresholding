@@ -190,9 +190,16 @@ def main(
                 f"{config['train']['name']}_"
                 f"{config['data']['threshold']['method']}_{app}.png",
             )
+            # Folders related to the model we are working with
+            model_name = (
+                f"seq_{str(config['train']['model']['output_len'])}"
+                f"_{config['data']['period']}"
+                f"_{config['data']['threshold']['method']}"
+            )
             plot_weights(
                 path_input,
                 app,
+                model=model_name,
                 figsize=(4, 3),
                 savefig=savefig,
                 dict_nde_lim=dict_nde_lim,

@@ -122,8 +122,9 @@ def generate_folder_name(
     Generates specific folder inside results.
     """
     name = (
-        f"seq_{str(output_len)}_{period}_clas_{str(int(class_w * 100))}"
-        f"_reg_{str(int(reg_w * 100))}_{threshold_method}"
+        f"seq_{str(output_len)}_{period}_{threshold_method}"
+        f"_clas_{str(int(class_w * 100))}"
+        f"_reg_{str(int(reg_w * 100))}"
     )
     path_output = os.path.join(path_output, name)
     if not os.path.isdir(path_output):
