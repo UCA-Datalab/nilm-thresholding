@@ -171,10 +171,10 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
         for key, dic1 in scores.items():
 
             # Skip scores if weight is zero
-            # if (class_w == 0) and (key.startswith('class')):
-            #    continue
-            # if (reg_w == 0) and (key.startswith('reg')):
-            #    continue
+            if (class_w == 0) and (key.startswith("class")):
+                continue
+            if (reg_w == 0) and (key.startswith("reg")):
+                continue
 
             text_file.write(f"{key}\n------------------------------------------\n")
             for app, dic2 in dic1.items():
