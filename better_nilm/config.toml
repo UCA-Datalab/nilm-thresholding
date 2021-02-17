@@ -48,6 +48,7 @@ num_models = 5  # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
 
 [train.model]
+input_len = 510  # Input sequence of the model
 output_len = 480  # Output sequence of the model
 border = 16  # Border added to input sequences, so that input = output + 2 * border
 init_features = 32
