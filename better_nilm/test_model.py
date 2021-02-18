@@ -177,9 +177,8 @@ def main(
         save_predictions=save_predictions,
     )
 
-    if config["plot"]["plot_scores"]:
-        print("PLOT RESULTS!")
-        plot_scores_by_class_weight(config, path_output)
+    print("PLOT RESULTS!")
+    plot_scores_by_class_weight(config, path_output)
 
 
 if __name__ == "__main__":
