@@ -1,3 +1,7 @@
+# Shut Future Warnings
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import os
 
 import typer
@@ -15,10 +19,6 @@ from better_nilm.results.store_output import (
 )
 from better_nilm.utils.conf import load_conf_full, update_config
 from better_nilm.utils.format_list import merge_dict_list
-
-# Shut Future Warnings
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def test_many_models(
