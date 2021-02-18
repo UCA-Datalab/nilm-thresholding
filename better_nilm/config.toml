@@ -61,6 +61,7 @@ plot_scores = true
 f1_lim = [0, 1]
 nde_lim = [0, 1]
 figsize = [4, 3]
+num_plots = 2
 
 [plot.appliances]
 dish_washer= "Dishwasher"

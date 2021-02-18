@@ -119,7 +119,7 @@ def test_many_models(
         model,
         dl_test,
         means,
-        thresholds,
+        thresholds
     )
 
     if save_predictions:
