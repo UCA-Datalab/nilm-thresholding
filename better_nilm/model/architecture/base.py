@@ -12,10 +12,19 @@ class KerasModel:
     def __init__(self):
         self.model = None
 
-    def train_with_validation(self, x_train, y_train, bin_train,
-                              x_val, y_val, bin_val,
-                              epochs=1000, batch_size=64,
-                              shuffle=False, patience=300):
+    def train_with_validation(
+        self,
+        x_train,
+        y_train,
+        bin_train,
+        x_val,
+        y_val,
+        bin_val,
+        epochs=1000,
+        batch_size=64,
+        shuffle=False,
+        patience=300,
+    ):
         """
         Train the model, implementing early stop. The train stops when the
         validation loss ceases to decrease.
@@ -24,8 +33,10 @@ class KerasModel:
         ----------
         x_train : numpy.array
         y_train : numpy.array or list of numpy.array
+        bin_train : numpy.array
         x_val : numpy.array
         y_val : numpy.array or list of numpy.array
+        bin_val : numpy.array
         epochs : int, default=4000
             Number of epochs to train the model. An epoch is an iteration over
             the entire x and y data provided.
@@ -38,14 +49,18 @@ class KerasModel:
              stopped.
         """
         # patient early stopping
-        es = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
-                           patience=patience)
+        es = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=patience)
 
         # Fit model
-        self.model.fit(x_train, [y_train, bin_train],
-                       validation_data=(x_val, [y_val, bin_val]),
-                       epochs=epochs, batch_size=batch_size, shuffle=shuffle,
-                       callbacks=[es])
+        self.model.fit(
+            x_train,
+            [y_train, bin_train],
+            validation_data=(x_val, [y_val, bin_val]),
+            epochs=epochs,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            callbacks=[es],
+        )
 
     def predict(self, x_test):
         return self.model.predict(x_test)
@@ -70,13 +85,14 @@ class TorchModel:
         tensor_y = torch.Tensor(y)
         tensor_bin = torch.Tensor(y_bin)
         dataset = TensorDataset(tensor_x, tensor_y, tensor_bin)
-        data_loader = DataLoader(dataset=dataset,
-                                 batch_size=self.batch_size,
-                                 shuffle=self.shuffle)
+        data_loader = DataLoader(
+            dataset=dataset, batch_size=self.batch_size, shuffle=self.shuffle
+        )
         return data_loader
 
-    def train_with_dataloader(self, train_loader, valid_loader,
-                              epochs=1000, patience=300):
+    def train_with_dataloader(
+        self, train_loader, valid_loader, epochs=1000, patience=300
+    ):
 
         # to track the training loss as the model trains
         train_losses = []
@@ -102,7 +118,8 @@ class TorchModel:
             # total = 0
 
             for batch, (data, target_power, target_status) in enumerate(
-                    train_loader, 1):
+                train_loader, 1
+            ):
                 data = data.unsqueeze(1).cuda()
                 target_power = target_power.cuda()
                 target_status = target_status.cuda()
@@ -117,8 +134,10 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = (self.pow_w * pow_loss / self.pow_loss_avg
-                        + self.act_w * act_loss / self.act_loss_avg)
+                loss = (
+                    self.pow_w * pow_loss / self.pow_loss_avg
+                    + self.act_w * act_loss / self.act_loss_avg
+                )
                 # backward pass: compute gradient of the loss with respect
                 # to model parameters
                 loss.backward()
@@ -150,8 +169,10 @@ class TorchModel:
                 # calculate the loss
                 pow_loss = self.pow_criterion(output_power, target_power)
                 act_loss = self.act_criterion(output_status, target_status)
-                loss = (self.pow_w * pow_loss / self.pow_loss_avg
-                        + self.act_w * act_loss / self.act_loss_avg)
+                loss = (
+                    self.pow_w * pow_loss / self.pow_loss_avg
+                    + self.act_w * act_loss / self.act_loss_avg
+                )
                 # record validation loss
                 valid_losses.append(loss.item())
 
@@ -165,9 +186,10 @@ class TorchModel:
             epoch_len = len(str(epochs))
 
             print_msg = (
-                    f'[{epoch:>{epoch_len}}/{epochs:>{epoch_len}}] ' +
-                    f'train_loss: {train_loss:.5f} ' +
-                    f'valid_loss: {valid_loss:.5f} ')
+                f"[{epoch:>{epoch_len}}/{epochs:>{epoch_len}}] "
+                + f"train_loss: {train_loss:.5f} "
+                + f"valid_loss: {valid_loss:.5f} "
+            )
 
             print(print_msg)
 
@@ -178,10 +200,12 @@ class TorchModel:
             # Check if validation loss has decreased
             # If so, store the model as the best model
             if valid_loss < min_loss:
-                print(f'Validation loss decreased ({min_loss:.6f} -->'
-                      f' {valid_loss:.6f}).  Saving model ...')
+                print(
+                    f"Validation loss decreased ({min_loss:.6f} -->"
+                    f" {valid_loss:.6f}).  Saving model ..."
+                )
                 min_loss = valid_loss
-                torch.save(self.model.state_dict(), 'model.pth')
+                self.save("model.pth")
             else:
                 loss_up += 1
 
@@ -190,13 +214,22 @@ class TorchModel:
 
         # Take best model
         # load the last checkpoint with the best model
-        self.model.load_state_dict(torch.load('model.pth'))
-        os.remove('model.pth')
+        self.load("model.pth")
+        os.remove("model.pth")
 
-    def train_with_data(self, x_train, y_train, bin_train,
-                        x_val, y_val, bin_val,
-                        epochs=1000, batch_size=32,
-                        shuffle=False, patience=300):
+    def train_with_data(
+        self,
+        x_train,
+        y_train,
+        bin_train,
+        x_val,
+        y_val,
+        bin_val,
+        epochs=1000,
+        batch_size=32,
+        shuffle=False,
+        patience=300,
+    ):
 
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -204,8 +237,9 @@ class TorchModel:
         train_loader = self._get_dataloader(x_train, y_train, bin_train)
         valid_loader = self._get_dataloader(x_val, y_val, bin_val)
 
-        self.train_with_dataloader(train_loader, valid_loader,
-                                   epochs=epochs, patience=patience)
+        self.train_with_dataloader(
+            train_loader, valid_loader, epochs=epochs, patience=patience
+        )
 
     def predict(self, x_test):
         self.model.eval()
@@ -240,12 +274,11 @@ class TorchModel:
                 pw = pw.detach().cpu().numpy()
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))
 
-                x_true.append(x[:, :,
-                              self.border:-self.border].detach().cpu().numpy().flatten())
-                s_true.append(
-                    status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
-                p_true.append(
-                    power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+                x_true.append(
+                    x[:, :, self.border : -self.border].detach().cpu().numpy().flatten()
+                )
+                s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+                p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
 
         x_true = np.hstack(x_true)
         s_true = np.concatenate(s_true, axis=0)
@@ -254,3 +287,11 @@ class TorchModel:
         p_hat = np.concatenate(p_hat, axis=0)
 
         return x_true, p_true, s_true, p_hat, s_hat
+
+    def save(self, path_model: str):
+        """Store the weights of the model"""
+        torch.save(self.model.state_dict(), path_model)
+
+    def load(self, path_model: str):
+        """Load the weights of the model"""
+        self.model.load_state_dict(torch.load(path_model))
