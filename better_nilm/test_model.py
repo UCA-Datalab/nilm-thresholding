@@ -17,7 +17,13 @@ from better_nilm.utils.conf import load_conf_full, update_config
 from better_nilm.utils.format_list import merge_dict_list
 
 
-def test_many_models(path_h5, path_data, path_output, config: dict):
+def test_many_models(
+    path_h5,
+    path_data,
+    path_output,
+    config: dict,
+    save_scores: bool = True,
+):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
@@ -76,15 +82,16 @@ def test_many_models(path_h5, path_data, path_output, config: dict):
 
         scores = {"classification": act_dict, "regression": pow_dict}
 
-        filename = f"scores_test_{i}.txt"
+        filename = f"scores_{i}.txt"
 
-        store_scores(
-            path_output_folder,
-            config,
-            scores,
-            time_ellapsed,
-            filename=filename,
-        )
+        if save_scores:
+            store_scores(
+                path_output_folder,
+                config,
+                scores,
+                time_ellapsed,
+                filename=filename,
+            )
 
     # List scores
 
@@ -96,10 +103,8 @@ def test_many_models(path_h5, path_data, path_output, config: dict):
     )
 
     # Store scores and plot
-
-    store_scores(
-        path_output_folder, config, scores, time_ellapsed, filename="scores_test.txt"
-    )
+    if save_scores:
+        store_scores(path_output_folder, config, scores, time_ellapsed)
 
     store_plots(
         path_output_folder,
@@ -115,6 +120,7 @@ def main(
     path_data: str = "data/ukdale",
     path_output: str = "outputs",
     path_config: str = "better_nilm/config.toml",
+    save_scores: bool = True,
 ):
     """
     Trains several CONV models under the same conditions
@@ -128,6 +134,8 @@ def main(
         Path to the results folder
     path_config : str, optional
         Path to the config toml file
+    save_scores : bool, optional
+        Store the model scores in txt files, by default True
     """
 
     print(f"\nLoading config file from {path_config}")
@@ -145,7 +153,7 @@ def main(
     # Run main results
     print(f"{config['train']['name']}\n")
 
-    test_many_models(path_h5, path_data, path_output, config)
+    test_many_models(path_h5, path_data, path_output, config, save_scores=save_scores)
 
     if config["plot"]["plot_scores"]:
         print("PLOT RESULTS!")
