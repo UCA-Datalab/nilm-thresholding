@@ -2,13 +2,10 @@ import os
 import re
 from itertools import groupby
 from operator import itemgetter
-import typer
 
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
-from better_nilm.utils.conf import load_conf_full
 
 sns.set_style("white")
 
@@ -189,7 +186,7 @@ def plot_arrays(
         plt.savefig(savefig)
 
 
-def plot_weights(
+def _plot_weights(
     path_input: str,
     app: str,
     nde_lim=(0, 1),
@@ -243,41 +240,33 @@ def plot_weights(
     )
 
 
-def main(
-    path_output: str = "outputs",
-    model: str = "ConvModel",
-    path_config: str = "better_nilm/config.toml",
-):
-    """Plots some model outputs"""
-    # Load config file
-    config = load_conf_full(path_config)
-    path_input = os.path.join(path_output, model)
-    # List all the different model configurations
-    list_confs = set([folder.rsplit("_", 4)[0] for folder in os.listdir(path_input)])
-    for config_name in list_confs:
-        for app in config["data"]["appliances"]:
-            try:
-                _, output_len, period, method = config_name.split("_", 4)
-            except ValueError:
-                print(f"Omitted {config_name}")
-                continue
-            # Store figures
-            savefig = os.path.join(
-                path_output,
-                f"{model}" f"_{output_len}" f"_{period}" f"_{method}_{app}.png",
-            )
-            plot_weights(
-                path_input,
-                app,
-                model=config_name,
-                figsize=config["plot"]["figsize"],
-                savefig=savefig,
-                nde_lim=config["plot"]["nde_lim"],
-                f1_lim=config["plot"]["f1_lim"],
-                dict_appliances=config["plot"]["appliances"],
-            )
-            print(f"Stored scores-weight plot in {savefig}")
-
-
-if __name__ == "__main__":
-    typer.run(main)
+def plot_scores_by_class_weight(config, path_output):
+    nde_lim = config["plot"]["nde_lim"]
+    f1_lim = config["plot"]["f1_lim"]
+    for app in config["data"]["appliances"]:
+        path_input = os.path.join(path_output, config["train"]["name"])
+        # Folders related to the model we are working with
+        model_name = (
+            f"seq_{str(config['train']['model']['output_len'])}"
+            f"_{config['data']['period']}"
+            f"_{config['data']['threshold']['method']}"
+        )
+        # Store figures
+        savefig = os.path.join(
+            path_output,
+            f"{config['train']['name']}"
+            f"_{str(config['train']['model']['output_len'])}"
+            f"_{config['data']['period']}"
+            f"_{config['data']['threshold']['method']}_{app}.png",
+        )
+        _plot_weights(
+            path_input,
+            app,
+            model=model_name,
+            figsize=config["plot"]["figsize"],
+            savefig=savefig,
+            nde_lim=nde_lim,
+            f1_lim=f1_lim,
+            dict_appliances=config["plot"]["appliances"],
+        )
+        print(f"Stored scores-weight plot in {savefig}")

@@ -125,3 +125,17 @@ def load_conf_full(path: Union[str, Path]) -> Conf:
     config_train = load_conf_train(path)
     config.update({"data": config_data, "train": config_train})
     return config
+
+
+def update_config(config: dict) -> dict:
+    """Performs some corrections on the config dictionary"""
+    if config["train"]["name"] == "GRUModel":
+        border = int(
+            (
+                config["train"]["model"]["input_len"]
+                - config["train"]["model"]["output_len"]
+            )
+            / 2
+        )
+        config["train"]["model"].update({"border": border})
+    return config

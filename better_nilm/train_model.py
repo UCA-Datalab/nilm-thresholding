@@ -1,49 +1,22 @@
 import os
 import time
-from collections import defaultdict
 
 import typer
 
 from better_nilm.data.ukdale import load_dataloaders
+from better_nilm.model.model import initialize_model
 from better_nilm.results.store_output import (
     generate_path_output,
     generate_folder_name,
     get_model_scores,
     list_scores,
-    store_plots,
     store_scores,
 )
-from better_nilm.results.plot_output import plot_weights
-from better_nilm.utils.conf import load_conf_full
-
-from better_nilm.model.architecture.conv import ConvModel
-from better_nilm.model.architecture.gru import GRUModel
+from better_nilm.utils.conf import load_conf_full, update_config
+from better_nilm.utils.format_list import merge_dict_list
 
 
-def update_config(config: dict) -> dict:
-    """Performs some corrections on the config dictionary"""
-    if config["train"]["name"] == "GRUModel":
-        border = int(
-            (
-                config["train"]["model"]["input_len"]
-                - config["train"]["model"]["output_len"]
-            )
-            / 2
-        )
-        config["train"]["model"].update({"border": border})
-    return config
-
-
-def _merge_dict_list(dict_list):
-    d = defaultdict(dict)
-    for l in dict_list:
-        for elem in l:
-            d[elem].update(l[elem])
-
-    return d
-
-
-def run_many_models(path_h5, path_data, path_output, config: dict):
+def train_many_models(path_h5, path_data, path_output, config: dict):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
@@ -76,7 +49,7 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
     for i in range(config["train"]["num_models"]):
         print(f"\nModel {i + 1}\n")
 
-        model = eval(config["train"]["name"])(**config["train"]["model"])
+        model = initialize_model(config)
 
         # Train
         time_start = time.time()
@@ -107,8 +80,8 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
         pow_scores += pow_scr
 
         # Store individual scores
-        act_dict = _merge_dict_list(act_scr)
-        pow_dict = _merge_dict_list(pow_scr)
+        act_dict = merge_dict_list(act_scr)
+        pow_dict = merge_dict_list(pow_scr)
 
         scores = {"classification": act_dict, "regression": pow_dict}
 
@@ -140,15 +113,6 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
         config,
         scores,
         time_ellapsed,
-    )
-
-    store_plots(
-        path_output_folder,
-        config,
-        model,
-        dl_test,
-        means,
-        thresholds,
     )
 
 
@@ -186,39 +150,7 @@ def main(
     # Run main results
     print(f"{config['train']['name']}\n")
 
-    run_many_models(path_h5, path_data, path_output, config)
-
-    if config["plot"]["plot_scores"]:
-        print("PLOT RESULTS!")
-        nde_lim = config["plot"]["nde_lim"]
-        f1_lim = config["plot"]["f1_lim"]
-        for app in config["data"]["appliances"]:
-            path_input = os.path.join(path_output, config["train"]["name"])
-            # Folders related to the model we are working with
-            model_name = (
-                f"seq_{str(config['train']['model']['output_len'])}"
-                f"_{config['data']['period']}"
-                f"_{config['data']['threshold']['method']}"
-            )
-            # Store figures
-            savefig = os.path.join(
-                path_output,
-                f"{config['train']['name']}"
-                f"_{str(config['train']['model']['output_len'])}"
-                f"_{config['data']['period']}"
-                f"_{config['data']['threshold']['method']}_{app}.png",
-            )
-            plot_weights(
-                path_input,
-                app,
-                model=model_name,
-                figsize=config["plot"]["figsize"],
-                savefig=savefig,
-                nde_lim=nde_lim,
-                f1_lim=f1_lim,
-                dict_appliances=config["plot"]["appliances"],
-            )
-            print(f"Stored scores-weight plot in {savefig}")
+    train_many_models(path_h5, path_data, path_output, config)
 
 
 if __name__ == "__main__":

@@ -178,7 +178,9 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
             text_file.write("==================================================\n")
 
 
-def store_plots(path_output, config, model, dl_test, means, thresholds):
+def store_plots(
+    path_output, config, model, dl_test, means, thresholds, max_plots: int = 2
+):
 
     # Ensure appliances is a list
     appliances = to_list(config["data"]["appliances"])
@@ -226,7 +228,7 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
         # Plot a certain number of sequences per appliance
         idx_start = 0
         num_plots = 0
-        while (num_plots < 10) and (
+        while (num_plots < max_plots) and (
             (idx_start + config["train"]["model"]["output_len"]) < p_true.shape[0]
         ):
             idx_end = idx_start + config["train"]["model"]["output_len"]
