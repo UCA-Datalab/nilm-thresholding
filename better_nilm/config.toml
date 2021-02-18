@@ -42,9 +42,9 @@ name = "model"
 train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
 batch_size = 32
-epochs = 300
+epochs = 3
 patience = 300
-num_models = 5  # Number of models to train. Their scores are then averaged
+num_models = 2 # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
 
 [train.model]
