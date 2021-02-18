@@ -212,19 +212,6 @@ def store_plots(
 
     for idx, app in enumerate(appliances):
 
-        # Store results
-        df = pd.DataFrame(
-            {
-                "x": x,
-                "y_true": p_true[:, idx],
-                "y_hat": p_hat[:, idx],
-                "s_true": s_true[:, idx],
-                "s_hat": s_hat[:, idx],
-            }
-        )
-        save_csv = os.path.join(path_output, f"{app}_data.csv")
-        df.to_csv(save_csv)
-
         # Plot a certain number of sequences per appliance
         idx_start = 0
         num_plots = 0
@@ -235,10 +222,8 @@ def store_plots(
             p_t = p_true[idx_start:idx_end, idx]
             if p_t.sum() > 0:
                 s_t = s_true[idx_start:idx_end, idx]
-                sp_h = sp_hat[idx_start:idx_end, idx]
                 s_h = s_hat[idx_start:idx_end, idx]
                 p_h = p_hat[idx_start:idx_end, idx]
-                ps_h = ps_hat[idx_start:idx_end, idx]
                 num_plots += 1
 
                 # Add aggregate load. Try to de-normalize it
@@ -284,3 +269,40 @@ def store_plots(
                     savefig=savefig,
                     title=app,
                 )
+
+
+def store_real_data_and_predictions(
+    path_output, config, model, dl_test, means, thresholds
+):
+
+    # Ensure appliances is a list
+    appliances = to_list(config["data"]["appliances"])
+
+    # Model values
+
+    x, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+
+    p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
+        p_true,
+        p_hat,
+        s_hat,
+        config["data"]["power_scale"],
+        means,
+        thresholds,
+        config["data"]["threshold"]["min_off"],
+        config["data"]["threshold"]["min_on"],
+    )
+
+    for idx, app in enumerate(appliances):
+        # Store results
+        df = pd.DataFrame(
+            {
+                "x": x,
+                "y_true": p_true[:, idx],
+                "y_hat": p_hat[:, idx],
+                "s_true": s_true[:, idx],
+                "s_hat": s_hat[:, idx],
+            }
+        )
+        save_csv = os.path.join(path_output, f"{app}_data.csv")
+        df.to_csv(save_csv)

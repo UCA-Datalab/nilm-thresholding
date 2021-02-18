@@ -1,6 +1,7 @@
 # Shut Future Warnings
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import os
 
@@ -16,6 +17,7 @@ from better_nilm.results.store_output import (
     list_scores,
     store_plots,
     store_scores,
+    store_real_data_and_predictions,
 )
 from better_nilm.utils.conf import load_conf_full, update_config
 from better_nilm.utils.format_list import merge_dict_list
@@ -27,6 +29,7 @@ def test_many_models(
     path_output,
     config: dict,
     save_scores: bool = True,
+    save_predictions: bool = True,
 ):
     """
     Runs several models with the same conditions.
@@ -119,12 +122,18 @@ def test_many_models(
         thresholds,
     )
 
+    if save_predictions:
+        store_real_data_and_predictions(
+            path_output, config, model, dl_test, means, thresholds
+        )
+
 
 def main(
     path_data: str = "data/ukdale",
     path_output: str = "outputs",
     path_config: str = "better_nilm/config.toml",
     save_scores: bool = True,
+    save_predictions: bool = True,
 ):
     """
     Trains several CONV models under the same conditions
@@ -140,6 +149,8 @@ def main(
         Path to the config toml file
     save_scores : bool, optional
         Store the model scores in txt files, by default True
+    save_predictions : bool, optional
+        Store the model predictions in txt files, by default True
     """
 
     print(f"\nLoading config file from {path_config}")
@@ -157,7 +168,14 @@ def main(
     # Run main results
     print(f"{config['train']['name']}\n")
 
-    test_many_models(path_h5, path_data, path_output, config, save_scores=save_scores)
+    test_many_models(
+        path_h5,
+        path_data,
+        path_output,
+        config,
+        save_scores=save_scores,
+        save_predictions=save_predictions,
+    )
 
     if config["plot"]["plot_scores"]:
         print("PLOT RESULTS!")
