@@ -135,11 +135,8 @@ def generate_folder_name(
 
 def store_scores(path_output, config, scores, time_ellapsed, filename="scores.txt"):
     # Load parameters
-    output_len = config["train"]["model"]["output_len"]
-    period = config["data"]["period"]
     class_w = config["train"]["model"]["classification_w"]
     reg_w = config["train"]["model"]["regression_w"]
-    threshold_method = config["data"]["threshold"]["method"]
     train_size = config["train"]["train_size"]
     valid_size = config["train"]["valid_size"]
     num_models = config["train"]["num_models"]
@@ -148,10 +145,6 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
     dropout = config["train"]["model"]["dropout"]
     epochs = config["train"]["epochs"]
     patience = config["train"]["patience"]
-
-    path_output = generate_folder_name(
-        path_output, output_len, period, class_w, reg_w, threshold_method
-    )
 
     path_scores = os.path.join(path_output, filename)
 
@@ -186,14 +179,6 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
 
 
 def store_plots(path_output, config, model, dl_test, means, thresholds):
-    path_output = generate_folder_name(
-        path_output,
-        config["train"]["model"]["output_len"],
-        config["data"]["period"],
-        config["train"]["model"]["classification_w"],
-        config["train"]["model"]["regression_w"],
-        config["data"]["threshold"]["method"],
-    )
 
     # Ensure appliances is a list
     appliances = to_list(config["data"]["appliances"])

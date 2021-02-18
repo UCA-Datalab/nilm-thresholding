@@ -7,6 +7,7 @@ import typer
 from better_nilm.data.ukdale import load_dataloaders
 from better_nilm.results.store_output import (
     generate_path_output,
+    generate_folder_name,
     get_model_scores,
     list_scores,
     store_plots,
@@ -50,6 +51,14 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
 
     # Set output path
     path_output = generate_path_output(path_output, config["train"]["name"])
+    path_output_folder = generate_folder_name(
+        path_output,
+        config["train"]["model"]["output_len"],
+        config["data"]["period"],
+        config["train"]["model"]["classification_w"],
+        config["train"]["model"]["regression_w"],
+        config["data"]["threshold"]["method"],
+    )
 
     # Load data
 
@@ -79,6 +88,10 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
         )
         time_ellapsed += time.time() - time_start
 
+        # Store the model
+        path_model = os.path.join(path_output_folder, f"model_{i}.pth")
+        model.save(path_model)
+
         act_scr, pow_scr = get_model_scores(
             model,
             dl_test,
@@ -99,10 +112,10 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
 
         scores = {"classification": act_dict, "regression": pow_dict}
 
-        filename = "scores_{}.txt".format(i)
+        filename = f"scores_{i}.txt"
 
         store_scores(
-            path_output,
+            path_output_folder,
             config,
             scores,
             time_ellapsed,
@@ -123,14 +136,14 @@ def run_many_models(path_h5, path_data, path_output, config: dict):
     # Store scores and plot
 
     store_scores(
-        path_output,
+        path_output_folder,
         config,
         scores,
         time_ellapsed,
     )
 
     store_plots(
-        path_output,
+        path_output_folder,
         config,
         model,
         dl_test,
