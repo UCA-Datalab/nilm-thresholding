@@ -90,13 +90,19 @@ If you want to use your own set of parameters, duplicate the aforementioned
   parameter). You can then use that config file with the following command:
  
  ```
-python better_nilm/train_test_model.py  --path_config <path to your config file>
+python better_nilm/train_model.py  --path_config <path to your config file>
 ```
 
 For more information about the script, run:
 
  ```
-python better_nilm/train_test_model.py  --help
+python better_nilm/train_model.py  --help
+```
+
+Once the models are trained, test them with:
+
+ ```
+python better_nilm/test_model.py  --path_config <path to your config file>
 ```
 
 #### Reproduce paper
