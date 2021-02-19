@@ -89,12 +89,22 @@ def regression_scores_dict(y_pred, y_real, appliances):
             )
         )
 
+        # Energy based precision and recall
+        energy_precision = np.divide(
+            np.sum(np.minimum(app_real, app_pred)), np.sum(app_pred)
+        )
+        energy_recall = np.divide(
+            np.sum(np.minimum(app_real, app_pred)), np.sum(app_real)
+        )
+
         scores[app] = {
             "mse": round(app_mse, 2),
             "rmse": round(app_rmse, 2),
             "mae": round(app_mae, 2),
             "sae": round(app_sae, 2),
-            "nde": round(app_nde, 2),
+            "nde": round(app_nde, 4),
+            "energy_precision": round(energy_precision, 4),
+            "energy_recall": round(energy_recall, 4),
         }
 
     return scores
