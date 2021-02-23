@@ -9,6 +9,7 @@ LIST_METHODS = ["mp", "vs", "at"]
 LIST_MODELS = ["ConvModel", "GRUModel"]
 LIST_CLASS_W = [
     0,
+    0.01,
     0.05,
     0.1,
     0.2,
@@ -20,6 +21,7 @@ LIST_CLASS_W = [
     0.8,
     0.9,
     0.95,
+    0.99,
     1,
 ]
 
