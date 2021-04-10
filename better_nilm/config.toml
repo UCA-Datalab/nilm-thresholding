@@ -38,7 +38,7 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # turned ON. If not provided, thresholds are computed using k-means.]
 
 [train]
-name = "model"
+name = "conv"
 train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
 batch_size = 32
@@ -54,13 +54,13 @@ border = 16  # Border added to input sequences, so that input = output + 2 * bor
 init_features = 32
 learning_rate = 1.0e-4
 dropout = 0.1
-classification_w = 0.1
+classification_w = 0.0
 
 [plot]
 f1_lim = [0.4, 1.0]
 nde_lim = [0.3, 0.8]
 figsize = [4, 3]
-num_plots = 1
+num_plots = 10
 
 [plot.appliances]
 dish_washer= "Dishwasher"
