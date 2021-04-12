@@ -38,7 +38,7 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # turned ON. If not provided, thresholds are computed using k-means.]
 
 [train]
-name = "conv"
+name = "ConvModel"
 train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
 batch_size = 32
