@@ -68,19 +68,19 @@ Credit: [Jack Kelly](https://jack-kelly.com/data/)
 ## Scripts
 
 The folder [better_nilm](/better_nilm) contains an executable script to train the
- models a plot their results. Run the following line on the root folder
+ models. Run the following line on the root folder
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python better_nilm/train_test_model.py
+python better_nilm/train_model.py
 ```
 
-This will train and score the CONV model using the default parameters.
+This will train the CONV model using the default parameters.
 The script stores several outputs in the [outputs folder](/outputs),
 including:
-- .txt files with the model scores over the test data
-- .png files showing samples of the model's prediction.
-- .png files with the scores against the classification weight.
+- .txt files with the model scores over the validation data
+- .pth files containing the model weights
+- .png files with a section of the validation data and the model's prediction
 
 The list with all the available parameters and their default values is stored in the
  [configuration file](better_nilm/config.toml).
