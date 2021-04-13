@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="better_nilm",
+    name="nilm-thresholding",
     use_scm_version=True,
     # version="0.1.0",
     author="Daniel Precioso Garcelán",
@@ -12,7 +12,7 @@ setuptools.setup(
     description="Non-Intrusive Load Monitoring",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/daniprec/better_nilm",
+    url="https://github.com/daniprec/nilm-thresholding",
     packages=setuptools.find_packages(),
     include_package_data=True,
     package_data={'': ['*.toml']},

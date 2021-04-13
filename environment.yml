@@ -1,4 +1,4 @@
-name: better-nilm
+name: nilm-thresholding
 channels:
   - conda-forge
   - defaults
