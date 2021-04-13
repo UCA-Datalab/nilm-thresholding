@@ -1,7 +1,7 @@
 from keras.callbacks import EarlyStopping
 
-from better_nilm.model.architecture.conv import ConvModel
-from better_nilm.model.architecture.gru import GRUModel
+from nilm_thresholding.model.architecture.conv import ConvModel
+from nilm_thresholding.model.architecture.gru import GRUModel
 
 
 def initialize_model(config: dict):

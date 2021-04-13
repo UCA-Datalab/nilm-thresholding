@@ -4,13 +4,13 @@ import os
 import numpy as np
 import pandas as pd
 
-from better_nilm.utils.format_list import to_list
-from better_nilm.model.preprocessing import get_status
-from better_nilm.model.preprocessing import get_status_by_duration
-from better_nilm.utils.scores import classification_scores_dict
-from better_nilm.utils.scores import regression_scores_dict
-from better_nilm.utils.plot import plot_informative_classification
-from better_nilm.utils.plot import plot_informative_regression
+from nilm_thresholding.utils.format_list import to_list
+from nilm_thresholding.model.preprocessing import get_status
+from nilm_thresholding.model.preprocessing import get_status_by_duration
+from nilm_thresholding.utils.scores import classification_scores_dict
+from nilm_thresholding.utils.scores import regression_scores_dict
+from nilm_thresholding.utils.plot import plot_informative_classification
+from nilm_thresholding.utils.plot import plot_informative_regression
 
 
 def process_model_outputs(

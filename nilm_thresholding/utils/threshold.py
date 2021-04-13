@@ -1,6 +1,6 @@
-from better_nilm.utils.format_list import to_list
-from better_nilm.utils.string import APPLIANCE_NAMES
-from better_nilm.utils.string import homogenize_string
+from nilm_thresholding.utils.format_list import to_list
+from nilm_thresholding.utils.string import APPLIANCE_NAMES
+from nilm_thresholding.utils.string import homogenize_string
 
 # Power load thresholds (in watts) applied by AT thresholding
 THRESHOLDS = {
