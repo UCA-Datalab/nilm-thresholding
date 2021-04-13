@@ -31,6 +31,7 @@ setuptools.setup(
         "scikit-learn==0.22.2.post1",
         "seaborn==0.10.0",
         "tables==3.6.1",
+        "tensorflow==2.3.1",
         "toml==0.10.2",
         "torch==1.4.0",
         "torchvision==0.5.0",
