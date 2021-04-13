@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from nilm-thresholding.model.architecture.base import TorchModel
+from nilm_thresholding.model.architecture.base import TorchModel
 
 
 class _Dense(nn.Module):

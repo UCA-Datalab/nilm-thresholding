@@ -1,36 +1,26 @@
 # Shut Future Warnings
 import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import os
+import time
 
 import typer
 
-from nilm-thresholding.data.ukdale import load_dataloaders
-from nilm-thresholding.model.model import initialize_model
-from nilm-thresholding.results.plot_output import plot_scores_by_class_weight
-from nilm-thresholding.results.store_output import (
+from nilm_thresholding.data.ukdale import load_dataloaders
+from nilm_thresholding.model.model import initialize_model
+from nilm_thresholding.results.store_output import (
     generate_path_output,
     generate_folder_name,
     get_model_scores,
     list_scores,
-    store_plots,
     store_scores,
-    store_real_data_and_predictions,
 )
-from nilm-thresholding.utils.conf import load_conf_full, update_config
-from nilm-thresholding.utils.format_list import merge_dict_list
+from nilm_thresholding.utils.conf import load_conf_full, update_config
+from nilm_thresholding.utils.format_list import merge_dict_list
 
 
-def test_many_models(
-    path_h5,
-    path_data,
-    path_output,
-    config: dict,
-    save_scores: bool = True,
-    save_predictions: bool = True,
-):
+def train_many_models(path_h5, path_data, path_output, config: dict):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
@@ -65,9 +55,19 @@ def test_many_models(
 
         model = initialize_model(config)
 
-        # Load model
+        # Train
+        time_start = time.time()
+        model.train_with_dataloader(
+            dl_train,
+            dl_valid,
+            epochs=config["train"]["epochs"],
+            patience=config["train"]["patience"],
+        )
+        time_ellapsed += time.time() - time_start
+
+        # Store the model
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
-        model.load(path_model)
+        model.save(path_model)
 
         act_scr, pow_scr = get_model_scores(
             model,
@@ -91,14 +91,13 @@ def test_many_models(
 
         filename = f"scores_{i}.txt"
 
-        if save_scores:
-            store_scores(
-                path_output_folder,
-                config,
-                scores,
-                time_ellapsed,
-                filename=filename,
-            )
+        store_scores(
+            path_output_folder,
+            config,
+            scores,
+            time_ellapsed,
+            filename=filename,
+        )
 
     # List scores
 
@@ -109,31 +108,22 @@ def test_many_models(
         config["train"]["num_models"],
     )
 
-    # Store scores and plot
-    if save_scores:
-        store_scores(path_output_folder, config, scores, time_ellapsed)
+    time_ellapsed /= config["train"]["num_models"]
 
-    store_plots(
+    # Store scores and plot
+
+    store_scores(
         path_output_folder,
         config,
-        model,
-        dl_test,
-        means,
-        thresholds
+        scores,
+        time_ellapsed,
     )
-
-    if save_predictions:
-        store_real_data_and_predictions(
-            path_output, config, model, dl_test, means, thresholds
-        )
 
 
 def main(
     path_data: str = "data/ukdale",
     path_output: str = "outputs",
-    path_config: str = "nilm-thresholding/config.toml",
-    save_scores: bool = True,
-    save_predictions: bool = True,
+    path_config: str = "nilm_thresholding/config.toml",
 ):
     """
     Trains several CONV models under the same conditions
@@ -147,10 +137,6 @@ def main(
         Path to the results folder
     path_config : str, optional
         Path to the config toml file
-    save_scores : bool, optional
-        Store the model scores in txt files, by default True
-    save_predictions : bool, optional
-        Store the model predictions in txt files, by default True
     """
 
     print(f"\nLoading config file from {path_config}")
@@ -168,17 +154,7 @@ def main(
     # Run main results
     print(f"{config['train']['name']}\n")
 
-    test_many_models(
-        path_h5,
-        path_data,
-        path_output,
-        config,
-        save_scores=save_scores,
-        save_predictions=save_predictions,
-    )
-
-    print("PLOT RESULTS!")
-    plot_scores_by_class_weight(config, path_output)
+    train_many_models(path_h5, path_data, path_output, config)
 
 
 if __name__ == "__main__":

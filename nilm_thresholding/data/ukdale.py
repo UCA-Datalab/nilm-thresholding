@@ -8,15 +8,15 @@ from pandas import Series
 from pandas.io.pytables import HDFStore
 from torch.utils.data import DataLoader
 
-from nilm-thresholding.utils.format_list import to_list
-from nilm-thresholding.model.preprocessing import (
+from nilm_thresholding.utils.format_list import to_list
+from nilm_thresholding.model.preprocessing import (
     get_status,
     get_status_by_duration,
     get_status_means,
     get_thresholds,
 )
-from nilm-thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
-from nilm-thresholding.utils.threshold import get_threshold_params
+from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
+from nilm_thresholding.utils.threshold import get_threshold_params
 
 
 def load_ukdale_datastore(path_h5):

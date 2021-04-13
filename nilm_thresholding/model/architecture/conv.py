@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from nilm-thresholding.model.architecture.base import TorchModel
+from nilm_thresholding.model.architecture.base import TorchModel
 
 """
 Source: https://github.com/lmssdd/TPNILM
