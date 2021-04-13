@@ -5,7 +5,7 @@ import torch
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset, DataLoader
 
-from better_nilm.model.export import store_model_json
+from nilm_thresholding.model.export import store_model_json
 
 
 class KerasModel:

@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from better_nilm.utils.format_list import to_list
+from nilm_thresholding.utils.format_list import to_list
 
 
 def _assert_shape(y_pred, y_real, appliances):
