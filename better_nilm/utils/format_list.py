@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+
 def to_list(x):
     """
     This utility just check if input X is a list
@@ -36,3 +39,12 @@ def flatten_list(ls, no_duplicates=True, sort=True):
         flatlist = sorted(flatlist)
 
     return flatlist
+
+
+def merge_dict_list(dict_list):
+    d = defaultdict(dict)
+    for l in dict_list:
+        for elem in l:
+            d[elem].update(l[elem])
+
+    return d

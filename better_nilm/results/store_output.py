@@ -122,8 +122,9 @@ def generate_folder_name(
     Generates specific folder inside results.
     """
     name = (
-        f"seq_{str(output_len)}_{period}_clas_{str(int(class_w * 100))}"
-        f"_reg_{str(int(reg_w * 100))}_{threshold_method}"
+        f"seq_{str(output_len)}_{period}_{threshold_method}"
+        f"_clas_{str(int(class_w * 100))}"
+        f"_reg_{str(int(reg_w * 100))}"
     )
     path_output = os.path.join(path_output, name)
     if not os.path.isdir(path_output):
@@ -134,11 +135,8 @@ def generate_folder_name(
 
 def store_scores(path_output, config, scores, time_ellapsed, filename="scores.txt"):
     # Load parameters
-    output_len = config["train"]["model"]["output_len"]
-    period = config["data"]["period"]
     class_w = config["train"]["model"]["classification_w"]
     reg_w = config["train"]["model"]["regression_w"]
-    threshold_method = config["data"]["threshold"]["method"]
     train_size = config["train"]["train_size"]
     valid_size = config["train"]["valid_size"]
     num_models = config["train"]["num_models"]
@@ -147,10 +145,6 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
     dropout = config["train"]["model"]["dropout"]
     epochs = config["train"]["epochs"]
     patience = config["train"]["patience"]
-
-    path_output = generate_folder_name(
-        path_output, output_len, period, class_w, reg_w, threshold_method
-    )
 
     path_scores = os.path.join(path_output, filename)
 
@@ -170,10 +164,10 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
         for key, dic1 in scores.items():
 
             # Skip scores if weight is zero
-            # if (class_w == 0) and (key.startswith('class')):
-            #    continue
-            # if (reg_w == 0) and (key.startswith('reg')):
-            #    continue
+            if (class_w == 0) and (key.startswith("class")):
+                continue
+            if (reg_w == 0) and (key.startswith("reg")):
+                continue
 
             text_file.write(f"{key}\n------------------------------------------\n")
             for app, dic2 in dic1.items():
@@ -184,15 +178,9 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
             text_file.write("==================================================\n")
 
 
-def store_plots(path_output, config, model, dl_test, means, thresholds):
-    path_output = generate_folder_name(
-        path_output,
-        config["train"]["model"]["output_len"],
-        config["data"]["period"],
-        config["train"]["model"]["classification_w"],
-        config["train"]["model"]["regression_w"],
-        config["data"]["threshold"]["method"],
-    )
+def store_plots(
+    path_output, config, model, dl_test, means, thresholds
+):
 
     # Ensure appliances is a list
     appliances = to_list(config["data"]["appliances"])
@@ -224,33 +212,18 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
 
     for idx, app in enumerate(appliances):
 
-        # Store results
-        df = pd.DataFrame(
-            {
-                "x": x,
-                "y_true": p_true[:, idx],
-                "y_hat": p_hat[:, idx],
-                "s_true": s_true[:, idx],
-                "s_hat": s_hat[:, idx],
-            }
-        )
-        save_csv = os.path.join(path_output, f"{app}_data.csv")
-        df.to_csv(save_csv)
-
         # Plot a certain number of sequences per appliance
         idx_start = 0
         num_plots = 0
-        while (num_plots < 10) and (
+        while (num_plots < config["plot"]["num_plots"]) and (
             (idx_start + config["train"]["model"]["output_len"]) < p_true.shape[0]
         ):
             idx_end = idx_start + config["train"]["model"]["output_len"]
             p_t = p_true[idx_start:idx_end, idx]
             if p_t.sum() > 0:
                 s_t = s_true[idx_start:idx_end, idx]
-                sp_h = sp_hat[idx_start:idx_end, idx]
                 s_h = s_hat[idx_start:idx_end, idx]
                 p_h = p_hat[idx_start:idx_end, idx]
-                ps_h = ps_hat[idx_start:idx_end, idx]
                 num_plots += 1
 
                 # Add aggregate load. Try to de-normalize it
@@ -296,3 +269,40 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                     savefig=savefig,
                     title=app,
                 )
+
+
+def store_real_data_and_predictions(
+    path_output, config, model, dl_test, means, thresholds
+):
+
+    # Ensure appliances is a list
+    appliances = to_list(config["data"]["appliances"])
+
+    # Model values
+
+    x, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+
+    p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
+        p_true,
+        p_hat,
+        s_hat,
+        config["data"]["power_scale"],
+        means,
+        thresholds,
+        config["data"]["threshold"]["min_off"],
+        config["data"]["threshold"]["min_on"],
+    )
+
+    for idx, app in enumerate(appliances):
+        # Store results
+        df = pd.DataFrame(
+            {
+                "x": x,
+                "y_true": p_true[:, idx],
+                "y_hat": p_hat[:, idx],
+                "s_true": s_true[:, idx],
+                "s_hat": s_hat[:, idx],
+            }
+        )
+        save_csv = os.path.join(path_output, f"{app}_data.csv")
+        df.to_csv(save_csv)
