@@ -7,7 +7,7 @@ import os
 
 import typer
 
-from nilm_thresholding.data.ukdale import load_dataloaders
+from nilm_thresholding.data.ukdale import UkdaleDataloader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.plot_output import plot_scores_by_class_weight
 from nilm_thresholding.results.store_output import (
@@ -49,10 +49,7 @@ def test_many_models(
 
     # Load data
 
-    params = load_dataloaders(path_h5, path_data, config)
-
-    dl_train, dl_valid, dl_test, kmeans = params
-    thresholds, means = kmeans
+    dataloader = UkdaleDataloader(path_h5, path_data, config)
 
     # Training
 
@@ -71,10 +68,10 @@ def test_many_models(
 
         act_scr, pow_scr = get_model_scores(
             model,
-            dl_test,
+            dataloader.dl_test,
             config["data"]["power_scale"],
-            means,
-            thresholds,
+            dataloader.means,
+            dataloader.thresholds,
             config["data"]["appliances"],
             config["data"]["threshold"]["min_off"],
             config["data"]["threshold"]["min_on"],
@@ -117,14 +114,19 @@ def test_many_models(
         path_output_folder,
         config,
         model,
-        dl_test,
-        means,
-        thresholds
+        dataloader.dl_test,
+        dataloader.means,
+        dataloader.thresholds,
     )
 
     if save_predictions:
         store_real_data_and_predictions(
-            path_output, config, model, dl_test, means, thresholds
+            path_output,
+            config,
+            model,
+            dataloader.dl_test,
+            dataloader.means,
+            dataloader.thresholds,
         )
 
 

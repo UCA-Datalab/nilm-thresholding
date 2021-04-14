@@ -1,13 +1,14 @@
 # Shut Future Warnings
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import os
 import time
 
 import typer
 
-from nilm_thresholding.data.ukdale import load_dataloaders
+from nilm_thresholding.data.ukdale import UkdaleDataloader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.store_output import (
     generate_path_output,
@@ -39,10 +40,7 @@ def train_many_models(path_h5, path_data, path_output, config: dict):
 
     # Load data
 
-    params = load_dataloaders(path_h5, path_data, config)
-
-    dl_train, dl_valid, dl_test, kmeans = params
-    thresholds, means = kmeans
+    dataloader = UkdaleDataloader(path_h5, path_data, config)
 
     # Training
 
@@ -58,8 +56,8 @@ def train_many_models(path_h5, path_data, path_output, config: dict):
         # Train
         time_start = time.time()
         model.train_with_dataloader(
-            dl_train,
-            dl_valid,
+            dataloader.dl_train,
+            dataloader.dl_valid,
             epochs=config["train"]["epochs"],
             patience=config["train"]["patience"],
         )
@@ -71,10 +69,10 @@ def train_many_models(path_h5, path_data, path_output, config: dict):
 
         act_scr, pow_scr = get_model_scores(
             model,
-            dl_test,
+            dataloader.dl_test,
             config["data"]["power_scale"],
-            means,
-            thresholds,
+            dataloader.means,
+            dataloader.thresholds,
             config["data"]["appliances"],
             config["data"]["threshold"]["min_off"],
             config["data"]["threshold"]["min_on"],
