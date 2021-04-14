@@ -1,7 +1,6 @@
 notebooks/
 plots/
-outputs/
-output/
+output*/
 
 # Log
 log.out
