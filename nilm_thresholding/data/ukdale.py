@@ -21,7 +21,7 @@ class UkdaleDataloader(DataloaderWrapper):
 
     def __init__(self, path_h5: str, path_labels: str, config: dict):
         super(UkdaleDataloader, self).__init__(config)
-        # Load the different datastores
+        # Load the different list of series
         self._load_series(path_h5, path_labels)
 
         # Load the data loaders
@@ -51,7 +51,6 @@ class UkdaleDataloader(DataloaderWrapper):
 
         Parameters
         ----------
-        datastore : pandas.HDFStore
         building : int
             Building ID.
         meter : int

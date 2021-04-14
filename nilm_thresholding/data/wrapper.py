@@ -136,7 +136,7 @@ class DataloaderWrapper:
             len(self.build_idx_test) > 0
         ), f"No ID in build_id_test matches the ones of buildings."
 
-    def _train_valid_test(self):
+    def _train_valid_test(self) -> tuple:
         """
         Splits lists of pandas.Series data into train, validation and tests.
         """
@@ -201,7 +201,9 @@ class DataloaderWrapper:
 
         return ds_train, ds_valid, ds_test
 
-    def _list_series_to_dataloader(self, list_series, build_idx, shuffle):
+    def _list_series_to_dataloader(
+        self, list_series: list, build_idx: list, shuffle: bool
+    ) -> DataLoader:
         """
         Turns a list of pandas.Series into a dataloader.
         """
