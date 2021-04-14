@@ -62,9 +62,10 @@ class Power(data.Dataset):
 
 
 class UkdaleDataloader(DataloaderWrapper):
-    list_df_meter: list = []
-    list_df_appliance: list = []
-    list_df_status: list = []
+    datastore: HDFStore = None
+    list_series_meter: list = []
+    list_series_appliance: list = []
+    list_series_status: list = []
     means: list = []
     dl_train: DataLoader = None
     dl_valid: DataLoader = None
@@ -73,13 +74,12 @@ class UkdaleDataloader(DataloaderWrapper):
     def __init__(self, path_h5: str, path_labels: str, config: dict):
         super(UkdaleDataloader, self).__init__(config)
         # Load the different datastores
-        self.load_series(path_h5, path_labels)
+        self._load_series(path_h5, path_labels)
 
         # Load the data loaders
-        self.datastores_to_dataloaders()
+        self._list_series_to_dataloaders()
 
-    @staticmethod
-    def load_datastore(path_h5: str) -> pd.HDFStore:
+    def _load_datastore(self, path_h5: str):
         """
         Loads the UKDALE h5 file as a datastore.
 
@@ -88,9 +88,6 @@ class UkdaleDataloader(DataloaderWrapper):
         path_h5 : str
             Path to the original UKDALE h5 file
 
-        Returns
-        -------
-        datastore : pandas.HDFStore
         """
         assert os.path.isfile(path_h5), (
             f"Input path does not lead to file:" f"\n{path_h5}"
@@ -98,12 +95,9 @@ class UkdaleDataloader(DataloaderWrapper):
         assert path_h5.endswith(".h5"), (
             "Path must lead to a h5 file.\n" f"Input is {path_h5}"
         )
-        datastore = pd.HDFStore(path_h5)
-        return datastore
+        self.datastore = pd.HDFStore(path_h5)
 
-    def load_meter(
-        self, datastore: pd.HDFStore, building: int, meter: int
-    ) -> pd.Series:
+    def _load_meter(self, building: int, meter: int) -> pd.Series:
         """
         Loads an UKDALE meter from the datastore, and resamples it to given period.
 
@@ -119,13 +113,8 @@ class UkdaleDataloader(DataloaderWrapper):
         -------
         s : pandas.Series
         """
-        assert type(datastore) is HDFStore, (
-            "datastore must be "
-            "pandas.io.pytables.HDFStore\n"
-            f"Input is {type(datastore)}"
-        )
         key = "/building{}/elec/meter{}".format(building, meter)
-        m = datastore[key]
+        m = self.datastore[key]
         v = m.values.flatten()
         t = m.index
         s = pd.Series(v, index=t).clip(0.0, self.max_power)
@@ -134,16 +123,13 @@ class UkdaleDataloader(DataloaderWrapper):
         s = s.resample(self.period).mean().tz_convert("UTC")
         return s
 
-    def datastore_to_series(
-        self, path_labels: str, datastore: pd.HDFStore, house: int, label: str
+    def _datastore_to_series(
+        self, path_labels: str, house: int, label: str
     ) -> pd.Series:
-        """
+        """Extracts a specific label (appliance) from a house, given the datastore
 
         Parameters
         ----------
-        path_labels : str
-            Path to the directory that contains the csv of the meter labels.
-        datastore : pandas.HDFStore
         house : int
             Building ID
         label : str
@@ -154,11 +140,7 @@ class UkdaleDataloader(DataloaderWrapper):
         s : pandas.Series
         """
         # Load the meter labels
-        assert os.path.isdir(
-            path_labels
-        ), f"Input path is not a directory:\n{path_labels}"
         filename = f"{path_labels}/house_%1d/labels.dat" % house
-        assert os.path.isfile(filename), f"Path not found:\n{filename}"
 
         labels = pd.read_csv(
             filename, delimiter=" ", header=None, index_col=0
@@ -178,7 +160,7 @@ class UkdaleDataloader(DataloaderWrapper):
             # When we find the input label, we load the meter records
             if lab == label:
                 print(i, labels[i])
-                s = self.load_meter(datastore, house, i)
+                s = self._load_meter(house, i)
 
         if s is None:
             raise ValueError(
@@ -186,24 +168,19 @@ class UkdaleDataloader(DataloaderWrapper):
                 f"Valid labels are: {list(labels.values())}"
             )
 
-        msg = (
+        assert type(s) is Series, (
             f"load_ukdale_meter() should output {Series}\n"
             f"Received {type(s)} instead"
         )
-        assert type(s) is Series, msg
 
         s.index.name = "datetime"
         s.name = label
 
         return s
 
-    def load_series(self, path_h5: str, path_labels: str):
+    def _load_series(self, path_h5: str, path_labels: str):
         # Load datastore
-        datastore = self.load_datastore(path_h5)
-        assert type(datastore) is HDFStore, (
-            f"load_ukdale_datastore() should output {HDFStore}\n"
-            f"Received {type(datastore)} instead"
-        )
+        self._load_datastore(path_h5)
 
         # Make a list of meters
         list_meters = self.appliances.copy()
@@ -213,18 +190,15 @@ class UkdaleDataloader(DataloaderWrapper):
         for house in self.buildings:
             meters = []
             for m in list_meters:
-                series_meter = self.datastore_to_series(
-                    path_labels, datastore, house, m
-                )
+                series_meter = self._datastore_to_series(path_labels, house, m)
                 meters += [series_meter]
 
             meters = pd.concat(meters, axis=1)
             meters.fillna(method="pad", inplace=True)
-            msg = (
+            assert meters.shape[1] == len(list_meters), (
                 f"meters dataframe must have {len(list_meters)} columns\n"
                 f"It currently has {meters.shape[1]} "
             )
-            assert meters.shape[1] == len(list_meters), msg
 
             # Pick range of dates
             try:
@@ -233,19 +207,17 @@ class UkdaleDataloader(DataloaderWrapper):
                 date_end = self.dates[house][1]
                 date_end = pd.to_datetime(date_end).tz_localize("Etc/UCT")
 
-                msg = (
+                assert date_end > date_start, (
                     f"Start date is {date_start}\nEnd date is {date_end}\n"
                     "End date must be after start date!"
                 )
-                assert date_end > date_start, msg
 
                 meters = meters[date_start:date_end]
 
-                msg = (
+                assert meters.shape[0] > 0, (
                     "meters dataframe was left empty after applying dates\n"
                     f"Start date is {date_start}\nEnd date is {date_end}"
                 )
-                assert meters.shape[0] > 0, msg
             except KeyError:
                 raise KeyError(f"House not found: {house}, of type {type(house)}")
 
@@ -262,8 +234,9 @@ class UkdaleDataloader(DataloaderWrapper):
                     arr_apps, use_std=self.threshold_std, return_mean=True
                 )
 
-                msg = "Number of thresholds doesn't match number of appliances"
-                assert len(self.thresholds) == len(self.appliances), msg
+                assert len(self.thresholds) == len(
+                    self.appliances
+                ), "Number of thresholds doesn't match number of appliances"
 
                 status = get_status(arr_apps, self.thresholds)
             else:
@@ -280,21 +253,21 @@ class UkdaleDataloader(DataloaderWrapper):
                 status.shape[0] == appliances.shape[0]
             ), "Number of records between appliance status and load doesn't match"
 
-            self.list_df_meter.append(meter)
-            self.list_df_appliance.append(appliances)
-            self.list_df_status.append(status)
+            self.list_series_meter.append(meter)
+            self.list_series_appliance.append(appliances)
+            self.list_series_status.append(status)
 
     def _train_valid_test(self):
         """
-        Splits data store data into train, validation and tests.
+        Splits lists of pandas.Series data into train, validation and tests.
         """
-        df_len = [len(self.list_df_meter[i]) for i in range(self.num_buildings)]
+        df_len = [len(self.list_series_meter[i]) for i in range(self.num_buildings)]
 
         ds_train = [
             Power(
-                self.list_df_meter[i][: int(self.train_size * df_len[i])],
-                self.list_df_appliance[i][: int(self.train_size * df_len[i])],
-                self.list_df_status[i][: int(self.train_size * df_len[i])],
+                self.list_series_meter[i][: int(self.train_size * df_len[i])],
+                self.list_series_appliance[i][: int(self.train_size * df_len[i])],
+                self.list_series_status[i][: int(self.train_size * df_len[i])],
                 self.output_len,
                 self.border,
                 self.power_scale,
@@ -305,17 +278,17 @@ class UkdaleDataloader(DataloaderWrapper):
 
         ds_valid = [
             Power(
-                self.list_df_meter[i][
+                self.list_series_meter[i][
                     int(self.train_size * df_len[i]) : int(
                         (self.train_size + self.valid_size) * df_len[i]
                     )
                 ],
-                self.list_df_appliance[i][
+                self.list_series_appliance[i][
                     int(self.train_size * df_len[i]) : int(
                         (self.train_size + self.valid_size) * df_len[i]
                     )
                 ],
-                self.list_df_status[i][
+                self.list_series_status[i][
                     int(self.train_size * df_len[i]) : int(
                         (self.train_size + self.valid_size) * df_len[i]
                     )
@@ -330,13 +303,13 @@ class UkdaleDataloader(DataloaderWrapper):
 
         ds_test = [
             Power(
-                self.list_df_meter[i][
+                self.list_series_meter[i][
                     int((self.train_size + self.valid_size) * df_len[i]) :
                 ],
-                self.list_df_appliance[i][
+                self.list_series_appliance[i][
                     int((self.train_size + self.valid_size) * df_len[i]) :
                 ],
-                self.list_df_status[i][
+                self.list_series_status[i][
                     int((self.train_size + self.valid_size) * df_len[i]) :
                 ],
                 self.output_len,
@@ -349,30 +322,29 @@ class UkdaleDataloader(DataloaderWrapper):
 
         return ds_train, ds_valid, ds_test
 
-    def _datastore_to_dataloader(self, list_ds, build_idx, shuffle):
+    def _list_series_to_dataloader(self, list_series, build_idx, shuffle):
         """
-        Turns a datastore into a dataloader.
+        Turns a list of pandas.Series into a dataloader.
         """
-        build_idx = to_list(build_idx)
         ds = []
         for idx in build_idx:
-            ds += [list_ds[idx]]
+            ds += [list_series[idx]]
         ds = torch.utils.data.ConcatDataset(ds)
         dl = DataLoader(dataset=ds, batch_size=self.batch_size, shuffle=shuffle)
         return dl
 
-    def datastores_to_dataloaders(self):
+    def _list_series_to_dataloaders(self):
         """
-        Turns datastores into dataloaders.
+        Turns list of pandas.Series into dataloaders.
         """
         ds_train, ds_valid, ds_test = self._train_valid_test()
 
-        self.dl_train = self._datastore_to_dataloader(
+        self.dl_train = self._list_series_to_dataloader(
             ds_train, self.build_idx_train, True
         )
-        self.dl_valid = self._datastore_to_dataloader(
+        self.dl_valid = self._list_series_to_dataloader(
             ds_valid, self.build_idx_valid, False
         )
-        self.dl_test = self._datastore_to_dataloader(
+        self.dl_test = self._list_series_to_dataloader(
             ds_test, self.build_idx_test, False
         )
