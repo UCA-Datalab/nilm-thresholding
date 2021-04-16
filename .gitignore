@@ -1,6 +1,7 @@
 notebooks/
 plots/
 output*/
+*.csv
 
 # Log
 log.out
