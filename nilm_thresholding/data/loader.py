@@ -22,40 +22,44 @@ class DataSet(data.Dataset):
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
+        """Opens a csv as a pandas.DataFrame"""
         df = pd.read_csv(path_file, index_col=0)
         return df
 
     def _list_files(self, path_data: str, config: dict, subset: str):
+        """List the files pertaining to given subset"""
+        # Initialize empty file list
         files = []
-        for building in sorted(os.listdir(path_data)):
-            path_building = os.path.join(path_data, building)
-            dataset, house = building.rsplit("_", 1)
-            files_of_dataset = sorted(
-                [
-                    os.path.join(path_building, file)
-                    for file in os.listdir(path_building)
-                ]
-            )
-            # Shuffle if requested
-            if config.get("random", False):
-                random.seed(config.get("random_seed", 0))
-                random.shuffle(files_of_dataset)
-            if int(house) in config[subset]["buildings"][dataset]:
-                val_idx = int(len(files_of_dataset) * config["train_size"])
-                test_idx = val_idx + int(len(files_of_dataset) * config["valid_size"])
+        # Loop through the datasets and buildings as sorted in config
+        for dataset, buildings in config[subset]["buildings"].items():
+            for building in buildings:
+                path_building = os.path.join(path_data, f"{dataset}_{building}")
+                files_of_building = sorted(
+                    [
+                        os.path.join(path_building, file)
+                        for file in os.listdir(path_building)
+                    ]
+                )
+                val_idx = int(len(files_of_building) * config["train_size"])
+                test_idx = val_idx + int(len(files_of_building) * config["valid_size"])
+                # Shuffle if requested
+                if config.get("random", False):
+                    random.seed(config.get("random_seed", 0))
+                    random.shuffle(files_of_building)
+                # Pick subset to choose from
                 if subset == "train":
-                    files += files_of_dataset[:val_idx]
+                    files += files_of_building[:val_idx]
                 elif subset == "validation":
-                    files += files_of_dataset[val_idx:test_idx]
+                    files += files_of_building[val_idx:test_idx]
                 elif subset == "test":
-                    files += files_of_dataset[test_idx:]
-                else:
-                    raise KeyError(f"Subset not found: {subset}")
+                    files += files_of_building[test_idx:]
+        # Update the class parameters
         self.files = files
         self.epochs = len(files)
         print(f"{self.epochs} data points found for {subset}")
 
     def _get_parameters_from_file(self):
+        """Updates class parameters from sample csv file"""
         df = self._open_file(self.files[0])
         appliances = [t for t in df.columns if not t.endswith("_status")]
         appliances.remove("aggregate")
