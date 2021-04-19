@@ -6,11 +6,11 @@ from nilm_thresholding.model.gru import GRUModel
 
 def initialize_model(config: dict):
     """Initialize a model given a config dictionary"""
-    model_name = config["train"]["name"].lower()
+    model_name = config["name"].lower()
     if model_name.startswith("conv"):
-        model = ConvModel(**config["train"]["model"])
+        model = ConvModel(**config)
     elif model_name.startswith("gru"):
-        model = GRUModel(**config["train"]["model"])
+        model = GRUModel(**config)
     else:
         raise ValueError(f"'{model_name}' not valid. Try using 'conv' or 'gru'")
     return model

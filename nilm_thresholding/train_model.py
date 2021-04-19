@@ -56,6 +56,7 @@ def train_many_models(path_data, path_output, config_data, config_model):
     act_scores = []
     pow_scores = []
     time_ellapsed = 0
+    config_model["out_channels"] = len(config_data["appliances"])
 
     for i in range(config_model["num_models"]):
         print(f"\nModel {i + 1}\n")
@@ -67,8 +68,6 @@ def train_many_models(path_data, path_output, config_data, config_model):
         model.train_with_dataloader(
             dataloader_train,
             dataloader_validation,
-            epochs=config_model["epochs"],
-            patience=config_model["patience"],
         )
         time_ellapsed += time.time() - time_start
 

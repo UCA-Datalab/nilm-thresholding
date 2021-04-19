@@ -180,17 +180,14 @@ class _PTPNet(nn.Module):
 class ConvModel(TorchModel):
     def __init__(
         self,
-        input_len=None,
-        output_len=480,
-        border=16,
-        out_channels=1,
-        init_features=32,
-        learning_rate=0.001,
-        dropout=0.1,
-        classification_w=1,
-        regression_w=1,
+        output_len: int = 480,
+        out_channels: int = 1,
+        init_features: int = 32,
+        learning_rate: float = 0.001,
+        dropout: float = 0.1,
+        **kwargs,
     ):
-        super(TorchModel, self).__init__()
+        super().__init__(**kwargs)
 
         # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
@@ -205,19 +202,11 @@ class ConvModel(TorchModel):
                 f" valid value is {96 * s}"
             )
 
-        self.border = border
-
         self.model = _PTPNet(
             output_len=output_len,
             out_channels=out_channels,
             init_features=init_features,
             dropout=dropout,
-        ).cuda()
+        ).to(device=self.device)
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.pow_criterion = nn.MSELoss()
-        self.act_criterion = nn.BCEWithLogitsLoss()
-        self.pow_w = regression_w
-        self.act_w = classification_w
-        self.pow_loss_avg = 0.0045
-        self.act_loss_avg = 0.68

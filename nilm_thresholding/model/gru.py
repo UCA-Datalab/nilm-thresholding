@@ -53,15 +53,12 @@ class GRUModel(TorchModel):
         self,
         input_len=510,
         output_len=480,
-        border=None,
         out_channels=1,
-        init_features=None,
         learning_rate=1e-4,
         dropout=0.1,
-        classification_w=1,
-        regression_w=1,
+        **kwargs
     ):
-        super(TorchModel, self).__init__()
+        super().__init__(**kwargs)
 
         msg = "Difference between input and output lens must be even"
         assert (input_len - output_len) % 2 == 0, msg
@@ -71,12 +68,7 @@ class GRUModel(TorchModel):
             output_len=output_len,
             out_channels=out_channels,
             dropout=dropout,
-        ).cuda()
+        ).to(device=self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self.pow_criterion = nn.MSELoss()
         self.act_criterion = nn.BCEWithLogitsLoss()
-        self.pow_w = regression_w
-        self.act_w = classification_w
-        self.pow_loss_avg = 0.0045
-        self.act_loss_avg = 0.68
-        self.border = int((input_len - output_len) / 2)
