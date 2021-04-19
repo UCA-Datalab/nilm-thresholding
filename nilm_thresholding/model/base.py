@@ -7,7 +7,7 @@ import torch.optim as optim
 from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset
 
-from nilm_thresholding.data.preprocessing import get_status, get_status_by_duration
+from nilm_thresholding.data.thresholding import get_status, get_status_by_duration
 from nilm_thresholding.model.export import store_model_json
 from nilm_thresholding.utils.scores import (
     classification_scores_dict,

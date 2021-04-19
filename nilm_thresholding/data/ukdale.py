@@ -4,7 +4,7 @@ import pandas as pd
 from pandas import Series
 from pandas.io.pytables import HDFStore
 
-from nilm_thresholding.data.wrapper import PreprocessWrapper
+from nilm_thresholding.data.preprocessing import PreprocessWrapper
 from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
 
 
