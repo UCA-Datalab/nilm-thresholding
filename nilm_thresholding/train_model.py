@@ -13,7 +13,6 @@ from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.store_output import (
     generate_path_output,
     generate_folder_name,
-    get_model_scores,
     list_scores,
     store_scores,
 )
@@ -42,13 +41,13 @@ def train_many_models(path_data, path_output, config_data, config_model):
 
     # Load dataloader
     dataloader_train = return_dataloader(
-        path_train, config_data, config_model, shuffle=True
+        path_train, config_data, config_model, subset="train", shuffle=True
     )
     dataloader_validation = return_dataloader(
-        path_valid, config_data, config_model, shuffle=False
+        path_valid, config_data, config_model, subset="validation", shuffle=False
     )
     dataloader_test = return_dataloader(
-        path_test, config_data, config_model, shuffle=False
+        path_test, config_data, config_model, subset="test", shuffle=False
     )
 
     # Training
@@ -75,16 +74,7 @@ def train_many_models(path_data, path_output, config_data, config_model):
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.save(path_model)
 
-        act_scr, pow_scr = get_model_scores(
-            model,
-            dataloader_test,
-            config_data["power_scale"],
-            dataloader_test.means,
-            dataloader_test.thresholds,
-            config_data["appliances"],
-            config_data["threshold"]["min_off"],
-            config_data["threshold"]["min_on"],
-        )
+        act_scr, pow_scr = model.get_scores(dataloader_test)
 
         act_scores += act_scr
         pow_scores += pow_scr

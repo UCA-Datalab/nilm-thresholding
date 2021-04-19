@@ -4,7 +4,7 @@ train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
 period = "1min"  # Time period of the sequence
 input_len = 510  # Number of records per data point
-overlap = 15  # Overlap between series
+border = 15  # Overlap between series
 max_power = 10000.0  # Maximum load power, in watts
 power_scale = 2000.0  # Power value by which we divide the load, normalizing it
 
@@ -44,12 +44,18 @@ buildings = [1, 2, 5]
 [data.train.buildings]
 ukdale = [1, 2, 5]
 
+[data.validation.buildings]
+ukdale = [1]
+
+[data.test.buildings]
+ukdale = [1]
+
 [model]
 name = "ConvModel"
-border = 16
+border = 15
 batch_size = 32
-epochs = 300
-patience = 300
+epochs = 1
+patience = 3
 num_models = 5 # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
 init_features = 32

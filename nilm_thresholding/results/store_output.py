@@ -5,76 +5,8 @@ import numpy as np
 import pandas as pd
 
 from nilm_thresholding.utils.format_list import to_list
-from nilm_thresholding.data.preprocessing import get_status
-from nilm_thresholding.data.preprocessing import get_status_by_duration
-from nilm_thresholding.utils.scores import classification_scores_dict
-from nilm_thresholding.utils.scores import regression_scores_dict
 from nilm_thresholding.utils.plot import plot_informative_classification
 from nilm_thresholding.utils.plot import plot_informative_regression
-
-
-def process_model_outputs(
-    p_true, p_hat, s_hat, power_scale, means, thresholds, min_off, min_on
-):
-    # Denormalize power values
-    p_true = np.multiply(p_true, power_scale)
-    p_hat = np.multiply(p_hat, power_scale)
-    p_hat[p_hat < 0.0] = 0.0
-
-    # Get status
-    if (min_on is None) or (min_off is None):
-        s_hat[s_hat >= 0.5] = 1
-        s_hat[s_hat < 0.5] = 0
-    else:
-        thresh = [0.5] * len(min_on)
-        s_hat = get_status_by_duration(s_hat, thresh, min_off, min_on)
-
-    # Get power values from status
-    sp_hat = np.multiply(np.ones(s_hat.shape), means[:, 0])
-    sp_on = np.multiply(np.ones(s_hat.shape), means[:, 1])
-    sp_hat[s_hat == 1] = sp_on[s_hat == 1]
-
-    # Get status from power values
-    ps_hat = get_status(p_hat, thresholds)
-
-    return p_true, p_hat, s_hat, sp_hat, ps_hat
-
-
-def get_model_scores(
-    model, dl_test, power_scale, means, thresholds, appliances, min_off, min_on
-):
-    """
-    Trains and test a model. Returns its activation and power scores.
-    """
-
-    # Test
-    x_true, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
-
-    p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
-        p_true, p_hat, s_hat, power_scale, means, thresholds, min_off, min_on
-    )
-
-    # classification scores
-
-    class_scores = classification_scores_dict(s_hat, s_true, appliances)
-    reg_scores = regression_scores_dict(sp_hat, p_true, appliances)
-    act_scores = [class_scores, reg_scores]
-
-    print("classification scores")
-    print(class_scores)
-    print(reg_scores)
-
-    # regression scores
-
-    class_scores = classification_scores_dict(ps_hat, s_true, appliances)
-    reg_scores = regression_scores_dict(p_hat, p_true, appliances)
-    pow_scores = [class_scores, reg_scores]
-
-    print("regression scores")
-    print(class_scores)
-    print(reg_scores)
-
-    return act_scores, pow_scores
 
 
 def list_scores(appliances, act_scores, pow_scores, num_models):
@@ -178,9 +110,7 @@ def store_scores(path_output, config, scores, time_ellapsed, filename="scores.tx
             text_file.write("==================================================\n")
 
 
-def store_plots(
-    path_output, config, model, dl_test, means, thresholds
-):
+def store_plots(path_output, config, model, dl_test, means, thresholds):
 
     # Ensure appliances is a list
     appliances = to_list(config["data"]["appliances"])
@@ -193,7 +123,7 @@ def store_plots(
 
     # Model values
 
-    x, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+    x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
 
     p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
         p_true,
@@ -280,7 +210,7 @@ def store_real_data_and_predictions(
 
     # Model values
 
-    x, p_true, s_true, p_hat, s_hat = model.predict_loader(dl_test)
+    x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
 
     p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
         p_true,

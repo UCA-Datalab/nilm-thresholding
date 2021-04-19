@@ -5,9 +5,14 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from keras.callbacks import EarlyStopping
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset
 
+from nilm_thresholding.data.preprocessing import get_status, get_status_by_duration
 from nilm_thresholding.model.export import store_model_json
+from nilm_thresholding.utils.scores import (
+    classification_scores_dict,
+    regression_scores_dict,
+)
 
 
 class KerasModel:
@@ -64,9 +69,6 @@ class KerasModel:
             callbacks=[es],
         )
 
-    def predict(self, x_test):
-        return self.model.predict(x_test)
-
     def store_json(self, path):
         store_model_json(self.model, path)
 
@@ -96,6 +98,7 @@ class TorchModel:
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
         self.border = border
+        self._limit = border + 1
         self.pow_w = regression_w
         self.act_w = classification_w
         self.batch_size = batch_size
@@ -109,15 +112,68 @@ class TorchModel:
         if len(kwargs) > 0:
             print(f"Unused parameters: {kwargs}")
 
-    def _get_dataloader(self, x, y, y_bin):
-        tensor_x = torch.tensor(x, dtype=torch.float)
-        tensor_y = torch.tensor(y, dtype=torch.float)
-        tensor_bin = torch.tensor(y_bin, dtype=torch.float)
-        dataset = TensorDataset(tensor_x, tensor_y, tensor_bin)
-        data_loader = DataLoader(
-            dataset=dataset, batch_size=self.batch_size, shuffle=self.shuffle
-        )
-        return data_loader
+    def _train_epoch(
+        self, train_loader: torch.utils.data.DataLoader, train_losses: list
+    ):
+        self.model.train()  # prep model for training
+
+        # Initialize ON activation frequency
+        # on = np.zeros(3)
+        # total = 0
+
+        for batch, (data, target_power, target_status) in enumerate(train_loader, 1):
+            data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
+            target_power = target_power.to(device=self.device, dtype=torch.float)
+            target_status = target_status.to(device=self.device, dtype=torch.float)
+
+            # clear the gradients of all optimized variables
+            self.optimizer.zero_grad()
+            # forward pass: compute predicted results by passing inputs
+            # to the model
+            output_power, output_status = self.model(data)
+            output_power = output_power.permute(0, 2, 1)
+            output_status = output_status.permute(0, 2, 1)
+            # calculate the loss
+            pow_loss = self.pow_criterion(output_power, target_power)
+            act_loss = self.act_criterion(output_status, target_status)
+            loss = (
+                self.pow_w * pow_loss / self.pow_loss_avg
+                + self.act_w * act_loss / self.act_loss_avg
+            )
+            # backward pass: compute gradient of the loss with respect
+            # to model parameters
+            loss.backward()
+            # perform a single optimization step (parameter update)
+            self.optimizer.step()
+            # record training loss
+            train_losses.append(loss.item())
+            # Compute ON activation frequency
+            # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
+            # total += target_status.size()[0] * target_status.size()[1]
+
+    def _validation_epoch(
+        self, valid_loader: torch.utils.data.DataLoader, valid_losses: list
+    ):
+        self.model.eval()  # prep model for evaluation
+        for data, target_power, target_status in valid_loader:
+            data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
+            target_power = target_power.to(device=self.device, dtype=torch.float)
+            target_status = target_status.to(device=self.device, dtype=torch.float)
+
+            # forward pass: compute predicted results by passing inputs
+            # to the model
+            output_power, output_status = self.model(data)
+            output_power = output_power.permute(0, 2, 1)
+            output_status = output_status.permute(0, 2, 1)
+            # calculate the loss
+            pow_loss = self.pow_criterion(output_power, target_power)
+            act_loss = self.act_criterion(output_status, target_status)
+            loss = (
+                self.pow_w * pow_loss / self.pow_loss_avg
+                + self.act_w * act_loss / self.act_loss_avg
+            )
+            # record validation loss
+            valid_losses.append(loss.item())
 
     def train_with_dataloader(self, train_loader, valid_loader):
 
@@ -138,70 +194,14 @@ class TorchModel:
             ###################
             # train the model #
             ###################
-            self.model.train()  # prep model for training
-
-            # Initialize ON activation frequency
-            # on = np.zeros(3)
-            # total = 0
-
-            for batch, (data, target_power, target_status) in enumerate(
-                train_loader, 1
-            ):
-                data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
-                target_power = target_power.to(device=self.device, dtype=torch.float)
-                target_status = target_status.to(device=self.device, dtype=torch.float)
-
-                # clear the gradients of all optimized variables
-                self.optimizer.zero_grad()
-                # forward pass: compute predicted results by passing inputs
-                # to the model
-                output_power, output_status = self.model(data)
-                output_power = output_power.permute(0, 2, 1)
-                output_status = output_status.permute(0, 2, 1)
-                # calculate the loss
-                pow_loss = self.pow_criterion(output_power, target_power)
-                act_loss = self.act_criterion(output_status, target_status)
-                loss = (
-                    self.pow_w * pow_loss / self.pow_loss_avg
-                    + self.act_w * act_loss / self.act_loss_avg
-                )
-                # backward pass: compute gradient of the loss with respect
-                # to model parameters
-                loss.backward()
-                # perform a single optimization step (parameter update)
-                self.optimizer.step()
-                # record training loss
-                train_losses.append(loss.item())
-                # Compute ON activation frequency
-                # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
-                # total += target_status.size()[0] * target_status.size()[1]
-
+            self._train_epoch(train_loader, train_losses)
             # Display ON activation frequency
             # print('Train ON frequency', on / total)
 
             ######################
             # validate the model #
             ######################
-            self.model.eval()  # prep model for evaluation
-            for data, target_power, target_status in valid_loader:
-                data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
-                target_power = target_power.to(device=self.device, dtype=torch.float)
-                target_status = target_status.to(device=self.device, dtype=torch.float)
-
-                # forward pass: compute predicted results by passing inputs
-                # to the model
-                output_power, output_status = self.model(data)
-                output_power = output_power.permute(0, 2, 1)
-                output_status = output_status.permute(0, 2, 1)
-                # calculate the loss
-                pow_loss = self.pow_criterion(output_power, target_power)
-                act_loss = self.act_criterion(output_status, target_status)
-                loss = (
-                    self.pow_w * pow_loss / self.pow_loss_avg
-                    + self.act_w * act_loss / self.act_loss_avg
-                )
-                # record validation loss
-                valid_losses.append(loss.item())
+            self._validation_epoch(valid_loader, valid_losses)
 
             # print training/validation statistics
             # calculate average loss over an epoch
@@ -212,13 +212,11 @@ class TorchModel:
 
             epoch_len = len(str(self.epochs))
 
-            print_msg = (
+            print(
                 f"[{epoch:>{epoch_len}}/{self.epochs:>{epoch_len}}] "
                 + f"train_loss: {train_loss:.5f} "
                 + f"valid_loss: {valid_loss:.5f} "
             )
-
-            print(print_msg)
 
             # clear lists to track next epoch
             train_losses = []
@@ -244,40 +242,7 @@ class TorchModel:
         self.load("model.pth")
         os.remove("model.pth")
 
-    def train_with_data(
-        self,
-        x_train,
-        y_train,
-        bin_train,
-        x_val,
-        y_val,
-        bin_val,
-        epochs=None,
-        batch_size=None,
-        shuffle=None,
-        patience=None,
-    ):
-
-        self.batch_size = batch_size if batch_size is not None else self.batch_size
-        self.shuffle = shuffle if shuffle is not None else self.shuffle
-        self.epochs = epochs if epochs is not None else self.epochs
-        self.patience = patience if patience is not None else self.patience
-
-        train_loader = self._get_dataloader(x_train, y_train, bin_train)
-        valid_loader = self._get_dataloader(x_val, y_val, bin_val)
-
-        self.train_with_dataloader(train_loader, valid_loader)
-
-    def predict(self, x_test):
-        self.model.eval()
-        tensor_x = torch.tensor(x_test, dtype=torch.float)
-        tensor_x = tensor_x.permute(0, 2, 1).to(device=self.device, dtype=torch.float)
-        output_power, output_status = self.model(tensor_x)
-        output_power = output_power.permute(0, 2, 1)
-        output_status = output_status.permute(0, 2, 1)
-        return output_power, output_status
-
-    def predict_loader(self, loader):
+    def predict(self, loader: torch.utils.data.DataLoader):
         x_true = []
         s_true = []
         p_true = []
@@ -302,7 +267,7 @@ class TorchModel:
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))
 
                 x_true.append(
-                    x[:, :, self.border : -self.border].detach().cpu().numpy().flatten()
+                    x[:, :, self._limit : -self._limit].detach().cpu().numpy().flatten()
                 )
                 s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
                 p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
@@ -322,3 +287,73 @@ class TorchModel:
     def load(self, path_model: str):
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
+
+    @staticmethod
+    def _process_outputs(p_true, p_hat, s_hat, loader: torch.utils.data.DataLoader):
+        # Denormalize power values
+        p_true = np.multiply(p_true, loader.dataset.power_scale)
+        p_hat = np.multiply(p_hat, loader.dataset.power_scale)
+        p_hat[p_hat < 0.0] = 0.0
+
+        # Get status
+        if (loader.dataset.threshold["min_on"] is None) or (
+            loader.dataset.threshold["min_off"] is None
+        ):
+            s_hat[s_hat >= 0.5] = 1
+            s_hat[s_hat < 0.5] = 0
+        else:
+            thresh = [0.5] * len(loader.dataset.threshold["min_on"])
+            s_hat = get_status_by_duration(
+                s_hat,
+                thresh,
+                loader.dataset.threshold["min_off"],
+                loader.dataset.threshold["min_on"],
+            )
+
+        # Get power values from status
+        sp_hat = np.multiply(np.ones(s_hat.shape), loader.dataset.means[:, 0])
+        sp_on = np.multiply(np.ones(s_hat.shape), loader.dataset.means[:, 1])
+        sp_hat[s_hat == 1] = sp_on[s_hat == 1]
+
+        # Get status from power values
+        ps_hat = get_status(p_hat, loader.dataset.thresholds)
+
+        return p_true, p_hat, s_hat, sp_hat, ps_hat
+
+    def get_scores(self, loader: torch.utils.data.DataLoader):
+        """
+        Returns its activation and power scores.
+        """
+
+        # Test
+        x_true, p_true, s_true, p_hat, s_hat = self.predict(loader)
+
+        p_true, p_hat, s_hat, sp_hat, ps_hat = self._process_outputs(
+            p_true, p_hat, s_hat, loader
+        )
+
+        # classification scores
+
+        class_scores = classification_scores_dict(
+            s_hat, s_true, loader.dataset.appliances
+        )
+        reg_scores = regression_scores_dict(sp_hat, p_true, loader.dataset.appliances)
+        act_scores = [class_scores, reg_scores]
+
+        print("classification scores")
+        print(class_scores)
+        print(reg_scores)
+
+        # regression scores
+
+        class_scores = classification_scores_dict(
+            ps_hat, s_true, loader.dataset.appliances
+        )
+        reg_scores = regression_scores_dict(p_hat, p_true, loader.dataset.appliances)
+        pow_scores = [class_scores, reg_scores]
+
+        print("regression scores")
+        print(class_scores)
+        print(reg_scores)
+
+        return act_scores, pow_scores

@@ -28,7 +28,7 @@ class PreprocessWrapper:
             "test": 1 - config["train_size"] - config["valid_size"],
         }
         self.input_len = config["input_len"]
-        self.overlap = config["overlap"]
+        self.border = config["border"]
         self.threshold_method = config["threshold"]["method"]
         self.threshold_std = config["threshold"]["std"]
         self.thresholds = config["threshold"]["list"]
@@ -114,7 +114,7 @@ class PreprocessWrapper:
             meters = self.load_house_meters(house)
             meters = self._get_status(meters)
             # Check the number of data points
-            step = self.input_len - self.overlap
+            step = self.input_len - self.border
             size = meters.shape[0] // step
             idx = 0
             # Loop through the subsets and store data points sequentially
