@@ -4,6 +4,7 @@ train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
 period = "1min"  # Time period of the sequence
 input_len = 510  # Number of records per data point
+overlap = 15  # Overlap between series
 max_power = 10000.0  # Maximum load power, in watts
 power_scale = 2000.0  # Power value by which we divide the load, normalizing it
 

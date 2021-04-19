@@ -28,6 +28,7 @@ class PreprocessWrapper:
             "test": 1 - config["train_size"] - config["valid_size"],
         }
         self.input_len = config["input_len"]
+        self.overlap = config["overlap"]
         self.threshold_method = config["threshold"]["method"]
         self.threshold_std = config["threshold"]["std"]
         self.thresholds = config["threshold"]["list"]
@@ -113,7 +114,8 @@ class PreprocessWrapper:
             meters = self.load_house_meters(house)
             meters = self._get_status(meters)
             # Check the number of data points
-            size = meters.shape[0] // self.input_len
+            step = self.input_len - self.overlap
+            size = meters.shape[0] // step
             idx = 0
             # Loop through the subsets and store data points sequentially
             for subset in ["train", "validation", "test"]:
@@ -128,9 +130,10 @@ class PreprocessWrapper:
                     pass
                 # Check the number of data points in that subset
                 size_sub = int(self.size[subset] * size)
+                print(house, subset, size_sub)
                 for point in range(size_sub):
                     # Each data point is stored individually
                     df_sub = meters.iloc[idx : (idx + self.input_len)]
                     path_file = os.path.join(path_house, f"{point:04}.csv")
                     df_sub.to_csv(path_file)
-                    idx += self.input_len
+                    idx += step
