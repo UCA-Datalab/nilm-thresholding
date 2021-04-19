@@ -178,16 +178,8 @@ class _PTPNet(nn.Module):
 
 
 class ConvModel(TorchModel):
-    def __init__(
-        self,
-        output_len: int = 480,
-        out_channels: int = 1,
-        init_features: int = 32,
-        learning_rate: float = 0.001,
-        dropout: float = 0.1,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
+    def __init__(self, config: dict):
+        super().__init__(config)
 
         # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
@@ -195,18 +187,18 @@ class ConvModel(TorchModel):
         # That series will them pass by four different filters
         # The output of the four filters must have the same size
         # For this reason, S must be a multiple of 12
-        if output_len % 96 != 0:
-            s = round(output_len / 96)
+        if self.output_len % 96 != 0:
+            s = round(self.output_len / 96)
             raise ValueError(
-                f"output_len {output_len} is not valid.\nClosest"
+                f"output_len {self.output_len} is not valid.\nClosest"
                 f" valid value is {96 * s}"
             )
 
         self.model = _PTPNet(
-            output_len=output_len,
-            out_channels=out_channels,
-            init_features=init_features,
-            dropout=dropout,
+            output_len=self.output_len,
+            out_channels=len(self.appliances),
+            init_features=self.init_features,
+            dropout=self.dropout,
         ).to(device=self.device)
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)

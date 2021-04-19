@@ -81,34 +81,30 @@ class TorchModel:
 
     def __init__(
         self,
-        border: int = 15,
-        classification_w: float = 1,
-        regression_w: float = 1,
-        class_loss_avg: float = 0.0045,
-        reg_loss_avg: float = 0.68,
-        batch_size: int = 32,
-        epochs: int = 1,
-        patience: int = 1,
-        shuffle: bool = True,
-        return_means: bool = True,
-        name: str = "Model",
-        **kwargs,
+        config: dict,
     ):
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
-        self.border = border
-        self._limit = border + 1
-        self.pow_w = regression_w
-        self.act_w = classification_w
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.pow_loss_avg = reg_loss_avg
-        self.act_loss_avg = class_loss_avg
-        self.epochs = epochs
-        self.patience = patience
-        self.return_means = return_means
-        self.name = name
+        self.input_len = config.get("input_len", 510)
+        self.border = config.get("border", 15)
+        self.output_len = config.get("output_len", self.input_len - 2 * self.border)
+        self._limit = self.border + 1
+        self.pow_w = config.get("regression_w", 1)
+        self.act_w = config.get("classification_w", 1)
+        self.batch_size = config.get("batch_size", 32)
+        self.shuffle = config.get("shuffle", True)
+        self.pow_loss_avg = config.get("reg_loss_avg", 0.68)
+        self.act_loss_avg = config.get("class_loss_avg", 0.0045)
+        self.epochs = config.get("epochs", 300)
+        self.patience = config.get("patience", 300)
+        self.name = config.get("name", "Model")
+        self.appliances = config.get("appliances", list())
+        self.init_features = config.get("init_features", 32)
+        self.dropout = config.get("dropout", 0.1)
+        self.learning_rate = config.get("learning_rate", 1e-4)
+        self.power_scale = config.get("power_scale", 2000)
+        self.threshold = config.get("threshold", {})
 
     def _train_epoch(
         self, train_loader: torch.utils.data.DataLoader, train_losses: list
@@ -290,35 +286,32 @@ class TorchModel:
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
 
-    @staticmethod
-    def process_outputs(p_true, p_hat, s_hat, loader: torch.utils.data.DataLoader):
+    def process_outputs(self, p_true, p_hat, s_hat):
         # Denormalize power values
-        p_true = np.multiply(p_true, loader.dataset.power_scale)
-        p_hat = np.multiply(p_hat, loader.dataset.power_scale)
+        p_true = np.multiply(p_true, self.power_scale)
+        p_hat = np.multiply(p_hat, self.power_scale)
         p_hat[p_hat < 0.0] = 0.0
 
         # Get status
-        if (loader.dataset.threshold["min_on"] is None) or (
-            loader.dataset.threshold["min_off"] is None
-        ):
+        if (self.threshold["min_on"] is None) or (self.threshold["min_off"] is None):
             s_hat[s_hat >= 0.5] = 1
             s_hat[s_hat < 0.5] = 0
         else:
-            thresh = [0.5] * len(loader.dataset.threshold["min_on"])
+            thresh = [0.5] * len(self.threshold["min_on"])
             s_hat = get_status_by_duration(
                 s_hat,
                 thresh,
-                loader.dataset.threshold["min_off"],
-                loader.dataset.threshold["min_on"],
+                self.threshold["min_off"],
+                self.threshold["min_on"],
             )
 
         # Get power values from status
-        sp_hat = np.multiply(np.ones(s_hat.shape), loader.dataset.means[:, 0])
-        sp_on = np.multiply(np.ones(s_hat.shape), loader.dataset.means[:, 1])
+        sp_hat = np.multiply(np.ones(s_hat.shape), self.means[:, 0])
+        sp_on = np.multiply(np.ones(s_hat.shape), self.means[:, 1])
         sp_hat[s_hat == 1] = sp_on[s_hat == 1]
 
         # Get status from power values
-        ps_hat = get_status(p_hat, loader.dataset.thresholds)
+        ps_hat = get_status(p_hat, self.thresholds)
 
         return p_true, p_hat, s_hat, sp_hat, ps_hat
 
@@ -331,15 +324,13 @@ class TorchModel:
         x_true, p_true, s_true, p_hat, s_hat = self.predict(loader)
 
         p_true, p_hat, s_hat, sp_hat, ps_hat = self.process_outputs(
-            p_true, p_hat, s_hat, loader
+            p_true, p_hat, s_hat
         )
 
         # classification scores
 
-        class_scores = classification_scores_dict(
-            s_hat, s_true, loader.dataset.appliances
-        )
-        reg_scores = regression_scores_dict(sp_hat, p_true, loader.dataset.appliances)
+        class_scores = classification_scores_dict(s_hat, s_true, self.appliances)
+        reg_scores = regression_scores_dict(sp_hat, p_true, self.appliances)
         act_scores = [class_scores, reg_scores]
 
         print("classification scores")
@@ -348,10 +339,8 @@ class TorchModel:
 
         # regression scores
 
-        class_scores = classification_scores_dict(
-            ps_hat, s_true, loader.dataset.appliances
-        )
-        reg_scores = regression_scores_dict(p_hat, p_true, loader.dataset.appliances)
+        class_scores = classification_scores_dict(ps_hat, s_true, self.appliances)
+        reg_scores = regression_scores_dict(p_hat, p_true, self.appliances)
         pow_scores = [class_scores, reg_scores]
 
         print("regression scores")

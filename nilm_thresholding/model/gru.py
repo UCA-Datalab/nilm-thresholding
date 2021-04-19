@@ -51,24 +51,20 @@ class _BiGRU(nn.Module):
 class GRUModel(TorchModel):
     def __init__(
         self,
-        input_len=510,
-        output_len=480,
-        out_channels=1,
-        learning_rate=1e-4,
-        dropout=0.1,
-        **kwargs
+        config: dict,
     ):
-        super().__init__(**kwargs)
+        super().__init__(config)
 
         msg = "Difference between input and output lens must be even"
-        assert (input_len - output_len) % 2 == 0, msg
+        assert (self.input_len - self.output_len) % 2 == 0, msg
 
         self.model = _BiGRU(
-            input_len=input_len,
-            output_len=output_len,
-            out_channels=out_channels,
-            dropout=dropout,
+            input_len=self.input_len,
+            output_len=self.output_len,
+            out_channels=len(self.appliances),
+            dropout=self.dropout,
         ).to(device=self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
         self.pow_criterion = nn.MSELoss()
         self.act_criterion = nn.BCEWithLogitsLoss()
