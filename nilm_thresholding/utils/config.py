@@ -31,7 +31,7 @@ class Conf(dict):
         return val
 
 
-def load_conf(path: Union[str, Path], key: str = None) -> Conf:
+def load_config(path: Union[str, Path], key: str = None) -> Conf:
     """Load TOML config as dict-like
     Parameters
     ----------
@@ -48,7 +48,7 @@ def load_conf(path: Union[str, Path], key: str = None) -> Conf:
     return Conf(config) if key is None else Conf(config[key])
 
 
-def load_conf_data(path: Union[str, Path]) -> Conf:
+def load_config_data(path: Union[str, Path]) -> Conf:
     """Load TOML data params as dict-like
     Parameters
     ----------
@@ -59,7 +59,7 @@ def load_conf_data(path: Union[str, Path]) -> Conf:
     Conf
         Config dictionary
     """
-    config = load_conf(path, "data")
+    config = load_config(path, "data")
     buildings = sorted(
         set(
             config["building_train"]
@@ -86,7 +86,7 @@ def load_conf_data(path: Union[str, Path]) -> Conf:
     return config
 
 
-def load_conf_train(path: Union[str, Path]) -> Conf:
+def load_config_train(path: Union[str, Path]) -> Conf:
     """Load TOML train params as dict-like
     Parameters
     ----------
@@ -97,7 +97,7 @@ def load_conf_train(path: Union[str, Path]) -> Conf:
     Conf
         Config dictionary
     """
-    config = load_conf(path)
+    config = load_config(path)
     config_train = config["train"]
     # Update model params
     model_params = config_train["model"]
@@ -109,7 +109,7 @@ def load_conf_train(path: Union[str, Path]) -> Conf:
     return config_train
 
 
-def load_conf_full(path: Union[str, Path]) -> Conf:
+def load_config_full(path: Union[str, Path]) -> Conf:
     """Load TOML dictionary, fully processed
     Parameters
     ----------
@@ -120,9 +120,9 @@ def load_conf_full(path: Union[str, Path]) -> Conf:
     Conf
         Config dictionary
     """
-    config = load_conf(path)
-    config_data = load_conf_data(path)
-    config_train = load_conf_train(path)
+    config = load_config(path)
+    config_data = load_config_data(path)
+    config_train = load_config_train(path)
     config.update({"data": config_data, "train": config_train})
     return config
 

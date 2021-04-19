@@ -14,31 +14,26 @@ from nilm_thresholding.utils.threshold import get_threshold_params
 
 
 class PreprocessWrapper:
-    name: str = "wrapper"
+    dataset: str = "wrapper"
 
     def __init__(self, config: dict):
         # Read parameters from config files
-        self.dates = config["data"]["dates"]
-        self.period = config["data"]["period"]
+        self.appliances = config["appliances"]
+        self.buildings = to_list(config[self.dataset]["buildings"])
+        self.dates = config[self.dataset]["dates"]
+        self.period = config["period"]
         self.size = {
-            "train": config["train"]["train_size"],
-            "validation": config["train"]["valid_size"],
-            "test": 1 - config["train"]["train_size"] - config["train"]["valid_size"],
+            "train": config["train_size"],
+            "validation": config["valid_size"],
+            "test": 1 - config["train_size"] - config["valid_size"],
         }
-        self.batch_size = config["train"]["batch_size"]
-        self.output_len = config["train"]["model"]["output_len"]
-        self.border = config["train"]["model"]["border"]
-        self.input_len = self.output_len + 2 * self.border
-        self.power_scale = config["data"]["power_scale"]
-        self.max_power = config["data"]["max_power"]
-        self.return_means = config["train"]["return_means"]
-        self.threshold_method = config["data"]["threshold"]["method"]
-        self.threshold_std = config["data"]["threshold"]["std"]
-        self.thresholds = config["data"]["threshold"]["list"]
-        self.min_off = config["data"]["threshold"]["min_off"]
-        self.min_on = config["data"]["threshold"]["min_on"]
-        self.buildings = to_list(config["data"]["buildings"])
-        self.appliances = config["data"]["appliances"]
+        self.input_len = config["input_len"]
+        self.threshold_method = config["threshold"]["method"]
+        self.threshold_std = config["threshold"]["std"]
+        self.thresholds = config["threshold"]["list"]
+        self.min_off = config["threshold"]["min_off"]
+        self.min_on = config["threshold"]["min_on"]
+        self.max_power = config["max_power"]
 
         # Set the parameters according to given threshold method
         if self.threshold_method != "custom":
@@ -124,7 +119,7 @@ class PreprocessWrapper:
             for subset in ["train", "validation", "test"]:
                 # Create the building folder inside each subset folder
                 path_subset = os.path.join(path_output, subset)
-                path_house = os.path.join(path_subset, f"{self.name}_{house}")
+                path_house = os.path.join(path_subset, f"{self.dataset}_{house}")
                 try:
                     os.mkdir(path_house)
                 except FileNotFoundError:

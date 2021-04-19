@@ -1,16 +1,10 @@
 [data]
-building_train = [1, 2, 5]
-building_valid = [1]
-building_test = [1]
 appliances = ["fridge", "dish_washer", "washing_machine"]
+train_size = 0.8  # Train size, relative to 1
+valid_size = 0.1  # Validation size, relative to 1
 period = "1min"  # Time period of the sequence
-power_scale = 2000.0  # Power value by which we divide the load, normalizing it
+input_len = 510  # Number of records per data point
 max_power = 10000.0  # Maximum load power, in watts
-
-[data.dates]  # Date range for each building
-1 = ["2013-04-12", "2014-12-15"]
-2 = ["2013-05-22", "2013-10-03 6:16"]
-5 =["2014-04-29", "2014-09-01"]
 
 [data.threshold]
 method = "mp"  # Thresholding method to use:
@@ -37,10 +31,16 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # Number of records that an appliance must be above the threshold to be considered
 # turned ON. If not provided, thresholds are computed using k-means.]
 
+[data.ukdale]
+buildings = [1, 2, 5]
+
+[data.ukdale.dates]  # Date range for each building
+1 = ["2013-04-12", "2014-12-15"]
+2 = ["2013-05-22", "2013-10-03 6:16"]
+5 =["2014-04-29", "2014-09-01"]
+
 [train]
 name = "ConvModel"
-train_size = 0.8  # Train size, relative to 1
-valid_size = 0.1  # Validation size, relative to 1
 batch_size = 32
 epochs = 300
 patience = 300
@@ -71,3 +71,9 @@ washing_machine= "Washing machine"
 at = 'b'
 mp = 'g'
 vs = 'r'
+
+[deprecated]
+building_train = [1, 2, 5]
+building_valid = [1]
+building_test = [1]
+power_scale = 2000.0  # Power value by which we divide the load, normalizing it

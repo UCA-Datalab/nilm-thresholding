@@ -1,9 +1,7 @@
-import os
-
 import typer
 
 from nilm_thresholding.data.ukdale import UkdalePreprocess
-from nilm_thresholding.utils.conf import load_conf_full, update_config
+from nilm_thresholding.utils.config import load_config
 
 
 def main(
@@ -27,15 +25,10 @@ def main(
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
-    config = load_conf_full(path_config)
-    config = update_config(config)
+    config = load_config(path_config, "data")
     print("Done\n")
 
-    assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
-        path_data
-    )
     path_h5 = path_data + ".h5"
-    assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
 
     dataloader = UkdalePreprocess(path_h5, path_data, config)
     dataloader.store_preprocessed_data(path_output)

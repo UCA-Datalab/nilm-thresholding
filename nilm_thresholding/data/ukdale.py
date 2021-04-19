@@ -9,7 +9,7 @@ from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
 
 
 class UkdalePreprocess(PreprocessWrapper):
-    name: str = "ukdale"
+    dataset: str = "ukdale"
     datastore: HDFStore = None
     means: list = []
 
@@ -126,23 +126,22 @@ class UkdalePreprocess(PreprocessWrapper):
 
         # Pick range of dates
         try:
-            date_start = self.dates[house][0]
-            date_start = pd.to_datetime(date_start).tz_localize("Etc/UCT")
-            date_end = self.dates[house][1]
-            date_end = pd.to_datetime(date_end).tz_localize("Etc/UCT")
-
-            assert date_end > date_start, (
-                f"Start date is {date_start}\nEnd date is {date_end}\n"
-                "End date must be after start date!"
-            )
-
-            meters = meters[date_start:date_end]
-
-            assert meters.shape[0] > 0, (
-                "meters dataframe was left empty after applying dates\n"
-                f"Start date is {date_start}\nEnd date is {date_end}"
-            )
+            dates = self.dates[house]
         except KeyError:
-            raise KeyError(f"House not found: {house}, of type {type(house)}")
+            dates = self.dates[str(house)]
+        date_start = pd.to_datetime(dates[0]).tz_localize("Etc/UCT")
+        date_end = pd.to_datetime(dates[1]).tz_localize("Etc/UCT")
+
+        assert date_end > date_start, (
+            f"Start date is {date_start}\nEnd date is {date_end}\n"
+            "End date must be after start date!"
+        )
+
+        meters = meters[date_start:date_end]
+
+        assert meters.shape[0] > 0, (
+            "meters dataframe was left empty after applying dates\n"
+            f"Start date is {date_start}\nEnd date is {date_end}"
+        )
 
         return meters
