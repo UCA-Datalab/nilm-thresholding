@@ -5,6 +5,7 @@ valid_size = 0.1  # Validation size, relative to 1
 period = "1min"  # Time period of the sequence
 input_len = 510  # Number of records per data point
 max_power = 10000.0  # Maximum load power, in watts
+power_scale = 2000.0  # Power value by which we divide the load, normalizing it
 
 [data.threshold]
 method = "mp"  # Thresholding method to use:
@@ -39,21 +40,21 @@ buildings = [1, 2, 5]
 2 = ["2013-05-22", "2013-10-03 6:16"]
 5 =["2014-04-29", "2014-09-01"]
 
-[train]
+[data.train.buildings]
+ukdale = [1, 2, 5]
+
+[model]
 name = "ConvModel"
+border = 16
 batch_size = 32
 epochs = 300
 patience = 300
 num_models = 5 # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
-
-[train.model]
-input_len = 510  # Input sequence of the model
-output_len = 480  # Output sequence of the model
-border = 16  # Border added to input sequences, so that input = output + 2 * border
 init_features = 32
 learning_rate = 1.0e-4
 dropout = 0.1
+regression_w = 1.0
 classification_w = 0.0
 
 [plot]
@@ -73,7 +74,9 @@ mp = 'g'
 vs = 'r'
 
 [deprecated]
-building_train = [1, 2, 5]
 building_valid = [1]
 building_test = [1]
-power_scale = 2000.0  # Power value by which we divide the load, normalizing it
+
+input_len = 510  # Input sequence of the model
+output_len = 480  # Output sequence of the model
+border = 16  # Border added to input sequences, so that input = output + 2 * border

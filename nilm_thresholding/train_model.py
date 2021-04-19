@@ -8,7 +8,7 @@ import time
 
 import typer
 
-from nilm_thresholding.data.ukdale import UkdaleDataloader
+from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.store_output import (
     generate_path_output,
@@ -17,30 +17,36 @@ from nilm_thresholding.results.store_output import (
     list_scores,
     store_scores,
 )
-from nilm_thresholding.utils.conf import load_conf_full, update_config
+from nilm_thresholding.utils.config import load_config
 from nilm_thresholding.utils.format_list import merge_dict_list
 
 
-def train_many_models(path_h5, path_data, path_output, config: dict):
+def train_many_models(path_train, path_output, config_data, config_model):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
 
     # Set output path
-    path_output = generate_path_output(path_output, config["train"]["name"])
+    path_output = generate_path_output(path_output, config_model["name"])
     path_output_folder = generate_folder_name(
         path_output,
-        config["train"]["model"]["output_len"],
-        config["data"]["period"],
-        config["train"]["model"]["classification_w"],
-        config["train"]["model"]["regression_w"],
-        config["data"]["threshold"]["method"],
+        config_data["input_len"],
+        config_data["period"],
+        config_model["classification_w"],
+        config_model["regression_w"],
+        config_data["threshold"]["method"],
     )
 
     # Load data
 
-    dataloader = UkdaleDataloader(path_h5, path_data, config)
+    dataloader = DataLoader(
+        path_train,
+        buildings=config_data["train"]["buildings"],
+        batch_size=config_model["batch_size"],
+        power_scale=config_data["power_scale"],
+        border=config_model["border"]
+    )
 
     # Training
 
@@ -119,7 +125,7 @@ def train_many_models(path_h5, path_data, path_output, config: dict):
 
 
 def main(
-    path_data: str = "data/ukdale",
+    path_data: str = "data-prep",
     path_output: str = "outputs",
     path_config: str = "nilm_thresholding/config.toml",
 ):
@@ -139,20 +145,16 @@ def main(
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
-    config = load_conf_full(path_config)
-    config = update_config(config)
+    config_data = load_config(path_config, "data")
+    config_model = load_config(path_config, "model")
     print("Done\n")
 
-    assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
-        path_data
-    )
-    path_h5 = path_data + ".h5"
-    assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
+    path_train = os.path.join(path_data, "train")
 
     # Run main results
-    print(f"{config['train']['name']}\n")
+    print(f"{config_model['name']}\n")
 
-    train_many_models(path_h5, path_data, path_output, config)
+    train_many_models(path_train, path_output, config_data, config_model)
 
 
 if __name__ == "__main__":

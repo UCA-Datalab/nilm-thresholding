@@ -1,5 +1,7 @@
 import numpy as np
 import torch.utils.data as data
+import os
+import itertools
 
 
 class Power(data.Dataset):
@@ -42,3 +44,24 @@ class Power(data.Dataset):
 
     def __len__(self):
         return self.epochs
+
+
+class DataLoader:
+    def __init__(
+        self,
+        path_data: str,
+        buildings: dict = None,
+        batch_size: int = 32,
+        power_scale: float = 2000,
+        border: int = 16,
+    ):
+        self.batch_size = batch_size
+        self.power_scale = power_scale
+        self.border = border
+
+        folders = [k + "_" + str(i) for k, v in buildings.items() for i in v]
+        folders = [
+            os.path.join(path_data, f) for f in folders if f in os.listdir(path_data)
+        ]
+        self.files = [os.path.join(f, x) for f in folders for x in os.listdir(f)]
+        print(len(self.files))
