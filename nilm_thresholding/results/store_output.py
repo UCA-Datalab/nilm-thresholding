@@ -65,18 +65,20 @@ def generate_folder_name(
     return path_output
 
 
-def store_scores(path_output, config, scores, time_ellapsed, filename="scores.txt"):
+def store_scores(
+    path_output, config_model, scores, time_ellapsed, filename="scores.txt"
+):
     # Load parameters
-    class_w = config["train"]["model"]["classification_w"]
-    reg_w = config["train"]["model"]["regression_w"]
-    train_size = config["train"]["train_size"]
-    valid_size = config["train"]["valid_size"]
-    num_models = config["train"]["num_models"]
-    batch_size = config["train"]["batch_size"]
-    learning_rate = config["train"]["model"]["learning_rate"]
-    dropout = config["train"]["model"]["dropout"]
-    epochs = config["train"]["epochs"]
-    patience = config["train"]["patience"]
+    class_w = config_model["classification_w"]
+    reg_w = config_model["regression_w"]
+    train_size = config_model["train_size"]
+    valid_size = config_model["valid_size"]
+    num_models = config_model["num_models"]
+    batch_size = config_model["batch_size"]
+    learning_rate = config_model["learning_rate"]
+    dropout = config_model["dropout"]
+    epochs = config_model["epochs"]
+    patience = config_model["patience"]
 
     path_scores = os.path.join(path_output, filename)
 
@@ -125,15 +127,8 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
 
     x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
 
-    p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
-        p_true,
-        p_hat,
-        s_hat,
-        config["data"]["power_scale"],
-        means,
-        thresholds,
-        config["data"]["threshold"]["min_off"],
-        config["data"]["threshold"]["min_on"],
+    p_true, p_hat, s_hat, sp_hat, ps_hat = model.process_outputs(
+        p_true, p_hat, s_hat, dl_test
     )
 
     thresh_color = config["plot"]["thresh_color"].get(
@@ -146,9 +141,9 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
         idx_start = 0
         num_plots = 0
         while (num_plots < config["plot"]["num_plots"]) and (
-            (idx_start + config["train"]["model"]["output_len"]) < p_true.shape[0]
+            (idx_start + config_model["name"]["output_len"]) < p_true.shape[0]
         ):
-            idx_end = idx_start + config["train"]["model"]["output_len"]
+            idx_end = idx_start + config_model["name"]["output_len"]
             p_t = p_true[idx_start:idx_end, idx]
             if p_t.sum() > 0:
                 s_t = s_true[idx_start:idx_end, idx]
@@ -165,12 +160,12 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                 if factor < 0:
                     p_agg -= factor
 
-                idx_start += config["train"]["model"]["output_len"]
+                idx_start += config_model["name"]["output_len"]
             else:
-                idx_start += config["train"]["model"]["output_len"]
+                idx_start += config_model["name"]["output_len"]
                 continue
             # Skip plots if weight is zero
-            if config["train"]["model"]["classification_w"] > 0:
+            if config_model["name"]["classification_w"] > 0:
                 savefig = os.path.join(
                     path_output, f"{app}_classification_{num_plots}.png"
                 )
@@ -178,7 +173,7 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                     s_t,
                     s_h,
                     p_agg,
-                    records=config["train"]["model"]["output_len"],
+                    records=config_model["name"]["output_len"],
                     period=period_x,
                     pw_max=p_agg.max(),
                     dpi=180,
@@ -186,13 +181,13 @@ def store_plots(path_output, config, model, dl_test, means, thresholds):
                     savefig=savefig,
                     title=app,
                 )
-            if config["train"]["model"]["regression_w"] > 0:
+            if config_model["name"]["regression_w"] > 0:
                 savefig = os.path.join(path_output, f"{app}_regression_{num_plots}.png")
                 plot_informative_regression(
                     p_t,
                     p_h,
                     p_agg,
-                    records=config["train"]["model"]["output_len"],
+                    records=config_model["model"]["output_len"],
                     scale=1.0,
                     period=period_x,
                     dpi=180,
@@ -212,15 +207,8 @@ def store_real_data_and_predictions(
 
     x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
 
-    p_true, p_hat, s_hat, sp_hat, ps_hat = process_model_outputs(
-        p_true,
-        p_hat,
-        s_hat,
-        config["data"]["power_scale"],
-        means,
-        thresholds,
-        config["data"]["threshold"]["min_off"],
-        config["data"]["threshold"]["min_on"],
+    p_true, p_hat, s_hat, sp_hat, ps_hat = model.process_outputs(
+        p_true, p_hat, s_hat, dl_test
     )
 
     for idx, app in enumerate(appliances):

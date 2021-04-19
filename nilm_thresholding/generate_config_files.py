@@ -37,7 +37,7 @@ def main(path_config="nilm_thresholding/config.toml", path_output="configs"):
         for method in LIST_METHODS:
             config["data"]["threshold"].update({"method": method})
             for class_w in LIST_CLASS_W:
-                config["train"]["model"].update({"classification_w": class_w})
+                config["train"]["name"].update({"classification_w": class_w})
                 path_dump = os.path.join(
                     path_output, f"{model_name}_{method}_classw_{class_w}.toml"
                 )

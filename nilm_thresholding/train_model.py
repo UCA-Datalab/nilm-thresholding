@@ -20,44 +20,41 @@ from nilm_thresholding.utils.config import load_config
 from nilm_thresholding.utils.format_list import merge_dict_list
 
 
-def train_many_models(path_data, path_output, config_data, config_model):
+def train_many_models(path_data, path_output, config):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
     # Set output path
-    path_output = generate_path_output(path_output, config_model["name"])
+    path_output = generate_path_output(path_output, config["name"])
     path_output_folder = generate_folder_name(
         path_output,
-        config_data["input_len"],
-        config_data["period"],
-        config_model["classification_w"],
-        config_model["regression_w"],
-        config_data["threshold"]["method"],
+        config["input_len"],
+        config["period"],
+        config["classification_w"],
+        config["regression_w"],
+        config["threshold"]["method"],
     )
 
     # Load dataloader
     dataloader_train = return_dataloader(
-        path_data, config_data, config_model, subset="train", shuffle=True
+        path_data, config, subset="train", shuffle=True
     )
     dataloader_validation = return_dataloader(
-        path_data, config_data, config_model, subset="validation", shuffle=False
+        path_data, config, subset="validation", shuffle=False
     )
-    dataloader_test = return_dataloader(
-        path_data, config_data, config_model, subset="test", shuffle=False
-    )
+    dataloader_test = return_dataloader(path_data, config, subset="test", shuffle=False)
 
     # Training
 
     act_scores = []
     pow_scores = []
     time_ellapsed = 0
-    config_model["out_channels"] = len(config_data["appliances"])
 
-    for i in range(config_model["num_models"]):
+    for i in range(config["train"]["num_models"]):
         print(f"\nModel {i + 1}\n")
 
-        model = initialize_model(config_model)
+        model = initialize_model(config)
 
         # Train
         time_start = time.time()
@@ -95,7 +92,7 @@ def train_many_models(path_data, path_output, config_data, config_model):
     # List scores
 
     scores = list_scores(
-        config["data"]["appliances"],
+        config["appliances"],
         act_scores,
         pow_scores,
         config["train"]["num_models"],
@@ -134,14 +131,13 @@ def main(
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
-    config_data = load_config(path_config, "data")
-    config_model = load_config(path_config, "model")
+    config = load_config(path_config, "model")
     print("Done\n")
 
     # Run main results
-    print(f"{config_model['name']}\n")
+    print(f"{config['model']}\n")
 
-    train_many_models(path_data, path_output, config_data, config_model)
+    train_many_models(path_data, path_output, config)
 
 
 if __name__ == "__main__":

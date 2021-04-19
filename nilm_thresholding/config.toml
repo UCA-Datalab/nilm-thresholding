@@ -1,4 +1,4 @@
-[data]
+[model]
 appliances = ["fridge", "dish_washer", "washing_machine"]
 train_size = 0.8  # Train size, relative to 1
 valid_size = 0.1  # Validation size, relative to 1
@@ -7,8 +7,17 @@ input_len = 510  # Number of records per data point
 border = 15  # Overlap between series
 max_power = 10000.0  # Maximum load power, in watts
 power_scale = 2000.0  # Power value by which we divide the load, normalizing it
+name = "ConvModel"  # Model to use
+batch_size = 32  # Batch size of the model
+epochs = 1  # Training epochs
+patience = 3  # Early stopping
+init_features = 32
+learning_rate = 1.0e-4
+dropout = 0.1
+regression_w = 1.0
+classification_w = 0.0
 
-[data.threshold]
+[model.threshold]
 method = "mp"  # Thresholding method to use:
 # 'vs': Variance-Sensitive. Applies k-means and uses the std of each
 # cluster to move the threshold accordingly.
@@ -33,36 +42,26 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # Number of records that an appliance must be above the threshold to be considered
 # turned ON. If not provided, thresholds are computed using k-means.]
 
-[data.ukdale]
+[model.ukdale]
 buildings = [1, 2, 5]
 
-[data.ukdale.dates]  # Date range for each building
+[model.ukdale.dates]  # Date range for each building
 1 = ["2013-04-12", "2014-12-15"]
 2 = ["2013-05-22", "2013-10-03 6:16"]
 5 =["2014-04-29", "2014-09-01"]
 
-[data.train.buildings]
+[model.train.buildings]
 ukdale = [1, 2, 5]
 
-[data.validation.buildings]
+[model.validation.buildings]
 ukdale = [1]
 
-[data.test.buildings]
+[model.test.buildings]
 ukdale = [1]
 
-[model]
-name = "ConvModel"
-border = 15
-batch_size = 32
-epochs = 1
-patience = 3
+[model.train]
 num_models = 5 # Number of models to train. Their scores are then averaged
 return_means = true  # Return as last argument the computed means of each status
-init_features = 32
-learning_rate = 1.0e-4
-dropout = 0.1
-regression_w = 1.0
-classification_w = 0.0
 
 [plot]
 f1_lim = [0.4, 1.0]

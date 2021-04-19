@@ -86,13 +86,12 @@ class DataSet(data.Dataset):
 
 def return_dataloader(
     path_data: str,
-    config_data: dict,
-    config_model: dict,
+    config: dict,
     subset: str = "train",
     shuffle: bool = True,
 ):
-    dataset = DataSet(path_data, config_data, subset=subset)
+    dataset = DataSet(path_data, config, subset=subset)
     dataloader = DataLoader(
-        dataset=dataset, batch_size=config_model["batch_size"], shuffle=shuffle
+        dataset=dataset, batch_size=config["batch_size"], shuffle=shuffle
     )
     return dataloader

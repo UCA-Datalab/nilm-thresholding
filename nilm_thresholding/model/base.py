@@ -109,8 +109,6 @@ class TorchModel:
         self.patience = patience
         self.return_means = return_means
         self.name = name
-        if len(kwargs) > 0:
-            print(f"Unused parameters: {kwargs}")
 
     def _train_epoch(
         self, train_loader: torch.utils.data.DataLoader, train_losses: list
@@ -175,7 +173,11 @@ class TorchModel:
             # record validation loss
             valid_losses.append(loss.item())
 
-    def train_with_dataloader(self, train_loader, valid_loader):
+    def train_with_dataloader(
+        self,
+        train_loader: torch.utils.data.DataLoader,
+        valid_loader: torch.utils.data.DataLoader,
+    ):
 
         # to track the training loss as the model trains
         train_losses = []
@@ -289,7 +291,7 @@ class TorchModel:
         self.model.load_state_dict(torch.load(path_model))
 
     @staticmethod
-    def _process_outputs(p_true, p_hat, s_hat, loader: torch.utils.data.DataLoader):
+    def process_outputs(p_true, p_hat, s_hat, loader: torch.utils.data.DataLoader):
         # Denormalize power values
         p_true = np.multiply(p_true, loader.dataset.power_scale)
         p_hat = np.multiply(p_hat, loader.dataset.power_scale)
@@ -328,7 +330,7 @@ class TorchModel:
         # Test
         x_true, p_true, s_true, p_hat, s_hat = self.predict(loader)
 
-        p_true, p_hat, s_hat, sp_hat, ps_hat = self._process_outputs(
+        p_true, p_hat, s_hat, sp_hat, ps_hat = self.process_outputs(
             p_true, p_hat, s_hat, loader
         )
 

@@ -7,20 +7,19 @@ import os
 
 import typer
 
-from nilm_thresholding.data.ukdale import UkdaleDataloader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.plot_output import plot_scores_by_class_weight
 from nilm_thresholding.results.store_output import (
     generate_path_output,
     generate_folder_name,
-    get_model_scores,
     list_scores,
     store_plots,
     store_scores,
     store_real_data_and_predictions,
 )
-from nilm_thresholding.utils.conf import load_conf_full, update_config
+from nilm_thresholding.utils.config import load_config
 from nilm_thresholding.utils.format_list import merge_dict_list
+from nilm_thresholding.data.loader import return_dataloader
 
 
 def test_many_models(
@@ -37,19 +36,19 @@ def test_many_models(
     """
 
     # Set output path
-    path_output = generate_path_output(path_output, config["train"]["name"])
+    path_output = generate_path_output(path_output, config["name"])
     path_output_folder = generate_folder_name(
         path_output,
-        config["train"]["model"]["output_len"],
-        config["data"]["period"],
-        config["train"]["model"]["classification_w"],
-        config["train"]["model"]["regression_w"],
-        config["data"]["threshold"]["method"],
+        config["output_len"],
+        config["period"],
+        config["classification_w"],
+        config["regression_w"],
+        config["threshold"]["method"],
     )
 
     # Load data
 
-    dataloader = UkdaleDataloader(path_h5, path_data, config)
+    dataloader = return_dataloader(path_data, config)
 
     # Training
 
@@ -57,7 +56,7 @@ def test_many_models(
     pow_scores = []
     time_ellapsed = 0
 
-    for i in range(config["train"]["num_models"]):
+    for i in range(config["num_models"]):
         print(f"\nModel {i + 1}\n")
 
         model = initialize_model(config)
@@ -66,15 +65,9 @@ def test_many_models(
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.load(path_model)
 
-        act_scr, pow_scr = get_model_scores(
+        act_scr, pow_scr = model.get_scores(
             model,
             dataloader.dl_test,
-            config["data"]["power_scale"],
-            dataloader.means,
-            dataloader.thresholds,
-            config["data"]["appliances"],
-            config["data"]["threshold"]["min_off"],
-            config["data"]["threshold"]["min_on"],
         )
 
         act_scores += act_scr
@@ -100,10 +93,10 @@ def test_many_models(
     # List scores
 
     scores = list_scores(
-        config["data"]["appliances"],
+        config["appliances"],
         act_scores,
         pow_scores,
-        config["train"]["num_models"],
+        config["num_models"],
     )
 
     # Store scores and plot
@@ -131,7 +124,7 @@ def test_many_models(
 
 
 def main(
-    path_data: str = "data/ukdale",
+    path_data: str = "data-prep",
     path_output: str = "outputs",
     path_config: str = "nilm_thresholding/config.toml",
     save_scores: bool = True,
@@ -157,8 +150,7 @@ def main(
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
-    config = load_conf_full(path_config)
-    config = update_config(config)
+    config = load_config(path_config, "model")
     print("Done\n")
 
     assert os.path.isdir(path_data), "path_data must lead to folder:\n{}".format(
@@ -168,7 +160,7 @@ def main(
     assert os.path.isfile(path_h5), "File not found:\n{}".format(path_h5)
 
     # Run main results
-    print(f"{config['train']['name']}\n")
+    print(f"{config['name']}\n")
 
     test_many_models(
         path_h5,

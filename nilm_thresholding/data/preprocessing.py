@@ -103,7 +103,6 @@ class PreprocessWrapper:
         for house in self.buildings:
             # Load the chosen meters of the building, compute their status
             meters = self.load_house_meters(house)
-            meters = self._get_status(meters)
             # Check the number of data points
             step = self.input_len - self.border
             size = meters.shape[0] // step
