@@ -130,7 +130,7 @@ class PreprocessWrapper:
                     pass
                 # Check the number of data points in that subset
                 size_sub = int(self.size[subset] * size)
-                print(house, subset, size_sub)
+                print(f"House {house}, {subset}: {size_sub} data points")
                 for point in range(size_sub):
                     # Each data point is stored individually
                     df_sub = meters.iloc[idx : (idx + self.input_len)]
