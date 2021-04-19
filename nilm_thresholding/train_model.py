@@ -25,9 +25,6 @@ def train_many_models(path_data, path_output, config_data, config_model):
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
-    path_train = os.path.join(path_data, "train")
-    path_valid = os.path.join(path_data, "validation")
-    path_test = os.path.join(path_data, "test")
     # Set output path
     path_output = generate_path_output(path_output, config_model["name"])
     path_output_folder = generate_folder_name(
@@ -41,13 +38,13 @@ def train_many_models(path_data, path_output, config_data, config_model):
 
     # Load dataloader
     dataloader_train = return_dataloader(
-        path_train, config_data, config_model, subset="train", shuffle=True
+        path_data, config_data, config_model, subset="train", shuffle=True
     )
     dataloader_validation = return_dataloader(
-        path_valid, config_data, config_model, subset="validation", shuffle=False
+        path_data, config_data, config_model, subset="validation", shuffle=False
     )
     dataloader_test = return_dataloader(
-        path_test, config_data, config_model, subset="test", shuffle=False
+        path_data, config_data, config_model, subset="test", shuffle=False
     )
 
     # Training

@@ -98,16 +98,6 @@ class PreprocessWrapper:
 
     def store_preprocessed_data(self, path_output: str):
         """Stores preprocessed data in output folder"""
-        # Create a folder for the three subsets
-        for subset in ["train", "validation", "test"]:
-            path_subset = os.path.join(path_output, subset)
-            try:
-                os.mkdir(path_subset)
-            except FileNotFoundError:
-                os.mkdir(path_output)
-                os.mkdir(path_subset)
-            except FileExistsError:
-                pass
         # Loop through the buildings that are going to be stored
         for house in self.buildings:
             # Load the chosen meters of the building, compute their status
@@ -117,23 +107,20 @@ class PreprocessWrapper:
             step = self.input_len - self.border
             size = meters.shape[0] // step
             idx = 0
-            # Loop through the subsets and store data points sequentially
-            for subset in ["train", "validation", "test"]:
-                # Create the building folder inside each subset folder
-                path_subset = os.path.join(path_output, subset)
-                path_house = os.path.join(path_subset, f"{self.dataset}_{house}")
-                try:
-                    os.mkdir(path_house)
-                except FileNotFoundError:
-                    os.mkdir(path_house)
-                except FileExistsError:
-                    pass
-                # Check the number of data points in that subset
-                size_sub = int(self.size[subset] * size)
-                print(f"House {house}, {subset}: {size_sub} data points")
-                for point in range(size_sub):
-                    # Each data point is stored individually
-                    df_sub = meters.iloc[idx : (idx + self.input_len)]
-                    path_file = os.path.join(path_house, f"{point:04}.csv")
-                    df_sub.to_csv(path_file)
-                    idx += step
+            # Store data points sequentially
+            # Create the building folder inside each subset folder
+            path_house = os.path.join(path_output, f"{self.dataset}_{house}")
+            try:
+                os.mkdir(path_house)
+            except FileNotFoundError:
+                os.mkdir(path_house)
+            except FileExistsError:
+                pass
+            # Check the number of data points
+            print(f"House {house}: {size} data points")
+            for point in range(size):
+                # Each data point is stored individually
+                df_sub = meters.iloc[idx : (idx + self.input_len)]
+                path_file = os.path.join(path_house, f"{point:04}.csv")
+                df_sub.to_csv(path_file)
+                idx += step

@@ -3,9 +3,12 @@ import os
 import pandas as pd
 import torch.utils.data as data
 from torch.utils.data import DataLoader
+import random
 
 
 class DataSet(data.Dataset):
+    files: list = list()
+    epochs: int = 0
     appliances: list = list()
     status: list = list()
 
@@ -14,22 +17,43 @@ class DataSet(data.Dataset):
         self.border = config["border"]
         self.length = config["input_len"]
         self.threshold = config["threshold"]
-        buildings = config[subset]["buildings"]
-
-        folders = [k + "_" + str(i) for k, v in buildings.items() for i in v]
-        folders = [
-            os.path.join(path_data, f) for f in folders if f in os.listdir(path_data)
-        ]
-        self.files = [os.path.join(f, x) for f in folders for x in os.listdir(f)]
-        self.epochs = len(self.files)
-
+        self._list_files(path_data, config, subset)
         self._get_parameters_from_file()
-        self._compute_means()
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
         df = pd.read_csv(path_file, index_col=0)
         return df
+
+    def _list_files(self, path_data: str, config: dict, subset: str):
+        files = []
+        for building in sorted(os.listdir(path_data)):
+            path_building = os.path.join(path_data, building)
+            dataset, house = building.rsplit("_", 1)
+            files_of_dataset = sorted(
+                [
+                    os.path.join(path_building, file)
+                    for file in os.listdir(path_building)
+                ]
+            )
+            # Shuffle if requested
+            if config.get("random", False):
+                random.seed(config.get("random_seed", 0))
+                random.shuffle(files_of_dataset)
+            if int(house) in config[subset]["buildings"][dataset]:
+                val_idx = int(len(files_of_dataset) * config["train_size"])
+                test_idx = val_idx + int(len(files_of_dataset) * config["valid_size"])
+                if subset == "train":
+                    files += files_of_dataset[:val_idx]
+                elif subset == "validation":
+                    files += files_of_dataset[val_idx:test_idx]
+                elif subset == "test":
+                    files += files_of_dataset[test_idx:]
+                else:
+                    raise KeyError(f"Subset not found: {subset}")
+        self.files = files
+        self.epochs = len(files)
+        print(f"{self.epochs} data points found for {subset}")
 
     def _get_parameters_from_file(self):
         df = self._open_file(self.files[0])
@@ -40,17 +64,6 @@ class DataSet(data.Dataset):
         self.length = df.shape[0]
         self._idx_start = self.border
         self._idx_end = self.length - self.border
-
-    def _compute_means(self):
-        sums = None
-        for path_file in self.files:
-            df = self._open_file(path_file)
-            try:
-                sums += df.sum(axis=0)
-            except TypeError:
-                sums = df.sum(axis=0)
-        print(sums)
-        self.means = sums
 
     def __getitem__(self, index):
         path_file = self.files[index]
