@@ -8,7 +8,7 @@ import time
 
 import typer
 
-from nilm_thresholding.data.loader import DataLoader
+from nilm_thresholding.data.loader import return_dataloader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.store_output import (
     generate_path_output,
@@ -21,12 +21,14 @@ from nilm_thresholding.utils.config import load_config
 from nilm_thresholding.utils.format_list import merge_dict_list
 
 
-def train_many_models(path_train, path_output, config_data, config_model):
+def train_many_models(path_data, path_output, config_data, config_model):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
-
+    path_train = os.path.join(path_data, "train")
+    path_valid = os.path.join(path_data, "validation")
+    path_test = os.path.join(path_data, "test")
     # Set output path
     path_output = generate_path_output(path_output, config_model["name"])
     path_output_folder = generate_folder_name(
@@ -38,14 +40,15 @@ def train_many_models(path_train, path_output, config_data, config_model):
         config_data["threshold"]["method"],
     )
 
-    # Load data
-
-    dataloader = DataLoader(
-        path_train,
-        buildings=config_data["train"]["buildings"],
-        batch_size=config_model["batch_size"],
-        power_scale=config_data["power_scale"],
-        border=config_model["border"]
+    # Load dataloader
+    dataloader_train = return_dataloader(
+        path_train, config_data, config_model, shuffle=True
+    )
+    dataloader_validation = return_dataloader(
+        path_valid, config_data, config_model, shuffle=False
+    )
+    dataloader_test = return_dataloader(
+        path_test, config_data, config_model, shuffle=False
     )
 
     # Training
@@ -54,18 +57,18 @@ def train_many_models(path_train, path_output, config_data, config_model):
     pow_scores = []
     time_ellapsed = 0
 
-    for i in range(config["train"]["num_models"]):
+    for i in range(config_model["num_models"]):
         print(f"\nModel {i + 1}\n")
 
-        model = initialize_model(config)
+        model = initialize_model(config_model)
 
         # Train
         time_start = time.time()
         model.train_with_dataloader(
-            dataloader.dl_train,
-            dataloader.dl_valid,
-            epochs=config["train"]["epochs"],
-            patience=config["train"]["patience"],
+            dataloader_train,
+            dataloader_validation,
+            epochs=config_model["epochs"],
+            patience=config_model["patience"],
         )
         time_ellapsed += time.time() - time_start
 
@@ -75,13 +78,13 @@ def train_many_models(path_train, path_output, config_data, config_model):
 
         act_scr, pow_scr = get_model_scores(
             model,
-            dataloader.dl_test,
-            config["data"]["power_scale"],
-            dataloader.means,
-            dataloader.thresholds,
-            config["data"]["appliances"],
-            config["data"]["threshold"]["min_off"],
-            config["data"]["threshold"]["min_on"],
+            dataloader_test,
+            config_data["power_scale"],
+            dataloader_test.means,
+            dataloader_test.thresholds,
+            config_data["appliances"],
+            config_data["threshold"]["min_off"],
+            config_data["threshold"]["min_on"],
         )
 
         act_scores += act_scr
@@ -149,12 +152,10 @@ def main(
     config_model = load_config(path_config, "model")
     print("Done\n")
 
-    path_train = os.path.join(path_data, "train")
-
     # Run main results
     print(f"{config_model['name']}\n")
 
-    train_many_models(path_train, path_output, config_data, config_model)
+    train_many_models(path_data, path_output, config_data, config_model)
 
 
 if __name__ == "__main__":
