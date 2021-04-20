@@ -19,15 +19,17 @@ class DataSet(data.Dataset):
         self.power_scale = config.get("power_scale", 2000)
         self.border = config.get("border", 15)
         self.length = config.get("input_len", 510)
-        self.threshold = config.get("threshold", {})
         self._list_files(path_data, config, subset)
         self._get_parameters_from_file()
 
         # Thresholding parameters
+        dict_thresh = config.get("threshold", {})
+        min_off = dict_thresh.get("min_off", None)
+        self.min_off = np.ones((len(self.appliances))) if min_off is None else min_off
+        min_on = dict_thresh.get("min_on", None)
+        self.min_on = np.ones((len(self.appliances))) if min_on is None else min_on
+        self.threshold_method = dict_thresh.get("method", "mp")
         self.thresholds = np.zeros((len(self.appliances), 1))
-        self.min_on = np.ones((len(self.appliances)))
-        self.min_off = np.ones((len(self.appliances)))
-        self.means = np.ones((len(self.appliances), 2))
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
@@ -94,7 +96,7 @@ class DataSet(data.Dataset):
             / self.power_scale
         )
         s = self._compute_status(y)
-        #s = df[self.status].iloc[self._idx_start : self._idx_end].values
+        # s = df[self.status].iloc[self._idx_start : self._idx_end].values
         return x, y, s
 
     def __len__(self):
