@@ -65,7 +65,7 @@ def test_many_models(
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.load(path_model)
 
-        act_scr, pow_scr = model.get_scores(
+        act_scr, pow_scr = model.score(
             model,
             dataloader.dl_test,
         )

@@ -4,73 +4,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from keras.callbacks import EarlyStopping
 from torch.utils.data import TensorDataset
 
 from nilm_thresholding.data.thresholding import get_status, get_status_by_duration
-from nilm_thresholding.model.export import store_model_json
 from nilm_thresholding.utils.scores import (
     classification_scores_dict,
     regression_scores_dict,
 )
-
-
-class KerasModel:
-    def __init__(self):
-        self.model = None
-
-    def train_with_validation(
-        self,
-        x_train,
-        y_train,
-        bin_train,
-        x_val,
-        y_val,
-        bin_val,
-        epochs=1000,
-        batch_size=64,
-        shuffle=False,
-        patience=300,
-    ):
-        """
-        Train the model, implementing early stop. The train stops when the
-        validation loss ceases to decrease.
-
-        Parameters
-        ----------
-        x_train : numpy.array
-        y_train : numpy.array or list of numpy.array
-        bin_train : numpy.array
-        x_val : numpy.array
-        y_val : numpy.array or list of numpy.array
-        bin_val : numpy.array
-        epochs : int, default=4000
-            Number of epochs to train the model. An epoch is an iteration over
-            the entire x and y data provided.
-        batch_size : int, default=64
-            Number of samples per gradient update.
-        shuffle : bool, default=True
-            Whether to shuffle the training data before each epoch.
-        patience : int, default=200
-             Number of epochs with no improvement after which training will be
-             stopped.
-        """
-        # patient early stopping
-        es = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=patience)
-
-        # Fit model
-        self.model.fit(
-            x_train,
-            [y_train, bin_train],
-            validation_data=(x_val, [y_val, bin_val]),
-            epochs=epochs,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            callbacks=[es],
-        )
-
-    def store_json(self, path):
-        store_model_json(self.model, path)
 
 
 class TorchModel:
@@ -106,14 +46,10 @@ class TorchModel:
         self.power_scale = config.get("power_scale", 2000)
         self.threshold = config.get("threshold", {})
 
-    def _train_epoch(
-        self, train_loader: torch.utils.data.DataLoader, train_losses: list
-    ):
+    def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
+        # Initialize list of train losses and set model to train mode
+        train_losses = []
         self.model.train()  # prep model for training
-
-        # Initialize ON activation frequency
-        # on = np.zeros(3)
-        # total = 0
 
         for batch, (data, target_power, target_status) in enumerate(train_loader, 1):
             data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
@@ -144,10 +80,10 @@ class TorchModel:
             # Compute ON activation frequency
             # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
             # total += target_status.size()[0] * target_status.size()[1]
+        return np.average(train_losses)
 
-    def _validation_epoch(
-        self, valid_loader: torch.utils.data.DataLoader, valid_losses: list
-    ):
+    def _validation_epoch(self, valid_loader: torch.utils.data.DataLoader) -> np.array:
+        valid_losses = []
         self.model.eval()  # prep model for evaluation
         for data, target_power, target_status in valid_loader:
             data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
@@ -168,17 +104,14 @@ class TorchModel:
             )
             # record validation loss
             valid_losses.append(loss.item())
+        return np.average(valid_losses)
 
-    def train_with_dataloader(
+    def train(
         self,
         train_loader: torch.utils.data.DataLoader,
         valid_loader: torch.utils.data.DataLoader,
     ):
 
-        # to track the training loss as the model trains
-        train_losses = []
-        # to track the validation loss as the model trains
-        valid_losses = []
         # to track the average training loss per epoch as the model trains
         avg_train_losses = []
         # to track the average validation loss per epoch as the model trains
@@ -188,23 +121,12 @@ class TorchModel:
         loss_up = 0
 
         for epoch in range(1, self.epochs + 1):
-
-            ###################
-            # train the model #
-            ###################
-            self._train_epoch(train_loader, train_losses)
-            # Display ON activation frequency
-            # print('Train ON frequency', on / total)
-
-            ######################
-            # validate the model #
-            ######################
-            self._validation_epoch(valid_loader, valid_losses)
+            # Train and validate the model
+            train_loss = self._train_epoch(train_loader)
+            valid_loss = self._validation_epoch(valid_loader)
 
             # print training/validation statistics
             # calculate average loss over an epoch
-            train_loss = np.average(train_losses)
-            valid_loss = np.average(valid_losses)
             avg_train_losses.append(train_loss)
             avg_valid_losses.append(valid_loss)
 
@@ -215,10 +137,6 @@ class TorchModel:
                 + f"train_loss: {train_loss:.5f} "
                 + f"valid_loss: {valid_loss:.5f} "
             )
-
-            # clear lists to track next epoch
-            train_losses = []
-            valid_losses = []
 
             # Check if validation loss has decreased
             # If so, store the model as the best model
@@ -231,9 +149,8 @@ class TorchModel:
                 self.save("model.pth")
             else:
                 loss_up += 1
-
-            if loss_up >= self.patience:
-                break
+                if loss_up >= self.patience:
+                    break
 
         # Take best model
         # load the last checkpoint with the best model
@@ -254,14 +171,10 @@ class TorchModel:
                 x = x.unsqueeze(1).to(device=self.device, dtype=torch.float)
 
                 pw, sh = self.model(x)
-                sh = torch.sigmoid(sh)
-
-                sh = sh.permute(0, 2, 1)
-                sh = sh.detach().cpu().numpy()
+                sh = torch.sigmoid(sh).permute(0, 2, 1).detach().cpu().numpy()
                 s_hat.append(sh.reshape(-1, sh.shape[-1]))
 
-                pw = pw.permute(0, 2, 1)
-                pw = pw.detach().cpu().numpy()
+                pw = pw.permute(0, 2, 1).detach().cpu().numpy()
                 p_hat.append(pw.reshape(-1, pw.shape[-1]))
 
                 x_true.append(
@@ -315,7 +228,7 @@ class TorchModel:
 
         return p_true, p_hat, s_hat, sp_hat, ps_hat
 
-    def get_scores(self, loader: torch.utils.data.DataLoader):
+    def score(self, loader: torch.utils.data.DataLoader):
         """
         Returns its activation and power scores.
         """

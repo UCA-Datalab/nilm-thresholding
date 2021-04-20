@@ -58,7 +58,7 @@ def train_many_models(path_data, path_output, config):
 
         # Train
         time_start = time.time()
-        model.train_with_dataloader(
+        model.train(
             dataloader_train,
             dataloader_validation,
         )
@@ -68,7 +68,7 @@ def train_many_models(path_data, path_output, config):
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.save(path_model)
 
-        act_scr, pow_scr = model.get_scores(dataloader_test)
+        act_scr, pow_scr = model.score(dataloader_test)
 
         act_scores += act_scr
         pow_scores += pow_scr
