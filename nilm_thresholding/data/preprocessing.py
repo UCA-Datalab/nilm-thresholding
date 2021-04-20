@@ -122,5 +122,7 @@ class PreprocessWrapper:
                 # Each data point is stored individually
                 df_sub = meters.iloc[idx : (idx + self.input_len)]
                 path_file = os.path.join(path_house, f"{point:04}.csv")
+                # Sort columns by name
+                df_sub = df_sub.reindex(sorted(df_sub.columns), axis=1)
                 df_sub.to_csv(path_file)
                 idx += step

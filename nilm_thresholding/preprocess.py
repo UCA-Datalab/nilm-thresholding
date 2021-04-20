@@ -25,7 +25,7 @@ def main(
 
     print(f"\nLoading config file from {path_config}")
     # Load config file
-    config = load_config(path_config, "data")
+    config = load_config(path_config, "model")
     print("Done\n")
 
     path_h5 = path_data + ".h5"
