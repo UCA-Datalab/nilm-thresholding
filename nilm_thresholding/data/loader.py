@@ -1,9 +1,12 @@
 import os
+import random
 
+import numpy as np
 import pandas as pd
 import torch.utils.data as data
 from torch.utils.data import DataLoader
-import random
+
+from nilm_thresholding.data.thresholding import get_status_by_duration
 
 
 class DataSet(data.Dataset):
@@ -13,12 +16,18 @@ class DataSet(data.Dataset):
     status: list = list()
 
     def __init__(self, path_data: str, config: dict, subset: str = "train"):
-        self.power_scale = config["power_scale"]
-        self.border = config["border"]
-        self.length = config["input_len"]
-        self.threshold = config["threshold"]
+        self.power_scale = config.get("power_scale", 2000)
+        self.border = config.get("border", 15)
+        self.length = config.get("input_len", 510)
+        self.threshold = config.get("threshold", {})
         self._list_files(path_data, config, subset)
         self._get_parameters_from_file()
+
+        # Thresholding parameters
+        self.thresholds = np.zeros((len(self.appliances), 1))
+        self.min_on = np.ones((len(self.appliances)))
+        self.min_off = np.ones((len(self.appliances)))
+        self.means = np.ones((len(self.appliances), 2))
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
@@ -69,6 +78,13 @@ class DataSet(data.Dataset):
         self._idx_start = self.border
         self._idx_end = self.length - self.border
 
+    def _compute_status(self, arr_apps: np.array):
+        status = get_status_by_duration(
+            arr_apps, self.thresholds, self.min_off, self.min_on
+        )
+        status = status.reshape(status.shape[0], len(self.appliances))
+        return status
+
     def __getitem__(self, index):
         path_file = self.files[index]
         df = self._open_file(path_file)
@@ -77,7 +93,8 @@ class DataSet(data.Dataset):
             df[self.appliances].iloc[self._idx_start : self._idx_end].values
             / self.power_scale
         )
-        s = df[self.status].iloc[self._idx_start : self._idx_end].values
+        s = self._compute_status(y)
+        #s = df[self.status].iloc[self._idx_start : self._idx_end].values
         return x, y, s
 
     def __len__(self):
