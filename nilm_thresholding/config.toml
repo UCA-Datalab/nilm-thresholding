@@ -44,21 +44,21 @@ min_on = "None"  # (!) Only used when threshold_method is 'custom'.
 # Number of records that an appliance must be above the threshold to be considered
 # turned ON. If not provided, thresholds are computed using k-means.]
 
-[model.ukdale]
-buildings = [1, 2, 5]
-
-[model.ukdale.dates]  # Date range for each building
+[model.dates.ukdale]  # Date range for each building
 1 = ["2013-04-12", "2014-12-15"]
 2 = ["2013-05-22", "2013-10-03 6:16"]
 5 =["2014-04-29", "2014-09-01"]
 
-[model.train.buildings]
+[model.buildings]
 ukdale = [1, 2, 5]
 
-[model.validation.buildings]
+[model.buildings.train]
+ukdale = [1, 2, 5]
+
+[model.buildings.validation]
 ukdale = [1]
 
-[model.test.buildings]
+[model.buildings.test]
 ukdale = [1]
 
 [plot]

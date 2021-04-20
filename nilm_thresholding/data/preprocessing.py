@@ -19,8 +19,8 @@ class PreprocessWrapper:
     def __init__(self, config: dict):
         # Read parameters from config files
         self.appliances = config["appliances"]
-        self.buildings = to_list(config[self.dataset]["buildings"])
-        self.dates = config[self.dataset]["dates"]
+        self.buildings = to_list(config["buildings"][self.dataset])
+        self.dates = config["dates"][self.dataset]
         self.period = config["period"]
         self.size = {
             "train": config["train_size"],
