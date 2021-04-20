@@ -51,7 +51,7 @@ def train_many_models(path_data, path_output, config):
     pow_scores = []
     time_ellapsed = 0
 
-    for i in range(config["train"]["num_models"]):
+    for i in range(config["num_models"]):
         print(f"\nModel {i + 1}\n")
 
         model = initialize_model(config)
@@ -95,10 +95,10 @@ def train_many_models(path_data, path_output, config):
         config["appliances"],
         act_scores,
         pow_scores,
-        config["train"]["num_models"],
+        config["num_models"],
     )
 
-    time_ellapsed /= config["train"]["num_models"]
+    time_ellapsed /= config["num_models"]
 
     # Store scores and plot
 
