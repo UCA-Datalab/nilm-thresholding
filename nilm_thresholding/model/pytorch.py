@@ -26,10 +26,12 @@ class TorchModel:
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
-        self.input_len = config.get("input_len", 510)
+
+        # Parameters expected to be found in the configuration dictionary
         self.border = config.get("border", 15)
-        self.output_len = config.get("output_len", self.input_len - 2 * self.border)
         self._limit = self.border + 1
+        self.input_len = config.get("input_len", 510)
+        self.output_len = config.get("output_len", self.input_len - 2 * self.border)
         self.pow_w = config.get("regression_w", 1)
         self.act_w = config.get("classification_w", 1)
         self.batch_size = config.get("batch_size", 32)
@@ -45,6 +47,10 @@ class TorchModel:
         self.learning_rate = config.get("learning_rate", 1e-4)
         self.power_scale = config.get("power_scale", 2000)
         self.threshold = config.get("threshold", {})
+
+        # Thresholding parameters
+        self.thresholds = np.zeros((len(self.appliances), 1))
+        self.means = np.ones((len(self.appliances), 2))
 
     def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
         # Initialize list of train losses and set model to train mode
