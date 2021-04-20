@@ -29,7 +29,7 @@ class DataSet(data.Dataset):
         min_on = dict_thresh.get("min_on", None)
         self.min_on = np.ones((len(self.appliances))) if min_on is None else min_on
         self.threshold_method = dict_thresh.get("method", "mp")
-        self.thresholds = np.zeros((len(self.appliances), 1))
+        self.thresholds = np.ones((len(self.appliances), 1)) * .5
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:

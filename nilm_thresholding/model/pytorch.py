@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -11,6 +12,8 @@ from nilm_thresholding.utils.scores import (
     classification_scores_dict,
     regression_scores_dict,
 )
+
+logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
 class TorchModel:
@@ -46,10 +49,15 @@ class TorchModel:
         self.dropout = config.get("dropout", 0.1)
         self.learning_rate = config.get("learning_rate", 1e-4)
         self.power_scale = config.get("power_scale", 2000)
-        self.threshold = config.get("threshold", {})
 
         # Thresholding parameters
-        self.thresholds = np.zeros((len(self.appliances), 1))
+        dict_thresh = config.get("threshold", {})
+        min_off = dict_thresh.get("min_off", None)
+        self.min_off = np.ones((len(self.appliances))) if min_off is None else min_off
+        min_on = dict_thresh.get("min_on", None)
+        self.min_on = np.ones((len(self.appliances))) if min_on is None else min_on
+        self.threshold_method = dict_thresh.get("method", "mp")
+        self.thresholds = np.ones((len(self.appliances), 1)) * 0.5
         self.means = np.ones((len(self.appliances), 2))
 
     def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
@@ -138,16 +146,16 @@ class TorchModel:
 
             epoch_len = len(str(self.epochs))
 
-            print(
+            logging.info(
                 f"[{epoch:>{epoch_len}}/{self.epochs:>{epoch_len}}] "
-                + f"train_loss: {train_loss:.5f} "
-                + f"valid_loss: {valid_loss:.5f} "
+                f"train_loss: {train_loss:.5f} "
+                f"valid_loss: {valid_loss:.5f}"
             )
 
             # Check if validation loss has decreased
             # If so, store the model as the best model
             if valid_loss < min_loss:
-                print(
+                logging.info(
                     f"Validation loss decreased ({min_loss:.6f} -->"
                     f" {valid_loss:.6f}).  Saving model ..."
                 )
@@ -212,17 +220,12 @@ class TorchModel:
         p_hat[p_hat < 0.0] = 0.0
 
         # Get status
-        if (self.threshold["min_on"] is None) or (self.threshold["min_off"] is None):
-            s_hat[s_hat >= 0.5] = 1
-            s_hat[s_hat < 0.5] = 0
-        else:
-            thresh = [0.5] * len(self.threshold["min_on"])
-            s_hat = get_status_by_duration(
-                s_hat,
-                thresh,
-                self.threshold["min_off"],
-                self.threshold["min_on"],
-            )
+        s_hat = get_status_by_duration(
+            s_hat,
+            self.thresholds,
+            self.min_off,
+            self.min_on,
+        )
 
         # Get power values from status
         sp_hat = np.multiply(np.ones(s_hat.shape), self.means[:, 0])
@@ -247,23 +250,21 @@ class TorchModel:
         )
 
         # classification scores
-
         class_scores = classification_scores_dict(s_hat, s_true, self.appliances)
         reg_scores = regression_scores_dict(sp_hat, p_true, self.appliances)
         act_scores = [class_scores, reg_scores]
 
-        print("classification scores")
-        print(class_scores)
-        print(reg_scores)
+        logging.debug("classification scores")
+        logging.debug(class_scores)
+        logging.debug(reg_scores)
 
         # regression scores
-
         class_scores = classification_scores_dict(ps_hat, s_true, self.appliances)
         reg_scores = regression_scores_dict(p_hat, p_true, self.appliances)
         pow_scores = [class_scores, reg_scores]
 
-        print("regression scores")
-        print(class_scores)
-        print(reg_scores)
+        logging.debug("regression scores")
+        logging.debug(class_scores)
+        logging.debug(reg_scores)
 
         return act_scores, pow_scores
