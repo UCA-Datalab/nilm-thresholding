@@ -19,6 +19,7 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 class Threshold:
     thresholds: list = None
     means: np.array = None
+    num_status: int = 2
     use_std: bool = False
     min_on: list = None
     min_off: list = None
@@ -77,7 +78,7 @@ class Threshold:
             )
 
     @staticmethod
-    def _get_cluster_centroids(ser):
+    def _get_cluster_centroids(ser, num_status: int):
         """
         Returns ON and OFF cluster centroids' mean and std
 
@@ -104,14 +105,14 @@ class Threshold:
         num_meters = ser.shape[2]
 
         # Initialize mean and std arrays
-        mean = np.zeros((num_meters, 2))
-        std = np.zeros((num_meters, 2))
+        mean = np.zeros((num_meters, num_status))
+        std = np.zeros((num_meters, num_status))
 
         for idx in range(num_meters):
             # Take one meter record
             meter = ser[:, :, idx].flatten()
             meter = meter.reshape((len(meter), -1))
-            kmeans = KMeans(n_clusters=2).fit(meter)
+            kmeans = KMeans(n_clusters=num_status).fit(meter)
 
             # The mean of a cluster is the cluster centroid
             mean[idx, :] = kmeans.cluster_centers_.reshape(2)
@@ -146,26 +147,31 @@ class Threshold:
             shape = (num_meters,)
 
         """
-        mean, std = self._get_cluster_centroids(ser)
+        mean, std = self._get_cluster_centroids(ser, self.num_status)
+        threshold = np.zeros(self.num_status)
 
-        # Sigma is a value between 0 and 1
-        # sigma = the distance from OFF to ON at which we set the threshold
-        if self.use_std:
-            sigma = std[:, 0] / (std.sum(axis=1))
-            sigma = np.nan_to_num(sigma)
-        else:
-            sigma = np.ones(mean.shape[0]) * 0.5
+        for split in range(self.num_status):
+            # Sigma is a value between 0 and 1
+            # sigma = the distance from OFF to ON at which we set the threshold
+            if self.use_std:
+                sigma = std[:, split] / (std.sum(axis=1))
+                sigma = np.nan_to_num(sigma)
+            else:
+                sigma = np.ones(mean.shape[0]) * 0.5
 
-        # Add threshold
-        threshold = mean[:, 0] + sigma * (mean[:, 1] - mean[:, 0])
+            # Add threshold
+            threshold[split + 1] = mean[:, split] + sigma * (
+                mean[:, (split + 1)] - mean[:, split]
+            )
 
         # Compute the new mean of each cluster
-        for idx in range(mean.shape[0]):
-            # Flatten the series
-            meter = ser[:, :, idx].flatten()
-            mask_on = meter >= threshold[idx]
-            mean[idx, 0] = meter[~mask_on].mean()
-            mean[idx, 1] = meter[mask_on].mean()
+        if self.num_status == 2:
+            for idx in range(mean.shape[0]):
+                # Flatten the series
+                meter = ser[:, :, idx].flatten()
+                mask_on = meter >= threshold[idx]
+                mean[idx, 0] = meter[~mask_on].mean()
+                mean[idx, 1] = meter[mask_on].mean()
 
         return threshold, mean
 
