@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 from sklearn.cluster import KMeans
 
@@ -17,28 +19,28 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 
 class Threshold:
-    thresholds: np.array = None
-    means: np.array = None
-    num_status: int = 2
+    thresholds: np.array = None  # (appliance, status)
+    means: np.array = None  # (appliance, status)
     use_std: bool = False
     min_on: list = None
     min_off: list = None
 
     def __init__(
-        self,
-        appliances: list = None,
-        method: str = "mp",
+        self, appliances: list = None, method: str = "mp", num_status: int = 2
     ):
         # Set thresholding method parameters
         self.appliances = [] if appliances is None else to_list(appliances)
         self.method = method
-        self.thresholds = np.repeat([[0, 0.01]], len(self.appliances), axis=0)
+        self.num_status = num_status
+        self.thresholds = np.repeat(
+            [[0] * self.num_status], len(self.appliances), axis=0
+        )
         self._get_threshold_params()
 
     def _get_threshold_params(self):
         """
         Given the method name and list of appliances,
-        this function results the necessary parameters to use the method
+        this function defines the necessary parameters to use the method
         """
 
         if self.method == "vs":
@@ -74,98 +76,81 @@ class Threshold:
                 f"Use one of the following: vs, mp, at"
             )
 
-    def _get_cluster_centroids(self, ser):
+    def _compute_cluster_centroids(self, ser: np.array):
         """
-        Returns ON and OFF cluster centroids' mean and std
+        Returns the cluster centroids of a series of power load values
 
         Parameters
         ----------
         ser : numpy.array
-            shape = (series_len, num_meters)
-            - series_len : Length of each time series.
-            - num_meters : Meters contained in the array.
+            shape = (num_points)
+            - num_points: Number of data values
 
         Returns
         -------
-        mean : numpy.array
-            shape = (num_meters,)
-        std : numpy.array
-            shape = (num_meters,)
+        tuple
+            Mean and standard deviation
 
         """
         # We dont want to modify the original series
         ser = ser.copy()
 
-        # Initialize mean and std arrays
-        mean = np.zeros((len(self.appliances), self.num_status))
-        std = np.zeros((len(self.appliances), self.num_status))
+        # Take one meter record
+        kmeans = KMeans(n_clusters=self.num_status).fit(ser)
 
-        for idx in range(len(self.appliances)):
-            # Take one meter record
-            meter = ser[:, idx].flatten()
-            meter = meter.reshape((len(meter), -1))
-            kmeans = KMeans(n_clusters=self.num_status).fit(meter)
+        # The mean of a cluster is the cluster centroid
+        mean = kmeans.cluster_centers_.reshape(2)
 
-            # The mean of a cluster is the cluster centroid
-            mean[idx, :] = kmeans.cluster_centers_.reshape(2)
-
-            # Compute the standard deviation of the points in
-            # each cluster
-            labels = kmeans.labels_
-            lab0 = meter[labels == 0]
-            lab1 = meter[labels == 1]
-            std[idx, 0] = lab0.std()
-            std[idx, 1] = lab1.std()
+        # Compute the standard deviation of the points in each cluster
+        labels = kmeans.labels_
+        std = np.zeros(self.num_status)
+        for split in range(self.num_status + 1):
+            std[split] = ser[labels == split].std()
 
         return mean, std
 
-    def _get_thresholds(self, ser):
+    def _compute_thresholds(self, ser: np.array):
         """
         Returns the estimated thresholds that splits ON and OFF appliances states.
 
         Parameters
         ----------
         ser : numpy.array
-            shape = (num_series, series_len, num_meters)
-            - num_series : Amount of time series.
-            - series_len : Length of each time series.
-            - num_meters : Meters contained in the array.
+            shape = (num_points)
+            - num_points: Number of data values
 
         Returns
         -------
-        threshold : numpy.array
-            shape = (num_meters,)
-        mean : numpy.array
-            shape = (num_meters,)
-
+        tuple
+            Thresholds and means
         """
-        mean, std = self._get_cluster_centroids(ser)
+        mean, std = self._compute_cluster_centroids(ser)
+
+        sigma = (
+            np.nan_to_num(np.divide(std[:-1], std[:-1] + std[1:]))
+            if self.use_std
+            else np.repeat([0.5], self.num_status - 1)
+        )
         threshold = np.zeros(self.num_status)
+        threshold[1:] = mean[0:] + np.multiply(sigma, mean[1:] - mean[:-1])
 
-        for split in range(self.num_status):
-            # Sigma is a value between 0 and 1
-            # sigma = the distance from OFF to ON at which we set the threshold
-            if self.use_std:
-                sigma = std[:, split] / (std.sum(axis=1))
-                sigma = np.nan_to_num(sigma)
-            else:
-                sigma = np.ones(mean.shape[0]) * 0.5
-
-            # Add threshold
-            threshold[split + 1] = mean[:, split] + sigma * (
-                mean[:, (split + 1)] - mean[:, split]
-            )
-
-        # Compute the new mean of each cluster
+        # Compute the new mean of each cluster, for binary classification
         if self.num_status == 2:
-            for idx in range(mean.shape[0]):
+            for split in [0, 1]:
                 # Flatten the series
-                meter = ser[:, :, idx].flatten()
-                mask_on = meter >= threshold[idx]
-                mean[idx, 0] = meter[~mask_on].mean()
-                mean[idx, 1] = meter[mask_on].mean()
+                mask_on = ser >= threshold[split]
+                mean[0] = ser[~mask_on].mean()
+                mean[1] = ser[mask_on].mean()
 
         return threshold, mean
+
+    def update_appliance_threshold(self, ser: np.array, appliance: str):
+        """Recomputes target appliance threshold and mean values, given its series"""
+        threshold, mean = self._compute_thresholds(ser.flatten())
+        idx = self.appliances.index(appliance)
+        self.thresholds[idx, :] = threshold
+        self.means[idx, :] = mean
+        logging.info(f"Appliance '{appliance}' thresholds have been updated")
 
     @staticmethod
     def _get_app_status_by_duration(y, threshold, min_off, min_on):
