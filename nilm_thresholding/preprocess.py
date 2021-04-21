@@ -30,7 +30,7 @@ def main(
 
     path_h5 = path_data + ".h5"
 
-    dataloader = UkdalePreprocess(path_h5, path_data, config)
+    dataloader = UkdalePreprocess(path_h5, path_data, **config)
     dataloader.store_preprocessed_data(path_output)
 
 

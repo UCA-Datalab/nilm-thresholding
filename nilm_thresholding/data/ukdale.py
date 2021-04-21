@@ -13,8 +13,8 @@ class UkdalePreprocess(PreprocessWrapper):
     datastore: HDFStore = None
     means: list = []
 
-    def __init__(self, path_h5: str, path_labels: str, config: dict):
-        super(UkdalePreprocess, self).__init__(config)
+    def __init__(self, path_h5: str, path_labels: str, **kwargs):
+        super(UkdalePreprocess, self).__init__(**kwargs)
         self._path_h5 = path_h5
         self._path_labels = path_labels
         # Load the datastore

@@ -1,32 +1,52 @@
+import logging
 import os
 
-import numpy as np
 import pandas as pd
 
 from nilm_thresholding.data.threshold import Threshold
 from nilm_thresholding.utils.format_list import to_list
 
+logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+
 
 class PreprocessWrapper:
     dataset: str = "wrapper"
 
-    def __init__(self, config: dict):
+    def __init__(
+        self,
+        appliances: list = None,
+        buildings: dict = None,
+        dates: dict = None,
+        period: str = "1min",
+        train_size: float = 0.8,
+        valid_size: float = 0.1,
+        input_len: int = 510,
+        border: int = 15,
+        max_power: float = 10000,
+        threshold: dict = None,
+        **kwargs,
+    ):
         # Read parameters from config files
-        self.appliances = config["appliances"]
-        self.buildings = to_list(config["buildings"][self.dataset])
-        self.dates = config["dates"][self.dataset]
-        self.period = config["period"]
+        self.appliances = [] if appliances is None else to_list(appliances)
+        self.buildings = [] if buildings is None else buildings[self.dataset]
+        self.dates = [] if dates is None else dates[self.dataset]
+        self.period = period
         self.size = {
-            "train": config["train_size"],
-            "validation": config["valid_size"],
-            "test": 1 - config["train_size"] - config["valid_size"],
+            "train": train_size,
+            "validation": valid_size,
+            "test": 1 - train_size - valid_size,
         }
-        self.input_len = config["input_len"]
-        self.border = config["border"]
-        self.max_power = config["max_power"]
+        self.input_len = input_len
+        self.border = border
+        self.max_power = max_power
 
         # Set the parameters according to given threshold method
-        self.threshold = Threshold(self.appliances, **config.get("threshold", {}))
+        param_thresh = {} if threshold is None else threshold
+        self.threshold = Threshold(appliances=self.appliances, **param_thresh)
+
+        logging.debug(
+            f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
+        )
 
     def _get_status(self, meters: pd.DataFrame):
         """Includes the status columns for each device
