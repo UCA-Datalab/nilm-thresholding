@@ -17,7 +17,7 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 
 class Threshold:
-    thresholds: list = None
+    thresholds: np.array = None
     means: np.array = None
     num_status: int = 2
     use_std: bool = False
@@ -26,16 +26,13 @@ class Threshold:
 
     def __init__(
         self,
-        appliances: list,
+        appliances: list = None,
         method: str = "mp",
     ):
         # Set thresholding method parameters
-        self.appliances = to_list(appliances)
+        self.appliances = [] if appliances is None else to_list(appliances)
         self.method = method
-        self.thresholds = np.ones((len(self.appliances), 1)) * 0.01
-        # Add OFF status (zero power load)
-        self.thresholds = np.insert(self.thresholds, [0], [0], axis=1)
-        print(self.thresholds)
+        self.thresholds = np.repeat([[0, 0.01]], len(self.appliances), axis=0)
         self._get_threshold_params()
 
     def _get_threshold_params(self):
@@ -77,16 +74,14 @@ class Threshold:
                 f"Use one of the following: vs, mp, at"
             )
 
-    @staticmethod
-    def _get_cluster_centroids(ser, num_status: int):
+    def _get_cluster_centroids(self, ser):
         """
         Returns ON and OFF cluster centroids' mean and std
 
         Parameters
         ----------
         ser : numpy.array
-            shape = (num_series, series_len, num_meters)
-            - num_series : Amount of time series.
+            shape = (series_len, num_meters)
             - series_len : Length of each time series.
             - num_meters : Meters contained in the array.
 
@@ -101,18 +96,15 @@ class Threshold:
         # We dont want to modify the original series
         ser = ser.copy()
 
-        # Reshape in order to have one dimension per meter
-        num_meters = ser.shape[2]
-
         # Initialize mean and std arrays
-        mean = np.zeros((num_meters, num_status))
-        std = np.zeros((num_meters, num_status))
+        mean = np.zeros((len(self.appliances), self.num_status))
+        std = np.zeros((len(self.appliances), self.num_status))
 
-        for idx in range(num_meters):
+        for idx in range(len(self.appliances)):
             # Take one meter record
-            meter = ser[:, :, idx].flatten()
+            meter = ser[:, idx].flatten()
             meter = meter.reshape((len(meter), -1))
-            kmeans = KMeans(n_clusters=num_status).fit(meter)
+            kmeans = KMeans(n_clusters=self.num_status).fit(meter)
 
             # The mean of a cluster is the cluster centroid
             mean[idx, :] = kmeans.cluster_centers_.reshape(2)
@@ -147,7 +139,7 @@ class Threshold:
             shape = (num_meters,)
 
         """
-        mean, std = self._get_cluster_centroids(ser, self.num_status)
+        mean, std = self._get_cluster_centroids(ser)
         threshold = np.zeros(self.num_status)
 
         for split in range(self.num_status):

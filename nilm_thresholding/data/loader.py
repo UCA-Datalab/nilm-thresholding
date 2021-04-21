@@ -32,7 +32,9 @@ class DataSet(data.Dataset):
         self._get_parameters_from_file()
 
         # Thresholding parameters
-        self.threshold = Threshold(self.appliances, **config.get("threshold", {}))
+        self.threshold = Threshold(
+            appliances=self.appliances, **config.get("threshold", {})
+        )
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
