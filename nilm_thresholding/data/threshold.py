@@ -32,9 +32,8 @@ class Threshold:
         self.appliances = [] if appliances is None else to_list(appliances)
         self.method = method
         self.num_status = num_status
-        self.thresholds = np.repeat(
-            [[0] * self.num_status], len(self.appliances), axis=0
-        )
+        self.thresholds = np.zeros((len(self.appliances), self.num_status))
+        self.means = np.zeros((len(self.appliances), self.num_status))
         self._get_threshold_params()
 
     def _get_threshold_params(self):
@@ -96,7 +95,7 @@ class Threshold:
         ser = ser.copy()
 
         # Take one meter record
-        kmeans = KMeans(n_clusters=self.num_status).fit(ser)
+        kmeans = KMeans(n_clusters=self.num_status).fit(ser.reshape(-1, 1))
 
         # The mean of a cluster is the cluster centroid
         mean = kmeans.cluster_centers_.reshape(2)
@@ -104,7 +103,7 @@ class Threshold:
         # Compute the standard deviation of the points in each cluster
         labels = kmeans.labels_
         std = np.zeros(self.num_status)
-        for split in range(self.num_status + 1):
+        for split in range(self.num_status):
             std[split] = ser[labels == split].std()
 
         return mean, std
@@ -132,7 +131,7 @@ class Threshold:
             else np.repeat([0.5], self.num_status - 1)
         )
         threshold = np.zeros(self.num_status)
-        threshold[1:] = mean[0:] + np.multiply(sigma, mean[1:] - mean[:-1])
+        threshold[1:] = mean[:-1] + np.multiply(sigma, mean[1:] - mean[:-1])
 
         # Compute the new mean of each cluster, for binary classification
         if self.num_status == 2:
