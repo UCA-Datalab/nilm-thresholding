@@ -24,32 +24,48 @@ class TorchModel:
 
     def __init__(
         self,
-        config: dict,
+        border: int = 15,
+        input_len: int = 510,
+        regression_w: float = 1,
+        classification_w: float = 1,
+        batch_size: int = 32,
+        shuffle: bool = True,
+        reg_loss_avg: float = 0.68,
+        class_loss_avg: float = 0.0045,
+        name: str = "Model",
+        epochs: int = 300,
+        patience: int = 300,
+        appliances: list = None,
+        init_features: int = 32,
+        dropout: float = 0.1,
+        learning_rate: float = 1e-4,
+        power_scale: int = 2000,
         threshold: dict = None,
+        **kwargs,
     ):
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
 
         # Parameters expected to be found in the configuration dictionary
-        self.border = config.get("border", 15)
+        self.border = border
         self._limit = self.border + 1
-        self.input_len = config.get("input_len", 510)
-        self.output_len = config.get("output_len", self.input_len - 2 * self.border)
-        self.pow_w = config.get("regression_w", 1)
-        self.act_w = config.get("classification_w", 1)
-        self.batch_size = config.get("batch_size", 32)
-        self.shuffle = config.get("shuffle", True)
-        self.pow_loss_avg = config.get("reg_loss_avg", 0.68)
-        self.act_loss_avg = config.get("class_loss_avg", 0.0045)
-        self.epochs = config.get("epochs", 300)
-        self.patience = config.get("patience", 300)
-        self.name = config.get("name", "Model")
-        self.appliances = config.get("appliances", list())
-        self.init_features = config.get("init_features", 32)
-        self.dropout = config.get("dropout", 0.1)
-        self.learning_rate = config.get("learning_rate", 1e-4)
-        self.power_scale = config.get("power_scale", 2000)
+        self.input_len = input_len
+        self.output_len = self.input_len - 2 * self.border
+        self.pow_w = regression_w
+        self.act_w = classification_w
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.pow_loss_avg = reg_loss_avg
+        self.act_loss_avg = class_loss_avg
+        self.epochs = epochs
+        self.patience = patience
+        self.name = name
+        self.appliances = [] if appliances is None else appliances
+        self.init_features = init_features
+        self.dropout = dropout
+        self.learning_rate = learning_rate
+        self.power_scale = power_scale
 
         # Set the parameters according to given threshold method
         param_thresh = {} if threshold is None else threshold

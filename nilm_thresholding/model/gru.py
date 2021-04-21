@@ -51,9 +51,9 @@ class _BiGRU(nn.Module):
 class GRUModel(TorchModel):
     def __init__(
         self,
-        config: dict,
+        **kwargs
     ):
-        super().__init__(config)
+        super().__init__(**kwargs)
 
         msg = "Difference between input and output lens must be even"
         assert (self.input_len - self.output_len) % 2 == 0, msg

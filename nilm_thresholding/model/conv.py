@@ -178,8 +178,8 @@ class _PTPNet(nn.Module):
 
 
 class ConvModel(TorchModel):
-    def __init__(self, config: dict):
-        super().__init__(config)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
