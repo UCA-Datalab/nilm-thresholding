@@ -30,8 +30,8 @@ def main(
 
     path_h5 = path_data + ".h5"
 
-    dataloader = UkdalePreprocess(path_h5, path_data, **config)
-    dataloader.store_preprocessed_data(path_output)
+    prep = UkdalePreprocess(path_h5, path_data, **config)
+    prep.store_preprocessed_data(path_output)
 
 
 if __name__ == "__main__":
