@@ -7,7 +7,7 @@ import pandas as pd
 import torch.utils.data as data
 from torch.utils.data import DataLoader
 
-from nilm_thresholding.data.thresholding import get_status_by_duration
+from nilm_thresholding.data.threshold import Threshold
 
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
@@ -32,13 +32,7 @@ class DataSet(data.Dataset):
         self._get_parameters_from_file()
 
         # Thresholding parameters
-        dict_thresh = config.get("threshold", {})
-        min_off = dict_thresh.get("min_off", None)
-        self.min_off = np.ones((len(self.appliances))) if min_off is None else min_off
-        min_on = dict_thresh.get("min_on", None)
-        self.min_on = np.ones((len(self.appliances))) if min_on is None else min_on
-        self.threshold_method = dict_thresh.get("method", "mp")
-        self.thresholds = np.ones((len(self.appliances), 1)) * 0.5
+        self.threshold = Threshold(self.appliances, **config.get("threshold", {}))
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
@@ -90,9 +84,7 @@ class DataSet(data.Dataset):
         self._idx_end = self.length - self.border
 
     def _compute_status(self, arr_apps: np.array) -> np.array:
-        status = get_status_by_duration(
-            arr_apps, self.thresholds, self.min_off, self.min_on
-        )
+        status = self.threshold.get_status(arr_apps)
         status = status.reshape(status.shape[0], len(self.appliances))
         return status
 
