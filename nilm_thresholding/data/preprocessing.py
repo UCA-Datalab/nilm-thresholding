@@ -1,6 +1,7 @@
 import logging
 import os
 
+import numpy as np
 import pandas as pd
 
 from nilm_thresholding.data.threshold import Threshold
@@ -48,7 +49,25 @@ class PreprocessWrapper:
             f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
         )
 
-    def _get_status(self, meters: pd.DataFrame):
+    def load_house_meters(self, house: int) -> pd.DataFrame:
+        """Placeholder function, this should load the household meters and status"""
+        return pd.DataFrame()
+
+    def compute_thresholds(self, buildings: list = None):
+        """Compute the thresholds of each appliance, using the given list of buildings"""
+        buildings = self.buildings if buildings is None else buildings
+        for app in self.appliances:
+            ser = [0] * len(buildings)
+            idx = 0
+            for house in buildings:
+                # Load the chosen meters of the building, compute their status
+                meters = self.load_house_meters(house)
+                ser[idx] = meters[app].values
+                idx += 1
+            ser = np.concatenate(ser)
+            self.threshold.update_appliance_threshold(ser, app)
+
+    def _include_status(self, meters: pd.DataFrame):
         """Includes the status columns for each device
 
         Parameters
@@ -80,17 +99,13 @@ class PreprocessWrapper:
         )
         return meters
 
-    def load_house_meters(self, house: int) -> pd.DataFrame:
-        """Placeholder function, this should load the household meters and status"""
-        return pd.DataFrame()
-
     def store_preprocessed_data(self, path_output: str):
         """Stores preprocessed data in output folder"""
+        self.compute_thresholds(buildings=[1])
         # Loop through the buildings that are going to be stored
         for house in self.buildings:
             # Load the chosen meters of the building, compute their status
             meters = self.load_house_meters(house)
-            meters = self._get_status(meters)
             # Check the number of data points
             step = self.input_len - self.border
             size = meters.shape[0] // step
