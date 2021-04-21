@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset
 
-from nilm_thresholding.data.thresholding import get_status, get_status_by_duration
+from nilm_thresholding.data.threshold import Threshold
 from nilm_thresholding.utils.scores import (
     classification_scores_dict,
     regression_scores_dict,
@@ -25,6 +25,7 @@ class TorchModel:
     def __init__(
         self,
         config: dict,
+        threshold: dict = None,
     ):
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -50,15 +51,13 @@ class TorchModel:
         self.learning_rate = config.get("learning_rate", 1e-4)
         self.power_scale = config.get("power_scale", 2000)
 
-        # Thresholding parameters
-        dict_thresh = config.get("threshold", {})
-        min_off = dict_thresh.get("min_off", None)
-        self.min_off = np.ones((len(self.appliances))) if min_off is None else min_off
-        min_on = dict_thresh.get("min_on", None)
-        self.min_on = np.ones((len(self.appliances))) if min_on is None else min_on
-        self.threshold_method = dict_thresh.get("method", "mp")
-        self.thresholds = np.ones((len(self.appliances), 1)) * 0.5
-        self.means = np.ones((len(self.appliances), 2))
+        # Set the parameters according to given threshold method
+        param_thresh = {} if threshold is None else threshold
+        self.threshold = Threshold(appliances=self.appliances, **param_thresh)
+
+        logging.debug(
+            f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
+        )
 
     def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
         # Initialize list of train losses and set model to train mode
@@ -220,20 +219,15 @@ class TorchModel:
         p_hat[p_hat < 0.0] = 0.0
 
         # Get status
-        s_hat = get_status_by_duration(
-            s_hat,
-            self.thresholds,
-            self.min_off,
-            self.min_on,
-        )
+        s_hat = self.threshold.get_status(s_hat)
 
         # Get power values from status
-        sp_hat = np.multiply(np.ones(s_hat.shape), self.means[:, 0])
-        sp_on = np.multiply(np.ones(s_hat.shape), self.means[:, 1])
+        sp_hat = np.multiply(np.ones(s_hat.shape), self.threshold.means[:, 0])
+        sp_on = np.multiply(np.ones(s_hat.shape), self.threshold.means[:, 1])
         sp_hat[s_hat == 1] = sp_on[s_hat == 1]
 
         # Get status from power values
-        ps_hat = get_status(p_hat, self.thresholds)
+        ps_hat = self.threshold.get_status(p_hat)
 
         return p_true, p_hat, s_hat, sp_hat, ps_hat
 
