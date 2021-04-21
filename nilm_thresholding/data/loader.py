@@ -18,22 +18,39 @@ class DataSet(data.Dataset):
     appliances: list = list()
     status: list = list()
 
-    def __init__(self, path_data: str, config: dict, subset: str = "train"):
+    def __init__(
+        self,
+        path_data: str,
+        subset: str = "train",
+        power_scale: int = 2000,
+        input_len: int = 510,
+        border: int = 15,
+        buildings: dict = None,
+        train_size: float = 0.8,
+        valid_size: float = 0.1,
+        shuffle: bool = False,
+        random_seed: int = 0,
+        threshold: dict = None,
+        **kwargs,
+    ):
         self.subset = subset
-        self.power_scale = config.get("power_scale", 2000)
-        self.border = config.get("border", 15)
-        self.length = config.get("input_len", 510)
-        self.buildings = config.get("buildings", {}).get(subset, {})
-        self.train_size = config.get("train_size", 0.8)
-        self.validation_size = config.get("valid_size", 0.1)
-        self.random = config.get("random", False)
-        self.random_seed = config.get("random_seed", 0)
+        self.power_scale = power_scale
+        self.border = border
+        self.length = input_len
+        self.buildings = [] if buildings is None else buildings[subset]
+        self.train_size = train_size
+        self.validation_size = valid_size
+        self.shuffle = shuffle
+        self.random_seed = random_seed
         self._list_files(path_data)
         self._get_parameters_from_file()
 
-        # Thresholding parameters
-        self.threshold = Threshold(
-            appliances=self.appliances, **config.get("threshold", {})
+        # Set the parameters according to given threshold method
+        param_thresh = {} if threshold is None else threshold
+        self.threshold = Threshold(appliances=self.appliances, **param_thresh)
+
+        logging.debug(
+            f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
         )
 
     @staticmethod
@@ -59,7 +76,7 @@ class DataSet(data.Dataset):
                 val_idx = int(len(files_of_building) * self.train_size)
                 test_idx = val_idx + int(len(files_of_building) * self.validation_size)
                 # Shuffle if requested
-                if self.random:
+                if self.shuffle:
                     random.seed(self.random_seed)
                     random.shuffle(files_of_building)
                 # Pick subset to choose from
@@ -111,7 +128,7 @@ def return_dataloader(
     subset: str = "train",
     shuffle: bool = True,
 ):
-    dataset = DataSet(path_data, config, subset=subset)
+    dataset = DataSet(path_data, subset=subset, **config)
     dataloader = DataLoader(
         dataset=dataset, batch_size=config["batch_size"], shuffle=shuffle
     )
