@@ -1,7 +1,8 @@
-import toml
 import warnings
 from pathlib import Path
 from typing import Union
+
+import toml
 
 
 class Conf(dict):
@@ -42,6 +43,12 @@ class Conf(dict):
         return d
 
 
+class ConfigError(Exception):
+    """Exception when config file is not opened properly"""
+
+    pass
+
+
 def load_config(path: Union[str, Path], key: str = None) -> Conf:
     """Load TOML config as dict-like
     Parameters
@@ -55,5 +62,16 @@ def load_config(path: Union[str, Path], key: str = None) -> Conf:
     Conf
         Config dictionary
     """
-    config = toml.load(path)
-    return Conf(config) if key is None else Conf(config[key])
+    try:
+        config = toml.load(path)
+    except FileNotFoundError:
+        raise ConfigError(f"Config toml file not found in path: {path}")
+    try:
+        return Conf(config) if key is None else Conf(config[key])
+    except KeyError:
+        raise ConfigError(f"Key missing in config file: {key}")
+
+
+def store_config(path: Union[str, Path], data: dict):
+    with open(path, "w") as toml_file:
+        toml.dump(data, toml_file)
