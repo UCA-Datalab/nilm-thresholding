@@ -208,7 +208,7 @@ class Threshold:
         y = y.flatten().copy()
 
         condition = y > threshold
-        # Find the indicies of changes in "condition"
+        # Find the indices of changes in "condition"
         d = np.diff(condition)
         idx = d.nonzero()[0]
 
@@ -292,21 +292,3 @@ class Threshold:
         ser_bin = ser_bin.astype(int)
 
         return ser_bin
-
-    @staticmethod
-    def get_status_means(ser, status):
-        """
-        Get means of both status.
-        """
-
-        means = np.zeros((ser.shape[2], 2))
-
-        # Compute the new mean of each cluster
-        for idx in range(ser.shape[2]):
-            # Flatten the series
-            meter = ser[:, :, idx].flatten()
-            mask_on = status[:, :, idx].flatten() > 0
-            means[idx, 0] = meter[~mask_on].mean()
-            means[idx, 1] = meter[mask_on].mean()
-
-        return means
