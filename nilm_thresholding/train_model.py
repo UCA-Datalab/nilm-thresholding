@@ -8,7 +8,7 @@ import time
 
 import typer
 
-from nilm_thresholding.data.loader import return_dataloader
+from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.model import initialize_model
 from nilm_thresholding.results.store_output import (
     generate_path_output,
@@ -37,13 +37,11 @@ def train_many_models(path_data, path_output, config):
     )
 
     # Load dataloader
-    dataloader_train = return_dataloader(
-        path_data, config, subset="train", shuffle=True
+    dataloader_train = DataLoader(path_data, subset="train", shuffle=True, **config)
+    dataloader_validation = DataLoader(
+        path_data, subset="validation", shuffle=True, **config
     )
-    dataloader_validation = return_dataloader(
-        path_data, config, subset="validation", shuffle=False
-    )
-    dataloader_test = return_dataloader(path_data, config, subset="test", shuffle=False)
+    dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
     # Training
 

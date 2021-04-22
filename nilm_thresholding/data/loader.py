@@ -5,9 +5,9 @@ import random
 import numpy as np
 import pandas as pd
 import torch.utils.data as data
-from torch.utils.data import DataLoader
 
 from nilm_thresholding.data.threshold import Threshold
+from nilm_thresholding.utils.config import ConfigError
 
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
@@ -50,7 +50,7 @@ class DataSet(data.Dataset):
         self.threshold = Threshold(appliances=self.appliances, **param_thresh)
 
         logging.debug(
-            f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
+            f"Dataset received extra kwargs, not used:\n     {', '.join(kwargs.keys())}"
         )
 
     @staticmethod
@@ -102,35 +102,70 @@ class DataSet(data.Dataset):
         self._idx_start = self.border
         self._idx_end = self.length - self.border
 
-    def _compute_status(self, arr_apps: np.array) -> np.array:
-        status = self.threshold.get_status(arr_apps)
-        status = status.reshape(status.shape[0], len(self.appliances))
-        return status
+    def normalize_power(self, ser: np.array) -> np.array:
+        return ser / self.power_scale
+
+    def denormalize_power(self, ser: np.array) -> np.array:
+        return ser * self.power_scale
+
+    def _compute_status(self, ser: np.array) -> np.array:
+        return self.threshold.get_status(ser)
 
     def __getitem__(self, index):
         path_file = self.files[index]
         df = self._open_file(path_file)
-        x = df["aggregate"].values / self.power_scale
-        y = (
-            df[self.appliances].iloc[self._idx_start : self._idx_end].values
-            / self.power_scale
-        )
+        x = df["aggregate"].values
+        y = df[self.appliances].iloc[self._idx_start : self._idx_end].values
         s = self._compute_status(y)
-        return x, y, s
+        return self.normalize_power(x), self.normalize_power(y), s
 
     def __len__(self):
         return self.epochs
 
 
-def return_dataloader(
-    path_data: str,
-    config: dict,
-    subset: str = "train",
-    shuffle: bool = True,
-):
-    dataset = DataSet(path_data, subset=subset, **config)
-    dataloader = DataLoader(
-        dataset=dataset, batch_size=config["batch_size"], shuffle=shuffle
-    )
-    logging.debug(f"\nDataloader ready for {subset}!")
-    return dataloader
+class DataLoader(data.DataLoader):
+    dataset: DataSet = None
+
+    def __init__(
+        self,
+        path_data: str,
+        subset: str = "train",
+        batch_size: int = 32,
+        shuffle: bool = True,
+        path_threshold: str = "threshold.toml",
+        **kwargs,
+    ):
+        self.subset = subset
+        dataset = DataSet(path_data, subset=subset, **kwargs)
+        super(DataLoader, self).__init__(
+            dataset=dataset, batch_size=batch_size, shuffle=shuffle
+        )
+        self.path_threshold = path_threshold
+        self.compute_thresholds()
+
+    def compute_thresholds(self):
+        """Compute the thresholds of each appliance"""
+        # First try to load the thresholds
+        try:
+            self.dataset.threshold.read_config(self.path_threshold)
+            return
+        # If not possible, compute them
+        except ConfigError:
+            if self.subset != "train":
+                logging.error(
+                    "Threshold values not found."
+                    "Please compute them first with the train subset!"
+                )
+            logging.debug("Threshold values not found. Computing them...")
+            # Loop through each appliance
+            for app_idx, app in enumerate(self.dataset.appliances):
+                # Initialize list
+                ser = [0] * self.__len__()
+                # Loop through the set and extract all the values
+                for idx, (_, meters, _) in enumerate(self):
+                    ser[idx] = meters[:, :, app_idx].flatten()
+                # Concatenate all values and denormalize them
+                ser = self.dataset.denormalize_power(np.concatenate(ser))
+                self.dataset.threshold.update_appliance_threshold(ser, app)
+            # Write the config file
+            self.dataset.threshold.write_config(self.path_threshold)
