@@ -78,38 +78,6 @@ class Threshold:
                 f"Use one of the following: vs, mp, at"
             )
 
-    @property
-    def config_key(self):
-        """Key that contains the relevant values of the config file"""
-        return f"{self.method}_{self.num_status}"
-
-    def read_config(self, path_config: str):
-        """Reads a config file and updates the thresholds accordingly"""
-        config = load_config(path_config, self.config_key)
-        for app_idx, app in enumerate(self.appliances):
-            self.thresholds[app_idx, :] = config[app]["thresholds"]
-            self.means[app_idx, :] = config[app]["means"]
-        logging.debug(f"Threshold values retrieved from: {path_config}\n")
-
-    def write_config(self, path_config: str):
-        """Writes a config file with the current parameters"""
-        dict_apps = {}
-        for idx, app in enumerate(self.appliances):
-            dict_update = {
-                "thresholds": self.thresholds[idx, :].round(2).tolist(),
-                "means": self.means[idx, :].round(2).tolist(),
-            }
-            dict_apps.update({app: dict_update})
-        dict_config = {self.config_key: dict_apps}
-        # Try to load the config file, if already exists
-        try:
-            config = load_config(path_config)
-            config.update(dict_config)
-        except ConfigError:
-            config = dict_config
-        store_config(path_config, config)
-        logging.debug(f"Config stored at {path_config}\n")
-
     def _compute_cluster_centroids(self, ser: np.array):
         """
         Returns the cluster centroids of a series of power load values
@@ -292,3 +260,35 @@ class Threshold:
         ser_bin = ser_bin.astype(int)
 
         return ser_bin
+
+    @property
+    def config_key(self):
+        """Key that contains the relevant values of the config file"""
+        return f"{self.method}_{self.num_status}"
+
+    def read_config(self, path_config: str):
+        """Reads a config file and updates the thresholds accordingly"""
+        config = load_config(path_config, self.config_key)
+        for app_idx, app in enumerate(self.appliances):
+            self.thresholds[app_idx, :] = config[app]["thresholds"]
+            self.means[app_idx, :] = config[app]["means"]
+        logging.debug(f"Threshold values retrieved from: {path_config}\n")
+
+    def write_config(self, path_config: str):
+        """Writes a config file with the current parameters"""
+        dict_apps = {}
+        for idx, app in enumerate(self.appliances):
+            dict_update = {
+                "thresholds": self.thresholds[idx, :].round(2).tolist(),
+                "means": self.means[idx, :].round(2).tolist(),
+            }
+            dict_apps.update({app: dict_update})
+        dict_config = {self.config_key: dict_apps}
+        # Try to load the config file, if already exists
+        try:
+            config = load_config(path_config)
+            config.update(dict_config)
+        except ConfigError:
+            config = dict_config
+        store_config(path_config, config)
+        logging.debug(f"Config stored at {path_config}\n")
