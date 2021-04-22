@@ -37,7 +37,7 @@ class DataSet(data.Dataset):
         self.power_scale = power_scale
         self.border = border
         self.length = input_len
-        self.buildings = [] if buildings is None else buildings[subset]
+        self.buildings = {} if buildings is None else buildings[subset]
         self.train_size = train_size
         self.validation_size = valid_size
         self.shuffle = shuffle
@@ -96,7 +96,7 @@ class DataSet(data.Dataset):
         df = self._open_file(self.files[0])
         appliances = [t for t in df.columns if not t.endswith("_status")]
         appliances.remove("aggregate")
-        self.appliances = appliances
+        self.appliances = sorted(appliances)
         self.status = [t + "_status" for t in appliances]
         self.length = df.shape[0]
         self._idx_start = self.border
