@@ -23,6 +23,31 @@ class PreprocessWrapper:
         max_power: float = 10000,
         **kwargs,
     ):
+        """Basic preprocessing class, with no dataset associated
+
+        Parameters
+        ----------
+        appliances : list, optional
+            List of appliances, by default empty
+        buildings : dict, optional
+            Datasets and buildings to extract from each {dataset: [buildings]},
+            by default empty
+        dates : dict, optional
+            Date period per building {dataset: {building: [start, end]}},
+            by default empty
+        period : str, optional
+            Time series period, by default '1min'
+        train_size : float, optional
+            Train subset proportion, by default 0.8
+        input_len : int, optional
+            Length of input time series, by default 510
+        border : int, optional
+            Border of the series that is lost to output, by default 15
+        max_power : float, optional
+            Maximum power (watts), higher values are reduced to this, by default 10000
+        kwargs
+            Additional arguments, not taken into account
+        """
         # Read parameters from config files
         self.appliances = [] if appliances is None else sorted(to_list(appliances))
         self.buildings = [] if buildings is None else buildings[self.dataset]
@@ -58,6 +83,7 @@ class PreprocessWrapper:
             try:
                 os.mkdir(path_house)
             except FileNotFoundError:
+                os.mkdir(path_output)
                 os.mkdir(path_house)
             except FileExistsError:
                 pass
