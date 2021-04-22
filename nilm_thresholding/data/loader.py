@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 class DataSet(data.Dataset):
     files: list = list()
-    epochs: int = 0
+    datapoints: int = 0
     appliances: list = list()
     status: list = list()
 
@@ -28,7 +28,7 @@ class DataSet(data.Dataset):
         buildings: dict = None,
         train_size: float = 0.8,
         valid_size: float = 0.1,
-        shuffle: bool = False,
+        random_split: bool = False,
         random_seed: int = 0,
         threshold: dict = None,
         **kwargs,
@@ -40,7 +40,7 @@ class DataSet(data.Dataset):
         self.buildings = {} if buildings is None else buildings[subset]
         self.train_size = train_size
         self.validation_size = valid_size
-        self.shuffle = shuffle
+        self.random_split = random_split
         self.random_seed = random_seed
         self._list_files(path_data)
         self._get_parameters_from_file()
@@ -76,7 +76,7 @@ class DataSet(data.Dataset):
                 val_idx = int(len(files_of_building) * self.train_size)
                 test_idx = val_idx + int(len(files_of_building) * self.validation_size)
                 # Shuffle if requested
-                if self.shuffle:
+                if self.random_split:
                     random.seed(self.random_seed)
                     random.shuffle(files_of_building)
                 # Pick subset to choose from
@@ -88,8 +88,8 @@ class DataSet(data.Dataset):
                     files += files_of_building[test_idx:]
         # Update the class parameters
         self.files = files
-        self.epochs = len(files)
-        logging.info(f"{self.epochs} data points found for {self.subset}")
+        self.datapoints = len(files)
+        logging.info(f"{self.datapoints} data points found for {self.subset}")
 
     def _get_parameters_from_file(self):
         """Updates class parameters from sample csv file"""
@@ -97,7 +97,6 @@ class DataSet(data.Dataset):
         appliances = [t for t in df.columns if not t.endswith("_status")]
         appliances.remove("aggregate")
         self.appliances = sorted(appliances)
-        self.status = [t + "_status" for t in appliances]
         self.length = df.shape[0]
         self._idx_start = self.border
         self._idx_end = self.length - self.border
@@ -120,7 +119,7 @@ class DataSet(data.Dataset):
         return self.normalize_power(x), self.normalize_power(y), s
 
     def __len__(self):
-        return self.epochs
+        return self.datapoints
 
 
 class DataLoader(data.DataLoader):
