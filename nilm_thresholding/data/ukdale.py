@@ -11,7 +11,6 @@ from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
 class UkdalePreprocess(PreprocessWrapper):
     dataset: str = "ukdale"
     datastore: HDFStore = None
-    means: list = []
 
     def __init__(self, path_h5: str, path_labels: str, **kwargs):
         super(UkdalePreprocess, self).__init__(**kwargs)

@@ -238,8 +238,8 @@ class TorchModel:
         s_hat = self.threshold.get_status(s_hat)
 
         # Get power values from status
-        sp_hat = np.multiply(np.ones(s_hat.shape), self.threshold.means[:, 0])
-        sp_on = np.multiply(np.ones(s_hat.shape), self.threshold.means[:, 1])
+        sp_hat = np.multiply(np.ones(s_hat.shape), self.threshold.centroids[:, 0])
+        sp_on = np.multiply(np.ones(s_hat.shape), self.threshold.centroids[:, 1])
         sp_hat[s_hat == 1] = sp_on[s_hat == 1]
 
         # Get status from power values
