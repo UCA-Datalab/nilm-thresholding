@@ -1,11 +1,12 @@
 import logging
 
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 
+from nilm_thresholding.utils.config import load_config, store_config, ConfigError
 from nilm_thresholding.utils.format_list import to_list
 from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
-from nilm_thresholding.utils.config import load_config, store_config, ConfigError
 
 # Power load thresholds (in watts) applied by AT thresholding
 THRESHOLDS = {"dishwasher": 10.0, "fridge": 50.0, "washingmachine": 20.0}
@@ -20,7 +21,7 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 class Threshold:
     thresholds: np.array = None  # (appliance, status)
-    means: np.array = None  # (appliance, status)
+    centroids: np.array = None  # (appliance, status)
     use_std: bool = False
     min_on: list = None
     min_off: list = None
@@ -33,8 +34,11 @@ class Threshold:
     ):
         # Set thresholding method parameters
         self.appliances = [] if appliances is None else sorted(to_list(appliances))
+        self.num_apps = len(self.appliances)
         self.method = method
         self.num_status = num_status
+        # Set the default status function
+        self._status_fun = self._compute_status
         self._initialize_params()
 
     def _initialize_params(self):
@@ -42,8 +46,8 @@ class Threshold:
         Given the method name and list of appliances,
         this function defines the necessary parameters to use the method
         """
-        self.thresholds = np.zeros((len(self.appliances), self.num_status))
-        self.means = np.zeros((len(self.appliances), self.num_status))
+        self.thresholds = np.zeros((self.num_apps, self.num_status))
+        self.centroids = np.zeros((self.num_apps, self.num_status))
         if self.method == "vs":
             # Variance-Sensitive threshold
             self.use_std = True
@@ -52,9 +56,9 @@ class Threshold:
             pass
         elif self.method == "at":
             # Activation-Time threshold
-            self.thresholds = []
-            self.min_off = []
-            self.min_on = []
+            thresholds = []
+            min_off = []
+            min_on = []
             for app in self.appliances:
                 # Homogenize input label
                 label = homogenize_string(app)
@@ -65,10 +69,16 @@ class Threshold:
                         f"Available appliances: {', '.join(THRESHOLDS.keys())}"
                     )
                     raise ValueError(msg)
-                self.thresholds += [THRESHOLDS[label]]
-                self.min_off += [MIN_OFF[label]]
-                self.min_on += [MIN_ON[label]]
-            self.thresholds = np.array(self.thresholds)
+                thresholds += [[0, THRESHOLDS[label]]]
+                min_off += [MIN_OFF[label]]
+                min_on += [MIN_ON[label]]
+            # AT thresholding only allows binary status
+            self.num_status = 2
+            self.thresholds = np.array(thresholds)
+            self.centroids = self.thresholds.copy()
+            self.min_off = min_off
+            self.min_on = min_on
+            self._status_fun = self._compute_status_by_activation_time
         elif self.method == "custom":
             # Custom method
             pass
@@ -101,7 +111,7 @@ class Threshold:
         kmeans = KMeans(n_clusters=self.num_status).fit(ser.reshape(-1, 1))
 
         # The mean of a cluster is the cluster centroid
-        mean = kmeans.cluster_centers_.reshape(self.num_status)
+        centroid = kmeans.cluster_centers_.reshape(self.num_status)
 
         # Compute the standard deviation of the points in each cluster
         labels = kmeans.labels_
@@ -109,7 +119,7 @@ class Threshold:
         for split in range(self.num_status):
             std[split] = ser[labels == split].std()
 
-        return mean, std
+        return centroid, std
 
     def _compute_thresholds(self, ser: np.array):
         """
@@ -124,9 +134,9 @@ class Threshold:
         Returns
         -------
         tuple
-            Thresholds and means
+            Thresholds and centroids
         """
-        mean, std = self._compute_cluster_centroids(ser)
+        centroid, std = self._compute_cluster_centroids(ser)
 
         sigma = (
             np.nan_to_num(np.divide(std[:-1], std[:-1] + std[1:]))
@@ -134,33 +144,39 @@ class Threshold:
             else np.repeat([0.5], self.num_status - 1)
         )
         threshold = np.zeros(self.num_status)
-        threshold[1:] = mean[:-1] + np.multiply(sigma, mean[1:] - mean[:-1])
+        threshold[1:] = centroid[:-1] + np.multiply(sigma, centroid[1:] - centroid[:-1])
 
-        # Compute the new mean of each cluster, for binary classification
+        # Compute the new centroid of each cluster, for binary classification
         if self.num_status == 2:
             mask_on = ser >= threshold[1]
-            mean[0] = ser[~mask_on].mean()
-            mean[1] = ser[mask_on].mean()
+            centroid[0] = ser[~mask_on].mean()
+            centroid[1] = ser[mask_on].mean()
 
-        return threshold, mean
+        return threshold, centroid
 
     def update_appliance_threshold(self, ser: np.array, appliance: str):
         """Recomputes target appliance threshold and mean values, given its series"""
-        threshold, mean = self._compute_thresholds(ser.flatten())
+        threshold, centroid = self._compute_thresholds(ser.flatten())
         idx = self.appliances.index(appliance)
         self.thresholds[idx, :] = threshold
-        self.means[idx, :] = mean
+        self.centroids[idx, :] = centroid
         logging.info(f"Appliance '{appliance}' thresholds have been updated")
 
+    def _compute_status(self, ser: np.array) -> np.array:
+        """Takes a power load series and computes the corresponding status"""
+        # We compute the difference between each power load and status
+        # The first positive value corresponds to the state of the appliance
+        ser_bin = np.argmax((ser[:, :, None] - self.thresholds[None, :, :]) > 0, axis=2)
+        return ser_bin
+
     @staticmethod
-    def _get_app_status_by_duration(y, threshold, min_off, min_on):
+    def _get_status_by_activation_time(y: np.array, threshold, min_off, min_on):
         """
 
         Parameters
         ----------
         y : numpy.array
-            shape = (num_series, series_len)
-            - num_series : Amount of time series.
+            shape = (series_len)
             - series_len : Length of each time series.
         threshold : float
         min_off : int
@@ -169,13 +185,13 @@ class Threshold:
         Returns
         -------
         s : numpy.array
-            shape = (num_series, series_len)
+            shape = (series_len)
             With binary values indicating ON (1) and OFF (0) states.
         """
         shape_original = y.shape
         y = y.flatten().copy()
 
-        condition = y > threshold
+        condition = y > threshold[1]
         # Find the indices of changes in "condition"
         d = np.diff(condition)
         idx = d.nonzero()[0]
@@ -219,6 +235,20 @@ class Threshold:
 
         return s
 
+    def _compute_status_by_activation_time(self, ser: np.array):
+
+        ser_bin = Parallel(n_jobs=-1)(
+            delayed(self._get_status_by_activation_time)(
+                ser[:, idx],
+                self.thresholds[idx],
+                self.min_off[idx],
+                self.min_on[idx],
+            )
+            for idx in range(self.num_apps)
+        )
+        ser_bin = np.stack(ser_bin).T
+        return ser_bin
+
     def get_status(self, ser: np.array) -> np.array:
         """
 
@@ -237,27 +267,7 @@ class Threshold:
         """
         # We don't want to modify the original series
         ser = ser.copy()
-
-        num_app = ser.shape[-1]
-        ser_bin = np.zeros(ser.shape)
-        # Iterate through all the appliances
-        try:
-            for idx in range(num_app):
-
-                ser_bin[:, idx] = self._get_app_status_by_duration(
-                    ser[:, idx],
-                    self.thresholds[idx],
-                    self.min_off[idx],
-                    self.min_on[idx],
-                )
-        except TypeError:
-            # We compute the difference between each power load and status
-            # The first positive value corresponds to the state of the appliance
-            ser_bin = np.argmax(
-                (ser[:, :, None] - self.thresholds[None, :, :]) > 0, axis=2
-            )
-
-        ser_bin = ser_bin.astype(int)
+        ser_bin = self._status_fun(ser).astype(int)
 
         return ser_bin
 
@@ -271,7 +281,7 @@ class Threshold:
         config = load_config(path_config, self.config_key)
         for app_idx, app in enumerate(self.appliances):
             self.thresholds[app_idx, :] = config[app]["thresholds"]
-            self.means[app_idx, :] = config[app]["means"]
+            self.centroids[app_idx, :] = config[app]["centroids"]
         logging.debug(f"Threshold values retrieved from: {path_config}\n")
 
     def write_config(self, path_config: str):
@@ -280,7 +290,7 @@ class Threshold:
         for idx, app in enumerate(self.appliances):
             dict_update = {
                 "thresholds": self.thresholds[idx, :].round(2).tolist(),
-                "means": self.means[idx, :].round(2).tolist(),
+                "centroids": self.centroids[idx, :].round(2).tolist(),
             }
             dict_apps.update({app: dict_update})
         dict_config = {self.config_key: dict_apps}

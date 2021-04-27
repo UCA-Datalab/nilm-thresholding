@@ -10,7 +10,6 @@ from nilm_thresholding.results.store_output import (
     store_scores,
     list_scores,
     store_plots,
-    store_real_data_and_predictions,
 )
 from nilm_thresholding.utils.format_list import merge_dict_list
 
@@ -106,7 +105,6 @@ def train_many_models(path_data, path_output, config):
     time_ellapsed /= config["num_models"]
 
     # Store scores and plot
-
     store_scores(
         path_output_folder,
         config,
@@ -115,33 +113,24 @@ def train_many_models(path_data, path_output, config):
     )
 
 
-def test_many_models(
-    path_h5,
-    path_data,
-    path_output,
-    config: dict,
-    save_scores: bool = True,
-    save_predictions: bool = True,
-):
+def test_many_models(path_data, path_output, config):
     """
     Runs several models with the same conditions.
     Stores plots and the average scores of those models.
     """
-
     # Set output path
     path_output = generate_path_output(path_output, config["name"])
     path_output_folder = generate_folder_name(
         path_output,
-        config["output_len"],
+        config["input_len"],
         config["period"],
         config["classification_w"],
         config["regression_w"],
         config["threshold"]["method"],
     )
 
-    # Load data
-
-    dataloader = return_dataloader(path_data, config)
+    # Load dataloader
+    dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
     # Training
 
@@ -154,14 +143,11 @@ def test_many_models(
 
         model = initialize_model(config)
 
-        # Load model
+        # Load the model
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.load(path_model)
 
-        act_scr, pow_scr = model.score(
-            model,
-            dataloader.dl_test,
-        )
+        act_scr, pow_scr = model.score(dataloader_test)
 
         act_scores += act_scr
         pow_scores += pow_scr
@@ -174,14 +160,13 @@ def test_many_models(
 
         filename = f"scores_{i}.txt"
 
-        if save_scores:
-            store_scores(
-                path_output_folder,
-                config,
-                scores,
-                time_ellapsed,
-                filename=filename,
-            )
+        store_scores(
+            path_output_folder,
+            config,
+            scores,
+            time_ellapsed,
+            filename=filename,
+        )
 
     # List scores
 
@@ -193,24 +178,11 @@ def test_many_models(
     )
 
     # Store scores and plot
-    if save_scores:
-        store_scores(path_output_folder, config, scores, time_ellapsed)
+    store_scores(path_output_folder, config, scores, time_ellapsed)
 
     store_plots(
         path_output_folder,
         config,
         model,
-        dataloader.dl_test,
-        dataloader.means,
-        dataloader.thresholds,
+        dataloader_test,
     )
-
-    if save_predictions:
-        store_real_data_and_predictions(
-            path_output,
-            config,
-            model,
-            dataloader.dl_test,
-            dataloader.means,
-            dataloader.thresholds,
-        )

@@ -2,7 +2,7 @@ import toml
 import os
 import typer
 
-from nilm_thresholding.utils.conf import load_conf
+from nilm_thresholding.utils.config import load_config
 
 
 LIST_METHODS = ["mp", "vs", "at"]
@@ -27,17 +27,18 @@ LIST_CLASS_W = [
 
 
 def main(path_config="nilm_thresholding/config.toml", path_output="configs"):
-    config = load_conf(path_config)
+    config = load_config(path_config)
 
     if not os.path.exists(path_output):
         os.mkdir(path_output)
 
     for model_name in LIST_MODELS:
-        config["train"].update({"name": model_name})
+        config["model"].update({"name": model_name})
         for method in LIST_METHODS:
-            config["data"]["threshold"].update({"method": method})
+            config["model"]["threshold"].update({"method": method})
             for class_w in LIST_CLASS_W:
-                config["train"]["name"].update({"classification_w": class_w})
+                config["model"].update({"classification_w": class_w})
+                config["model"].update({"regression_w": round(1 - class_w, 2)})
                 path_dump = os.path.join(
                     path_output, f"{model_name}_{method}_classw_{class_w}.toml"
                 )
