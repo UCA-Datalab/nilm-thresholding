@@ -170,7 +170,9 @@ class Threshold:
         return ser_bin
 
     @staticmethod
-    def _get_status_by_activation_time(y: np.array, threshold, min_off, min_on):
+    def _get_status_by_activation_time(
+        y: np.array, threshold: np.array, min_off, min_on
+    ):
         """
 
         Parameters
@@ -178,7 +180,7 @@ class Threshold:
         y : numpy.array
             shape = (series_len)
             - series_len : Length of each time series.
-        threshold : float
+        threshold : np.array
         min_off : int
         min_on : int
 
@@ -191,7 +193,7 @@ class Threshold:
         shape_original = y.shape
         y = y.flatten().copy()
 
-        condition = y > threshold[1]
+        condition = np.array(y > threshold[1])
         # Find the indices of changes in "condition"
         d = np.diff(condition)
         idx = d.nonzero()[0]
