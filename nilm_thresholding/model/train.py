@@ -33,14 +33,7 @@ def train_many_models(path_data, path_output, config):
     """
     # Set output path
     path_output = generate_path_output(path_output, config["name"])
-    path_output_folder = generate_folder_name(
-        path_output,
-        config["input_len"],
-        config["period"],
-        config["classification_w"],
-        config["regression_w"],
-        config["threshold"]["method"],
-    )
+    path_output_folder = generate_folder_name(path_output, config)
 
     # Load dataloader
     dataloader_train = DataLoader(path_data, subset="train", shuffle=True, **config)
@@ -94,7 +87,6 @@ def train_many_models(path_data, path_output, config):
         )
 
     # List scores
-
     scores = list_scores(
         config["appliances"],
         act_scores,
@@ -120,14 +112,7 @@ def test_many_models(path_data, path_output, config):
     """
     # Set output path
     path_output = generate_path_output(path_output, config["name"])
-    path_output_folder = generate_folder_name(
-        path_output,
-        config["input_len"],
-        config["period"],
-        config["classification_w"],
-        config["regression_w"],
-        config["threshold"]["method"],
-    )
+    path_output_folder = generate_folder_name(path_output, config)
 
     # Load dataloader
     dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)

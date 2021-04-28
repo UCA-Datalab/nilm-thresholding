@@ -47,14 +47,18 @@ def generate_path_output(path_output, model_name):
     return path_output
 
 
-def generate_folder_name(
-    path_output, output_len, period, class_w, reg_w, threshold_method
-):
+def generate_folder_name(path_output: str, config: dict):
     """
     Generates specific folder inside results.
     """
+    input_len = config["input_len"]
+    period = config["period"]
+    class_w = config["classification_w"]
+    reg_w = config["regression_w"]
+    threshold_method = (config["threshold"]["method"],)
+
     name = (
-        f"seq_{str(output_len)}_{period}_{threshold_method}"
+        f"seq_{str(input_len)}_{period}_{threshold_method}"
         f"_clas_{str(int(class_w * 100))}"
         f"_reg_{str(int(reg_w * 100))}"
     )
