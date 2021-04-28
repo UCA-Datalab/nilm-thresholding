@@ -168,6 +168,8 @@ def test_many_models(path_data, path_output, config):
             filename=filename,
         )
 
+        del model
+
     # List scores
 
     scores = list_scores(
