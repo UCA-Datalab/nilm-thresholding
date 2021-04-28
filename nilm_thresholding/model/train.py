@@ -12,6 +12,7 @@ from nilm_thresholding.results.store_output import (
     store_plots,
 )
 from nilm_thresholding.utils.format_list import merge_dict_list
+from nilm_thresholding.utils.logging import logger
 
 
 def initialize_model(config: dict):
@@ -49,7 +50,7 @@ def train_many_models(path_data, path_output, config):
     time_ellapsed = 0
 
     for i in range(config["num_models"]):
-        print(f"\nModel {i + 1}\n")
+        logger.debug(f"\nModel {i + 1}\n")
 
         model = initialize_model(config)
 
@@ -124,7 +125,7 @@ def test_many_models(path_data, path_output, config):
     time_ellapsed = 0
 
     for i in range(config["num_models"]):
-        print(f"\nModel {i + 1}\n")
+        logger.debug(f"\nModel {i + 1}\n")
 
         model = initialize_model(config)
 

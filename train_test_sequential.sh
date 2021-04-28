@@ -10,7 +10,7 @@ do
     if python nilm_thresholding/test_model.py --path-config $f; then
       echo "SUCCESS"
     else
-      break
+      eco "FAILED TO TEST"
     fi
   else
     break

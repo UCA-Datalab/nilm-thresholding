@@ -1,4 +1,3 @@
-import logging
 import os
 
 import numpy as np
@@ -8,12 +7,11 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset
 
 from nilm_thresholding.data.threshold import Threshold
+from nilm_thresholding.utils.logging import logger
 from nilm_thresholding.utils.scores import (
     classification_scores_dict,
     regression_scores_dict,
 )
-
-logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
 class TorchModel:
@@ -46,6 +44,7 @@ class TorchModel:
         self.device = (
             torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
         )
+        logger.debug(f"Using device: {self.device}")
 
         # Parameters expected to be found in the configuration dictionary
         self.border = border
@@ -71,9 +70,7 @@ class TorchModel:
         param_thresh = {} if threshold is None else threshold
         self.threshold = Threshold(appliances=self.appliances, **param_thresh)
 
-        logging.debug(
-            f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}"
-        )
+        logger.debug(f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}")
 
     def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
         # Initialize list of train losses and set model to train mode
@@ -161,7 +158,7 @@ class TorchModel:
 
             epoch_len = len(str(self.epochs))
 
-            logging.info(
+            logger.info(
                 f"[{epoch:>{epoch_len}}/{self.epochs:>{epoch_len}}] "
                 f"train_loss: {train_loss:.5f} "
                 f"valid_loss: {valid_loss:.5f}"
@@ -170,7 +167,7 @@ class TorchModel:
             # Check if validation loss has decreased
             # If so, store the model as the best model
             if valid_loss < min_loss:
-                logging.info(
+                logger.info(
                     f"Validation loss decreased ({min_loss:.6f} -->"
                     f" {valid_loss:.6f}).  Saving model ..."
                 )
@@ -264,17 +261,17 @@ class TorchModel:
         reg_scores = regression_scores_dict(sp_hat, p_true, self.appliances)
         act_scores = [class_scores, reg_scores]
 
-        logging.debug("classification scores")
-        logging.debug(class_scores)
-        logging.debug(reg_scores)
+        logger.debug("classification scores")
+        logger.debug(class_scores)
+        logger.debug(reg_scores)
 
         # regression scores
         class_scores = classification_scores_dict(ps_hat, s_true, self.appliances)
         reg_scores = regression_scores_dict(p_hat, p_true, self.appliances)
         pow_scores = [class_scores, reg_scores]
 
-        logging.debug("regression scores")
-        logging.debug(class_scores)
-        logging.debug(reg_scores)
+        logger.debug("regression scores")
+        logger.debug(class_scores)
+        logger.debug(reg_scores)
 
         return act_scores, pow_scores

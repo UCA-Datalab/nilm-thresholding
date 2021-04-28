@@ -1,4 +1,3 @@
-import logging
 import os
 import random
 
@@ -8,8 +7,7 @@ import torch.utils.data as data
 
 from nilm_thresholding.data.threshold import Threshold
 from nilm_thresholding.utils.config import ConfigError
-
-logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+from nilm_thresholding.utils.logging import logger
 
 
 class DataSet(data.Dataset):
@@ -49,7 +47,7 @@ class DataSet(data.Dataset):
         param_thresh = {} if threshold is None else threshold
         self.threshold = Threshold(appliances=self.appliances, **param_thresh)
 
-        logging.debug(
+        logger.debug(
             f"Dataset received extra kwargs, not used:\n     {', '.join(kwargs.keys())}"
         )
 
@@ -89,7 +87,7 @@ class DataSet(data.Dataset):
         # Update the class parameters
         self.files = files
         self.datapoints = len(files)
-        logging.info(f"{self.datapoints} data points found for {self.subset}")
+        logger.info(f"{self.datapoints} data points found for {self.subset}")
 
     def _get_parameters_from_file(self):
         """Updates class parameters from sample csv file"""
@@ -97,6 +95,7 @@ class DataSet(data.Dataset):
         appliances = [t for t in df.columns if not t.endswith("_status")]
         appliances.remove("aggregate")
         self.appliances = sorted(appliances)
+        self.status = [app + "_status" for app in self.appliances]
         self.length = df.shape[0]
         self._idx_start = self.border
         self._idx_end = self.length - self.border
@@ -115,7 +114,10 @@ class DataSet(data.Dataset):
         df = self._open_file(path_file)
         x = df["aggregate"].values
         y = df[self.appliances].iloc[self._idx_start : self._idx_end].values
-        s = self._compute_status(y)
+        try:
+            s = df[self.status].iloc[self._idx_start : self._idx_end].values
+        except KeyError:
+            s = self._compute_status(y)
         return self.normalize_power(x), self.normalize_power(y), s
 
     def __len__(self):
@@ -151,11 +153,11 @@ class DataLoader(data.DataLoader):
         # If not possible, compute them
         except ConfigError:
             if self.subset != "train":
-                logging.error(
+                logger.error(
                     "Threshold values not found."
                     "Please compute them first with the train subset!"
                 )
-            logging.debug("Threshold values not found. Computing them...")
+            logger.debug("Threshold values not found. Computing them...")
             # Loop through each appliance
             for app_idx, app in enumerate(self.dataset.appliances):
                 # Initialize list
