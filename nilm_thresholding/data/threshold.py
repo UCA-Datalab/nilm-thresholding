@@ -156,6 +156,9 @@ class Threshold:
 
     def update_appliance_threshold(self, ser: np.array, appliance: str):
         """Recomputes target appliance threshold and mean values, given its series"""
+        if self.method == "at":
+            logging.debug(f"No need to compute thresholds for AT method. Skipping!")
+            return
         threshold, centroid = self._compute_thresholds(ser.flatten())
         idx = self.appliances.index(appliance)
         self.thresholds[idx, :] = threshold
