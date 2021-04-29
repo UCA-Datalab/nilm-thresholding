@@ -169,7 +169,10 @@ class Threshold:
         """Takes a power load series and computes the corresponding status"""
         # We compute the difference between each power load and status
         # The first positive value corresponds to the state of the appliance
-        ser_bin = np.argmax((ser[:, :, None] - self.thresholds[None, :, :]) > 0, axis=2)
+        ser_bin = (
+            np.argmin((ser[:, :, None] - self.thresholds[None, :, :]) >= 0, axis=2) - 1
+        )
+        ser_bin[ser_bin < 0] = self.num_status - 1
         return ser_bin
 
     @staticmethod
