@@ -14,7 +14,9 @@ class DataSet(data.Dataset):
     files: list = list()
     datapoints: int = 0
     appliances: list = list()
+    num_apps: int = 0
     status: list = list()
+    threshold: Threshold = None
 
     def __init__(
         self,
@@ -95,6 +97,7 @@ class DataSet(data.Dataset):
         appliances = [t for t in df.columns if not t.endswith("_status")]
         appliances.remove("aggregate")
         self.appliances = sorted(appliances)
+        self.num_apps = len(appliances)
         self.status = [app + "_status" for app in self.appliances]
         self.length = df.shape[0]
         self._idx_start = self.border
