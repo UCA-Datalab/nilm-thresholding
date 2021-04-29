@@ -48,4 +48,5 @@ my_formatter = CustomFormatter()
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(my_formatter)
 
-logger.addHandler(console_handler)
+if not logger.hasHandlers():
+    logger.addHandler(console_handler)
