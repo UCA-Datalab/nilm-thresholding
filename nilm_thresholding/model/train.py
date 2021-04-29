@@ -100,6 +100,7 @@ def train_many_models(path_data, path_output, config):
     dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
     generate_temporal_data(dataloader_train, path="temp_train")
+    generate_temporal_data(dataloader_validation, path="temp_valid")
 
     # Training
 
@@ -162,6 +163,9 @@ def train_many_models(path_data, path_output, config):
         scores,
         time_ellapsed,
     )
+
+    remove_directory("temp_train")
+    remove_directory("temp_valid")
 
 
 def test_many_models(path_data, path_output, config):
