@@ -104,9 +104,9 @@ def train_many_models(path_data, path_output, config):
 
     # Training
 
-    act_scores = []
-    pow_scores = []
-    time_ellapsed = 0
+    act_scores = [0] * config["num_models"]
+    pow_scores = [0] * config["num_models"]
+    time_ellapsed = [0] * config["num_models"]
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -119,20 +119,17 @@ def train_many_models(path_data, path_output, config):
             dataloader_train,
             dataloader_validation,
         )
-        time_ellapsed += time.time() - time_start
+        time_ellapsed[i] = round(time.time() - time_start, 2)
 
         # Store the model
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.save(path_model)
 
-        act_scr, pow_scr = model.score(dataloader_test)
-
-        act_scores += act_scr
-        pow_scores += pow_scr
+        act_scores[i], pow_scores[i] = model.score(dataloader_test)
 
         # Store individual scores
-        act_dict = merge_dict_list(act_scr)
-        pow_dict = merge_dict_list(pow_scr)
+        act_dict = merge_dict_list(act_scores[i])
+        pow_dict = merge_dict_list(pow_scores[i])
 
         scores = {"classification": act_dict, "regression": pow_dict}
 
@@ -142,7 +139,7 @@ def train_many_models(path_data, path_output, config):
             path_output_folder,
             config,
             scores,
-            time_ellapsed,
+            time_ellapsed[i],
             filename=filename,
         )
 
@@ -154,14 +151,12 @@ def train_many_models(path_data, path_output, config):
         config["num_models"],
     )
 
-    time_ellapsed /= config["num_models"]
-
     # Store scores and plot
     store_scores(
         path_output_folder,
         config,
         scores,
-        time_ellapsed,
+        np.mean(time_ellapsed),
     )
 
     remove_directory("temp_train")
