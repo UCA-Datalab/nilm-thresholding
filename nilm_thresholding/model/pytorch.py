@@ -261,17 +261,9 @@ class TorchModel:
         reg_scores = regression_scores_dict(sp_hat, p_true, self.appliances)
         act_scores = [class_scores, reg_scores]
 
-        logger.debug("classification scores")
-        logger.debug(class_scores)
-        logger.debug(reg_scores)
-
         # regression scores
         class_scores = classification_scores_dict(ps_hat, s_true, self.appliances)
         reg_scores = regression_scores_dict(p_hat, p_true, self.appliances)
         pow_scores = [class_scores, reg_scores]
-
-        logger.debug("regression scores")
-        logger.debug(class_scores)
-        logger.debug(reg_scores)
 
         return act_scores, pow_scores
