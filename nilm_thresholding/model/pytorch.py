@@ -4,8 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset
 
+from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.data.threshold import Threshold
 from nilm_thresholding.utils.logging import logger
 from nilm_thresholding.utils.scores import (
@@ -72,7 +72,7 @@ class TorchModel:
 
         logger.debug(f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}")
 
-    def _train_epoch(self, train_loader: torch.utils.data.DataLoader) -> np.array:
+    def _train_epoch(self, train_loader: DataLoader) -> np.array:
         # Initialize list of train losses and set model to train mode
         train_losses = []
         self.model.train()  # prep model for training
@@ -108,7 +108,7 @@ class TorchModel:
             # total += target_status.size()[0] * target_status.size()[1]
         return np.average(train_losses)
 
-    def _validation_epoch(self, valid_loader: torch.utils.data.DataLoader) -> np.array:
+    def _validation_epoch(self, valid_loader: DataLoader) -> np.array:
         valid_losses = []
         self.model.eval()  # prep model for evaluation
         for data, target_power, target_status in valid_loader:
@@ -134,8 +134,8 @@ class TorchModel:
 
     def train(
         self,
-        train_loader: torch.utils.data.DataLoader,
-        valid_loader: torch.utils.data.DataLoader,
+        train_loader: DataLoader,
+        valid_loader: DataLoader,
     ):
 
         # to track the average training loss per epoch as the model trains
@@ -183,7 +183,7 @@ class TorchModel:
         self.load("model.pth")
         os.remove("model.pth")
 
-    def predict(self, loader: torch.utils.data.DataLoader):
+    def predict(self, loader: DataLoader):
         x_true = []
         s_true = []
         p_true = []
@@ -209,11 +209,11 @@ class TorchModel:
                 s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
                 p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
 
-        x_true = np.hstack(x_true)
+        x_true = loader.dataset.denormalize_power(np.hstack(x_true))
         s_true = np.concatenate(s_true, axis=0)
-        p_true = np.concatenate(p_true, axis=0)
+        p_true = loader.dataset.denormalize_power(np.concatenate(p_true, axis=0))
         s_hat = np.concatenate(s_hat, axis=0)
-        p_hat = np.concatenate(p_hat, axis=0)
+        p_hat = loader.dataset.denormalize_power(np.concatenate(p_hat, axis=0))
 
         return x_true, p_true, s_true, p_hat, s_hat
 
@@ -225,26 +225,19 @@ class TorchModel:
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
 
-    def process_outputs(self, p_true, p_hat, s_hat):
-        # Denormalize power values
-        p_true = np.multiply(p_true, self.power_scale)
-        p_hat = np.multiply(p_hat, self.power_scale)
-        p_hat[p_hat < 0.0] = 0.0
-
+    def process_outputs(self, p_true, p_hat, s_hat, loader: DataLoader):
         # Get status
         s_hat = self.threshold.get_status(s_hat)
 
         # Get power values from status
-        sp_hat = np.multiply(np.ones(s_hat.shape), self.threshold.centroids[:, 0])
-        sp_on = np.multiply(np.ones(s_hat.shape), self.threshold.centroids[:, 1])
-        sp_hat[s_hat == 1] = sp_on[s_hat == 1]
+        sp_hat = loader.dataset.status_to_power(s_hat)
 
         # Get status from power values
         ps_hat = self.threshold.get_status(p_hat)
 
         return p_true, p_hat, s_hat, sp_hat, ps_hat
 
-    def score(self, loader: torch.utils.data.DataLoader):
+    def score(self, loader: DataLoader):
         """
         Returns its activation and power scores.
         """
@@ -253,7 +246,7 @@ class TorchModel:
         x_true, p_true, s_true, p_hat, s_hat = self.predict(loader)
 
         p_true, p_hat, s_hat, sp_hat, ps_hat = self.process_outputs(
-            p_true, p_hat, s_hat
+            p_true, p_hat, s_hat, loader
         )
 
         # classification scores

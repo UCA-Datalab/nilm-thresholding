@@ -107,10 +107,19 @@ class DataSet(data.Dataset):
         return ser / self.power_scale
 
     def denormalize_power(self, ser: np.array) -> np.array:
-        return ser * self.power_scale
+        new_ser = ser * self.power_scale
+        new_ser[new_ser < 0] = 0
+        return new_ser
 
-    def _compute_status(self, ser: np.array) -> np.array:
+    def power_to_status(self, ser: np.array) -> np.array:
         return self.threshold.get_status(ser)
+
+    def status_to_power(self, ser: np.array) -> np.array:
+        # Get power values from status
+        power = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 0])
+        power_on = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 1])
+        power[ser == 1] = power_on[ser == 1]
+        return power
 
     def __getitem__(self, index):
         path_file = self.files[index]
@@ -120,7 +129,7 @@ class DataSet(data.Dataset):
         try:
             s = df[self.status].iloc[self._idx_start : self._idx_end].values
         except KeyError:
-            s = self._compute_status(y)
+            s = self.power_to_status(y)
         return self.normalize_power(x), self.normalize_power(y), s
 
     def __len__(self):
