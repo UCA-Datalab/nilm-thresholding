@@ -55,7 +55,7 @@ def generate_folder_name(path_output: str, config: dict):
     period = config["period"]
     class_w = config["classification_w"]
     reg_w = config["regression_w"]
-    threshold_method = (config["threshold"]["method"],)
+    threshold_method = config["threshold"]["method"]
 
     name = (
         f"seq_{str(input_len)}_{period}_{threshold_method}"
