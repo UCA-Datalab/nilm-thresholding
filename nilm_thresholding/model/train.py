@@ -49,10 +49,8 @@ def generate_temporal_data(loader: DataLoader, path: str = "data_temp"):
     files = loader.dataset.files.copy()
     # Iterate through the whole dataloader
     for data, target_power, target_status in loader:
-        data = loader.dataset.denormalize_power(data).cpu().detach().numpy()
-        target_power = (
-            loader.dataset.denormalize_power(target_power).cpu().detach().numpy()
-        )
+        data = data.cpu().detach().numpy()
+        target_power = target_power.cpu().detach().numpy()
         target_status = target_status.cpu().detach().numpy()
         # Add the border for appliance power and status
         npad = ((0, 0), (loader.dataset.border, loader.dataset.border), (0, 0))

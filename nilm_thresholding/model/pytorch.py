@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -48,7 +49,7 @@ class TorchModel:
 
         # Parameters expected to be found in the configuration dictionary
         self.border = border
-        self._limit = self.border + 1
+        self._limit = self.border
         self.input_len = input_len
         self.output_len = self.input_len - 2 * self.border
         self.pow_w = regression_w
@@ -61,6 +62,8 @@ class TorchModel:
         self.patience = patience
         self.name = name
         self.appliances = [] if appliances is None else appliances
+        self.status = [app + "_status" for app in self.appliances]
+        self.num_apps = len(self.appliances)
         self.init_features = init_features
         self.dropout = dropout
         self.learning_rate = learning_rate
@@ -72,64 +75,111 @@ class TorchModel:
 
         logger.debug(f"Received extra kwargs, not used:\n   {', '.join(kwargs.keys())}")
 
+    def _normalize_x(self, x: torch.Tensor) -> torch.Tensor:
+        """Normalizes X data by subtracting the mean of each series and dividing by a
+        constant power value
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            shape [batch, 1, input len]
+
+        Returns
+        -------
+        torch.Tensor
+            shape [batch, 1, input len]
+
+        """
+        # x data are subtracted their mean and normalized
+        return (x - x.mean(axis=1, keepdim=True)) / self.power_scale
+
+    def _normalize_y(self, y: torch.Tensor) -> torch.Tensor:
+        return y / self.power_scale
+
+    def _denormalize_y(self, y: torch.Tensor) -> torch.Tensor:
+        y[y < 0] = 0
+        return y * self.power_scale
+
+    def _process_loader_data(self, data: tuple) -> tuple:
+        """Reads the data provided by the data loader and processes it
+
+        Parameters
+        ----------
+        data : tuple
+            x : shape [batch, input len]
+            y_pow : shape [batch, output len, num appliances]
+            y_sta : shape [batch, output len, num appliances]
+
+        Returns
+        -------
+        tuple
+            x : shape [batch, 1, input len]
+            y_pow : shape [batch, num appliances, output len]
+            y_sta : shape [batch, num appliances, output len]
+
+        """
+        x, y_pow, y_sta = data
+        x = x.unsqueeze(1).to(device=self.device, dtype=torch.float)
+        x = self._normalize_x(x)
+        # Permute y arrays
+        y_pow = self._normalize_y(
+            y_pow.to(device=self.device, dtype=torch.float).permute(0, 2, 1)
+        )
+        y_sta = y_sta.to(device=self.device, dtype=torch.float).permute(0, 2, 1)
+        return x, y_pow, y_sta
+
+    def _compute_loss(
+        self,
+        output_power: torch.Tensor,
+        y_pow: torch.Tensor,
+        output_status: torch.Tensor,
+        y_sta: torch.Tensor,
+    ):
+        """All input tensors must have shape [batch, num appliances, output len]"""
+        pow_loss = self.pow_criterion(output_power, y_pow)
+        act_loss = self.act_criterion(output_status, y_sta)
+
+        loss = (
+            self.pow_w * pow_loss / self.pow_loss_avg
+            + self.act_w * act_loss / self.act_loss_avg
+        )
+        return loss
+
     def _train_epoch(self, train_loader: DataLoader) -> np.array:
         # Initialize list of train losses and set model to train mode
-        train_losses = []
+        train_losses = [0] * len(train_loader)
         self.model.train()  # prep model for training
 
-        for batch, (data, target_power, target_status) in enumerate(train_loader, 1):
-            data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
-            target_power = target_power.to(device=self.device, dtype=torch.float)
-            target_status = target_status.to(device=self.device, dtype=torch.float)
-
+        for batch, data in enumerate(train_loader):
+            x, y_pow, y_sta = self._process_loader_data(data)
             # clear the gradients of all optimized variables
             self.optimizer.zero_grad()
             # forward pass: compute predicted results by passing inputs
             # to the model
-            output_power, output_status = self.model(data)
-            output_power = output_power.permute(0, 2, 1)
-            output_status = output_status.permute(0, 2, 1)
+            output_power, output_status = self.model(x)
             # calculate the loss
-            pow_loss = self.pow_criterion(output_power, target_power)
-            act_loss = self.act_criterion(output_status, target_status)
-            loss = (
-                self.pow_w * pow_loss / self.pow_loss_avg
-                + self.act_w * act_loss / self.act_loss_avg
-            )
+            loss = self._compute_loss(output_power, y_pow, output_status, y_sta)
             # backward pass: compute gradient of the loss with respect
             # to model parameters
             loss.backward()
             # perform a single optimization step (parameter update)
             self.optimizer.step()
             # record training loss
-            train_losses.append(loss.item())
-            # Compute ON activation frequency
-            # on += target_status.sum(dim=0).sum(dim=0).cpu().numpy()
-            # total += target_status.size()[0] * target_status.size()[1]
+            train_losses[batch] = loss.item()
         return np.average(train_losses)
 
     def _validation_epoch(self, valid_loader: DataLoader) -> np.array:
-        valid_losses = []
+        valid_losses = [0] * len(valid_loader)
         self.model.eval()  # prep model for evaluation
-        for data, target_power, target_status in valid_loader:
-            data = data.unsqueeze(1).to(device=self.device, dtype=torch.float)
-            target_power = target_power.to(device=self.device, dtype=torch.float)
-            target_status = target_status.to(device=self.device, dtype=torch.float)
-
+        for batch, data in enumerate(valid_loader):
+            x, y_pow, y_sta = self._process_loader_data(data)
             # forward pass: compute predicted results by passing inputs
             # to the model
-            output_power, output_status = self.model(data)
-            output_power = output_power.permute(0, 2, 1)
-            output_status = output_status.permute(0, 2, 1)
+            output_power, output_status = self.model(x)
             # calculate the loss
-            pow_loss = self.pow_criterion(output_power, target_power)
-            act_loss = self.act_criterion(output_status, target_status)
-            loss = (
-                self.pow_w * pow_loss / self.pow_loss_avg
-                + self.act_w * act_loss / self.act_loss_avg
-            )
+            loss = self._compute_loss(output_power, y_pow, output_status, y_sta)
             # record validation loss
-            valid_losses.append(loss.item())
+            valid_losses[batch] = loss.item()
         return np.average(valid_losses)
 
     def train(
@@ -139,9 +189,9 @@ class TorchModel:
     ):
 
         # to track the average training loss per epoch as the model trains
-        avg_train_losses = []
+        avg_train_losses = [0] * self.epochs
         # to track the average validation loss per epoch as the model trains
-        avg_valid_losses = []
+        avg_valid_losses = [0] * self.epochs
 
         min_loss = np.inf
         loss_up = 0
@@ -153,8 +203,8 @@ class TorchModel:
 
             # print training/validation statistics
             # calculate average loss over an epoch
-            avg_train_losses.append(train_loss)
-            avg_valid_losses.append(valid_loss)
+            avg_train_losses[epoch - 1] = train_loss
+            avg_valid_losses[epoch - 1] = valid_loss
 
             epoch_len = len(str(self.epochs))
 
@@ -183,39 +233,84 @@ class TorchModel:
         self.load("model.pth")
         os.remove("model.pth")
 
-    def predict(self, loader: DataLoader):
-        x_true = []
-        s_true = []
-        p_true = []
-        s_hat = []
-        p_hat = []
+    def predictions_to_dictionary(self, loader: DataLoader) -> dict:
+        """Builds a dictionary with the following structure:
+        {
+            "aggregated": series of aggregated power load,
+            "appliance": {
+                "power": series of appliance power load,
+                "status": series of appliance status,
+                "power_pred": series of predicted appliance power load,
+                "status_pred": series of predicted appliance status
+            }
+        }
+        """
+        # Initialize arrays
+        aggregated = [0] * len(loader)
+        status_true = [0] * len(loader)
+        power_true = [0] * len(loader)
+        status_predict = [0] * len(loader)
+        power_predict = [0] * len(loader)
 
         self.model.eval()
 
         with torch.no_grad():
-            for x, power, status in loader:
-                x = x.unsqueeze(1).to(device=self.device, dtype=torch.float)
-
-                pw, sh = self.model(x)
-                sh = torch.sigmoid(sh).permute(0, 2, 1).detach().cpu().numpy()
-                s_hat.append(sh.reshape(-1, sh.shape[-1]))
-
-                pw = pw.permute(0, 2, 1).detach().cpu().numpy()
-                p_hat.append(pw.reshape(-1, pw.shape[-1]))
-
-                x_true.append(
-                    x[:, :, self._limit : -self._limit].detach().cpu().numpy().flatten()
+            for batch, data in enumerate(loader):
+                x_raw, y_pow_raw, y_sta_raw = data
+                aggregated[batch] = (
+                    x_raw[:, self._limit : -self._limit]
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .flatten()
                 )
-                s_true.append(status.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
-                p_true.append(power.detach().cpu().numpy().reshape(-1, sh.shape[-1]))
+                status_true[batch] = (
+                    y_sta_raw.detach().cpu().numpy().reshape(-1, self.num_apps)
+                )
+                power_true[batch] = (
+                    y_pow_raw.detach().cpu().numpy().reshape(-1, self.num_apps)
+                )
 
-        x_true = loader.dataset.denormalize_power(np.hstack(x_true))
-        s_true = np.concatenate(s_true, axis=0)
-        p_true = loader.dataset.denormalize_power(np.concatenate(p_true, axis=0))
-        s_hat = np.concatenate(s_hat, axis=0)
-        p_hat = loader.dataset.denormalize_power(np.concatenate(p_hat, axis=0))
+                x, y_pow, y_sta = self._process_loader_data(data)
+                pred_power, pred_status = self.model(x)
 
-        return x_true, p_true, s_true, p_hat, s_hat
+                status_predict[batch] = (
+                    torch.sigmoid(pred_status)
+                    .permute(0, 2, 1)
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .reshape(-1, self.num_apps)
+                )
+
+                power_predict[batch] = (
+                    self._denormalize_y(pred_power)
+                    .permute(0, 2, 1)
+                    .detach()
+                    .cpu()
+                    .numpy()
+                    .reshape(-1, self.num_apps)
+                )
+
+        dict_series = {"aggregated": np.hstack(aggregated)}
+        # True values
+        status_true = np.concatenate(status_true, axis=0)
+        power_true = np.concatenate(power_true, axis=0)
+        status_predict = np.concatenate(status_predict, axis=0)
+        power_predict = np.concatenate(power_predict, axis=0)
+        for idx, app in enumerate(self.appliances):
+            dict_series.update(
+                {
+                    app: {
+                        "power": power_true[:, idx],
+                        "status": status_true[:, idx],
+                        "power_pred": power_predict[:, idx],
+                        "status_pred": status_predict[:, idx],
+                    }
+                }
+            )
+
+        return dict_series
 
     def save(self, path_model: str):
         """Store the weights of the model"""
@@ -225,38 +320,51 @@ class TorchModel:
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
 
-    def process_outputs(self, p_true, p_hat, s_hat, loader: DataLoader):
+    def process_outputs(
+        self, power_true, power_predict, status_predict, loader: DataLoader
+    ):
         # Get status
-        s_hat = self.threshold.get_status(s_hat)
+        status_predict = self.threshold.get_status(status_predict)
 
         # Get power values from status
-        sp_hat = loader.dataset.status_to_power(s_hat)
+        spower_predict = loader.dataset.status_to_power(status_predict)
 
         # Get status from power values
-        ps_hat = self.threshold.get_status(p_hat)
+        pstatus_predict = self.threshold.get_status(power_predict)
 
-        return p_true, p_hat, s_hat, sp_hat, ps_hat
+        return (
+            power_true,
+            power_predict,
+            status_predict,
+            spower_predict,
+            pstatus_predict,
+        )
 
+    # TODO: Redo score functions
     def score(self, loader: DataLoader):
         """
         Returns its activation and power scores.
         """
 
         # Test
-        x_true, p_true, s_true, p_hat, s_hat = self.predict(loader)
-
-        p_true, p_hat, s_hat, sp_hat, ps_hat = self.process_outputs(
-            p_true, p_hat, s_hat, loader
-        )
+        dict_pred = self.predictions_to_dictionary(loader)
+        power_reconstructed = loader.dataset.status_to_power(status_predict)
+        status_from_power = loader.dataset.power_to_status(power_predict)
 
         # classification scores
-        class_scores = classification_scores_dict(s_hat, s_true, self.appliances)
-        reg_scores = regression_scores_dict(sp_hat, p_true, self.appliances)
+        class_scores = classification_scores_dict(
+            status_predict, status_true, self.appliances
+        )
+        reg_scores = regression_scores_dict(
+            power_reconstructed, power_true, self.appliances
+        )
         act_scores = [class_scores, reg_scores]
 
         # regression scores
-        class_scores = classification_scores_dict(ps_hat, s_true, self.appliances)
-        reg_scores = regression_scores_dict(p_hat, p_true, self.appliances)
+        class_scores = classification_scores_dict(
+            status_from_power, status_true, self.appliances
+        )
+        reg_scores = regression_scores_dict(power_predict, power_true, self.appliances)
         pow_scores = [class_scores, reg_scores]
 
         return act_scores, pow_scores

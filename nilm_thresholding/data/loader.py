@@ -22,7 +22,6 @@ class DataSet(data.Dataset):
         self,
         path_data: str,
         subset: str = "train",
-        power_scale: int = 2000,
         input_len: int = 510,
         border: int = 15,
         buildings: dict = None,
@@ -34,7 +33,6 @@ class DataSet(data.Dataset):
         **kwargs,
     ):
         self.subset = subset
-        self.power_scale = power_scale
         self.border = border
         self.length = input_len
         self.buildings = {} if buildings is None else buildings[subset]
@@ -103,14 +101,6 @@ class DataSet(data.Dataset):
         self._idx_start = self.border
         self._idx_end = self.length - self.border
 
-    def normalize_power(self, ser: np.array) -> np.array:
-        return ser / self.power_scale
-
-    def denormalize_power(self, ser: np.array) -> np.array:
-        new_ser = ser * self.power_scale
-        new_ser[new_ser < 0] = 0
-        return new_ser
-
     def power_to_status(self, ser: np.array) -> np.array:
         return self.threshold.get_status(ser)
 
@@ -130,7 +120,7 @@ class DataSet(data.Dataset):
             s = df[self.status].iloc[self._idx_start : self._idx_end].values
         except KeyError:
             s = self.power_to_status(y)
-        return self.normalize_power(x), self.normalize_power(y), s
+        return x, y, s
 
     def __len__(self):
         return self.datapoints
