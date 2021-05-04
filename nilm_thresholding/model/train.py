@@ -12,7 +12,6 @@ from nilm_thresholding.results.store_output import (
     generate_folder_name,
     store_scores,
     list_scores,
-    store_plots,
 )
 from nilm_thresholding.utils.format_list import merge_dict_list
 from nilm_thresholding.utils.logging import logger
@@ -99,8 +98,7 @@ def train_many_models(path_data, path_output, config):
     generate_temporal_data(dataloader_train, path="temp_train")
     generate_temporal_data(dataloader_validation, path="temp_valid")
 
-    # Training
-
+    # Initialize lists
     act_scores = [0] * config["num_models"]
     pow_scores = [0] * config["num_models"]
     time_elapsed = [0.0] * config["num_models"]
@@ -135,7 +133,7 @@ def train_many_models(path_data, path_output, config):
             path_output_folder,
             config,
             scores,
-            time_elapsed[i],
+            time_elapsed=time_elapsed[i],
             filename=filename,
         )
 
@@ -152,7 +150,7 @@ def train_many_models(path_data, path_output, config):
         path_output_folder,
         config,
         scores,
-        np.mean(time_elapsed),
+        time_elapsed=np.mean(time_elapsed),
     )
 
     remove_directory("temp_train")
@@ -171,11 +169,9 @@ def test_many_models(path_data, path_output, config):
     # Load dataloader
     dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
-    # Training
-
-    act_scores = []
-    pow_scores = []
-    time_elapsed = 0
+    # Initialize lists
+    act_scores = [0] * config["num_models"]
+    pow_scores = [0] * config["num_models"]
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -186,14 +182,11 @@ def test_many_models(path_data, path_output, config):
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.load(path_model)
 
-        act_scr, pow_scr = model.score(dataloader_test)
-
-        act_scores += act_scr
-        pow_scores += pow_scr
+        act_scores[i], pow_scores[i] = model.score(dataloader_test)
 
         # Store individual scores
-        act_dict = merge_dict_list(act_scr)
-        pow_dict = merge_dict_list(pow_scr)
+        act_dict = merge_dict_list(act_scores[i])
+        pow_dict = merge_dict_list(pow_scores[i])
 
         scores = {"classification": act_dict, "regression": pow_dict}
 
@@ -203,7 +196,6 @@ def test_many_models(path_data, path_output, config):
             path_output_folder,
             config,
             scores,
-            time_elapsed,
             filename=filename,
         )
 
@@ -219,11 +211,4 @@ def test_many_models(path_data, path_output, config):
     )
 
     # Store scores and plot
-    store_scores(path_output_folder, config, scores, time_elapsed)
-
-    store_plots(
-        path_output_folder,
-        config,
-        model,
-        dataloader_test,
-    )
+    store_scores(path_output_folder, config, scores)

@@ -70,7 +70,7 @@ def generate_folder_name(path_output: str, config: dict):
 
 
 def store_scores(
-    path_output, config_model, scores, time_ellapsed, filename="scores.txt"
+    path_output, config_model, scores, time_elapsed: float = 0, filename="scores.txt"
 ):
     # Load parameters
     class_w = config_model["classification_w"]
@@ -96,7 +96,7 @@ def store_scores(
             f"Dropout: {dropout}\n"
             f"Epochs: {epochs}\n"
             f"Patience: {patience}\n"
-            f"Time per model (seconds): {time_ellapsed}\n"
+            f"Time per model (seconds): {time_elapsed}\n"
             f"=============================================\n"
         )
         for key, dic1 in scores.items():
@@ -114,90 +114,6 @@ def store_scores(
                     text_file.write(f"{name}: {value}\n")
                 text_file.write("----------------------------------------------\n")
             text_file.write("==================================================\n")
-
-
-def store_plots(path_output, config, model, dl_test, means, thresholds):
-
-    # Ensure appliances is a list
-    appliances = to_list(config["data"]["appliances"])
-
-    # Compute period of x axis
-    if config["data"]["period"].endswith("min"):
-        period_x = int(config["data"]["period"].replace("min", ""))
-    elif config["data"]["period"].endswith("s"):
-        period_x = float(config["data"]["period"].replace("s", "")) / 60
-
-    # Model values
-
-    x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
-
-    p_true, p_hat, s_hat, sp_hat, ps_hat = model.process_outputs(
-        p_true, p_hat, s_hat, dl_test
-    )
-
-    thresh_color = config["plot"]["thresh_color"].get(
-        config["data"]["threshold"]["method"], "grey"
-    )
-
-    for idx, app in enumerate(appliances):
-
-        # Plot a certain number of sequences per appliance
-        idx_start = 0
-        num_plots = 0
-        while (num_plots < config["plot"]["num_plots"]) and (
-            (idx_start + config_model["name"]["output_len"]) < p_true.shape[0]
-        ):
-            idx_end = idx_start + config_model["name"]["output_len"]
-            p_t = p_true[idx_start:idx_end, idx]
-            if p_t.sum() > 0:
-                s_t = s_true[idx_start:idx_end, idx]
-                s_h = s_hat[idx_start:idx_end, idx]
-                p_h = p_hat[idx_start:idx_end, idx]
-                num_plots += 1
-
-                # Add aggregate load. Try to de-normalize it
-                p_agg = np.multiply(x[idx_start:idx_end], config["data"]["power_scale"])
-                p_agg -= p_agg.min()
-                # It may need further denormalization if one of its values
-                # is lower than the appliance load
-                factor = (p_agg - p_t).min()
-                if factor < 0:
-                    p_agg -= factor
-
-                idx_start += config_model["name"]["output_len"]
-            else:
-                idx_start += config_model["name"]["output_len"]
-                continue
-            # Skip plots if weight is zero
-            if config_model["name"]["classification_w"] > 0:
-                savefig = os.path.join(
-                    path_output, f"{app}_classification_{num_plots}.png"
-                )
-                plot_informative_classification(
-                    s_t,
-                    s_h,
-                    p_agg,
-                    records=config_model["name"]["output_len"],
-                    period=period_x,
-                    pw_max=p_agg.max(),
-                    dpi=180,
-                    thresh_color=thresh_color,
-                    savefig=savefig,
-                    title=app,
-                )
-            if config_model["name"]["regression_w"] > 0:
-                savefig = os.path.join(path_output, f"{app}_regression_{num_plots}.png")
-                plot_informative_regression(
-                    p_t,
-                    p_h,
-                    p_agg,
-                    records=config_model["model"]["output_len"],
-                    scale=1.0,
-                    period=period_x,
-                    dpi=180,
-                    savefig=savefig,
-                    title=app,
-                )
 
 
 def store_real_data_and_predictions(

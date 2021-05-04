@@ -56,7 +56,7 @@ def regression_scores_dict(
         # Skip aggregated power load
         if app == "aggregated":
             continue
-        
+
         app_real = values[key_real]
         app_pred = values[key_pred]
 
