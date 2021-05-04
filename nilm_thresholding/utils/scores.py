@@ -53,8 +53,10 @@ def regression_scores_dict(
     scores = {}
 
     for app, values in dict_pred.items():
+        # Skip aggregated power load
         if app == "aggregated":
             continue
+        
         app_real = values[key_real]
         app_pred = values[key_pred]
 
@@ -128,10 +130,12 @@ def classification_scores_dict(
     scores = {}
 
     for app, values in dict_pred.items():
+        # Skip aggregated power load
         if app == "aggregated":
             continue
-        app_real = values[key_real]
-        app_pred = values[key_pred]
+
+        app_real = values[key_real].astype(int)
+        app_pred = values[key_pred].astype(int)
 
         # Precision
         app_accuracy = accuracy_score(app_real, app_pred)
