@@ -382,7 +382,7 @@ class TorchModel:
     def load(self, path_model: str):
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
-    
+
     def score(self, loader: DataLoader):
         """
         Returns its activation and power scores.

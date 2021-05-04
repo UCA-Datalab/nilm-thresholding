@@ -52,7 +52,9 @@ def regression_scores_dict(
     # Initialize dict
     scores = {}
 
-    for app, values in dict_pred["appliance"].items():
+    for app, values in dict_pred.items():
+        if app == "aggregated":
+            continue
         app_real = values[key_real]
         app_pred = values[key_pred]
 
@@ -125,7 +127,9 @@ def classification_scores_dict(
     # Initialize dict
     scores = {}
 
-    for app, values in dict_pred["appliance"].items():
+    for app, values in dict_pred.items():
+        if app == "aggregated":
+            continue
         app_real = values[key_real]
         app_pred = values[key_pred]
 
