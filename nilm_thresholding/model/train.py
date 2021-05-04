@@ -7,7 +7,7 @@ import pandas as pd
 from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.conv import ConvModel
 from nilm_thresholding.model.gru import GRUModel
-from nilm_thresholding.results.store_output import (
+from nilm_thresholding.utils.store_output import (
     generate_path_output,
     generate_folder_name,
     store_scores,
@@ -15,6 +15,7 @@ from nilm_thresholding.results.store_output import (
 )
 from nilm_thresholding.utils.format_list import merge_dict_list
 from nilm_thresholding.utils.logging import logger
+from nilm_thresholding.utils.scores import score_dict_predictions
 
 
 def initialize_model(config: dict):
@@ -119,7 +120,8 @@ def train_many_models(path_data, path_output, config):
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.save(path_model)
 
-        act_scores[i], pow_scores[i] = model.score(dataloader_test)
+        dict_pred = model.predictions_to_dictionary(dataloader_test)
+        pow_scores[i], act_scores[i] = score_dict_predictions(dict_pred)
 
         # Store individual scores
         act_dict = merge_dict_list(act_scores[i])
@@ -182,7 +184,8 @@ def test_many_models(path_data, path_output, config):
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
         model.load(path_model)
 
-        act_scores[i], pow_scores[i] = model.score(dataloader_test)
+        dict_pred = model.predictions_to_dictionary(dataloader_test)
+        pow_scores[i], act_scores[i] = score_dict_predictions(dict_pred)
 
         # Store individual scores
         act_dict = merge_dict_list(act_scores[i])

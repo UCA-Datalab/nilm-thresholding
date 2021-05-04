@@ -140,3 +140,16 @@ def classification_scores_dict(
         }
 
     return scores
+
+
+def score_dict_predictions(dict_pred: dict) -> tuple:
+    # classification scores
+    class_scores = classification_scores_dict(dict_pred)
+    reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
+    act_scores = [class_scores, reg_scores]
+
+    # regression scores
+    class_scores = classification_scores_dict(dict_pred, key_pred="status_from_power")
+    reg_scores = regression_scores_dict(dict_pred)
+    pow_scores = [class_scores, reg_scores]
+    return pow_scores, act_scores

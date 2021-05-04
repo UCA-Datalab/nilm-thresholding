@@ -6,7 +6,6 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 import typer
 
 from nilm_thresholding.model.train import test_many_models
-from nilm_thresholding.results.plot_output import plot_scores_by_class_weight
 from nilm_thresholding.utils.config import load_config
 
 
@@ -38,9 +37,6 @@ def main(
     print(f"{config['name']}\n")
 
     test_many_models(path_data, path_output, config)
-
-    print("PLOT RESULTS!")
-    plot_scores_by_class_weight(config, path_output)
 
 
 if __name__ == "__main__":

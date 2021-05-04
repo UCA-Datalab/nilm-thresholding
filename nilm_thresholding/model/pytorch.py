@@ -9,10 +9,6 @@ import torch.optim as optim
 from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.data.threshold import Threshold
 from nilm_thresholding.utils.logging import logger
-from nilm_thresholding.utils.scores import (
-    classification_scores_dict,
-    regression_scores_dict,
-)
 
 
 class TorchModel:
@@ -390,25 +386,3 @@ class TorchModel:
     def load(self, path_model: str):
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
-
-    def score(self, loader: DataLoader):
-        """
-        Returns its activation and power scores.
-        """
-
-        # Test
-        dict_pred = self.predictions_to_dictionary(loader)
-
-        # classification scores
-        class_scores = classification_scores_dict(dict_pred)
-        reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
-        act_scores = [class_scores, reg_scores]
-
-        # regression scores
-        class_scores = classification_scores_dict(
-            dict_pred, key_pred="status_from_power"
-        )
-        reg_scores = regression_scores_dict(dict_pred)
-        pow_scores = [class_scores, reg_scores]
-
-        return act_scores, pow_scores
