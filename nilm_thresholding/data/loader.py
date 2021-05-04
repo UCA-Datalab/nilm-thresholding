@@ -107,12 +107,12 @@ class DataSet(data.Dataset):
         Parameters
         ----------
         ser : numpy.array
-            shape [num appliances, output len]
+            shape [output len, num appliances]
 
         Returns
         -------
         numpy.array
-            shape [num appliances, output len]
+            shape [output len, num appliances]
 
         """
         return self.threshold.get_status(ser)
@@ -123,12 +123,12 @@ class DataSet(data.Dataset):
         Parameters
         ----------
         ser : numpy.array
-            shape [num appliances, output len]
+            shape [output len, num appliances]
 
         Returns
         -------
         numpy.array
-            shape [num appliances, output len]
+            shape [output len, num appliances]
 
         """
         # Get power values from status
@@ -148,8 +148,8 @@ class DataSet(data.Dataset):
         -------
         tuple (numpy.array)
             x : shape [input len]
-            y : shape [num appliances, output len]
-            s : shape [num appliances, output len]
+            y : shape [output len, num appliances]
+            s : shape [output len, num appliances]
 
         """
         path_file = self.files[index]
