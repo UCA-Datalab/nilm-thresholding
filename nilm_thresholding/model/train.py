@@ -16,6 +16,7 @@ from nilm_thresholding.utils.store_output import (
 from nilm_thresholding.utils.format_list import merge_dict_list
 from nilm_thresholding.utils.logging import logger
 from nilm_thresholding.utils.scores import score_dict_predictions
+from nilm_thresholding.utils.plot import plot_real_data
 
 
 def initialize_model(config: dict):
@@ -103,6 +104,7 @@ def train_many_models(path_data, path_output, config):
     act_scores = [0] * config["num_models"]
     pow_scores = [0] * config["num_models"]
     time_elapsed = [0.0] * config["num_models"]
+    dict_pred = {}
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -154,6 +156,8 @@ def train_many_models(path_data, path_output, config):
         scores,
         time_elapsed=np.mean(time_elapsed),
     )
+
+    plot_real_data(dict_pred, savefig=os.path.join(path_output_folder, "real_data.png"))
 
     remove_directory("temp_train")
     remove_directory("temp_valid")
