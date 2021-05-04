@@ -267,6 +267,8 @@ class TorchModel:
                 )
                 min_loss = valid_loss
                 self.save("model.pth")
+                # Reset patience count
+                loss_up = 0
             else:
                 loss_up += 1
                 if loss_up >= self.patience:
