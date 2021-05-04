@@ -61,7 +61,7 @@ class TorchModel:
         self.epochs = epochs
         self.patience = patience
         self.name = name
-        self.appliances = [] if appliances is None else appliances
+        self.appliances = [] if appliances is None else sorted(appliances)
         self.status = [app + "_status" for app in self.appliances]
         self.num_apps = len(self.appliances)
         self.init_features = init_features
@@ -300,13 +300,18 @@ class TorchModel:
         pred_power, pred_status = self.model(x)
 
         status_predict = (
-            torch.sigmoid(pred_status)
-            .permute(0, 2, 1)
+            # torch.sigmoid(pred_status)
+            pred_status.permute(0, 2, 1)
             .detach()
             .cpu()
             .numpy()
             .reshape(-1, self.num_apps)
         )
+        # Status to integer
+        status_predict = status_predict.astype(int)
+        status_predict[status_predict < 0] = 0
+        n = self.threshold.num_status - 1
+        status_predict[status_predict > n] = n
 
         power_predict = (
             self._denormalize_y(pred_power)
@@ -316,6 +321,7 @@ class TorchModel:
             .numpy()
             .reshape(-1, self.num_apps)
         )
+        power_predict[power_predict < 0] = 0
         return power_predict, status_predict
 
     def predictions_to_dictionary(self, loader: DataLoader) -> dict:
