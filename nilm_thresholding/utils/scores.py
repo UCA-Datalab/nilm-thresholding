@@ -6,23 +6,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 
-from nilm_thresholding.utils.format_list import to_list
-
-
-def _assert_shape(y_pred, y_real, appliances):
-    if not y_pred.shape == y_real.shape:
-        raise ValueError(
-            "Array shape mismatch.\n"
-            f"y_pred shape: {y_pred.shape}\n"
-            f"y_real_shape: {y_real.shape}"
-        )
-    if y_pred.shape[-1] != len(appliances):
-        raise ValueError(
-            "Number of appliances mismatch.\n"
-            f"Appliances in y_pred array: {y_pred.shape[-1]}\n"
-            f"Appliances in appliances list: {len(appliances)}"
-        )
-
 
 def regression_scores_dict(
     dict_pred: dict, key_real: str = "power", key_pred: str = "power_pred"

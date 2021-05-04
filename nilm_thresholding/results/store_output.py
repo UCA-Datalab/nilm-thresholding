@@ -1,13 +1,6 @@
 import collections
 import os
 
-import numpy as np
-import pandas as pd
-
-from nilm_thresholding.utils.format_list import to_list
-from nilm_thresholding.utils.plot import plot_informative_classification
-from nilm_thresholding.utils.plot import plot_informative_regression
-
 
 def list_scores(appliances, act_scores, pow_scores, num_models):
     """
@@ -114,33 +107,3 @@ def store_scores(
                     text_file.write(f"{name}: {value}\n")
                 text_file.write("----------------------------------------------\n")
             text_file.write("==================================================\n")
-
-
-def store_real_data_and_predictions(
-    path_output, config, model, dl_test, means, thresholds
-):
-
-    # Ensure appliances is a list
-    appliances = to_list(config["data"]["appliances"])
-
-    # Model values
-
-    x, p_true, s_true, p_hat, s_hat = model.predict(dl_test)
-
-    p_true, p_hat, s_hat, sp_hat, ps_hat = model.process_outputs(
-        p_true, p_hat, s_hat, dl_test
-    )
-
-    for idx, app in enumerate(appliances):
-        # Store results
-        df = pd.DataFrame(
-            {
-                "x": x,
-                "y_true": p_true[:, idx],
-                "y_hat": p_hat[:, idx],
-                "s_true": s_true[:, idx],
-                "s_hat": s_hat[:, idx],
-            }
-        )
-        save_csv = os.path.join(path_output, f"{app}_data.csv")
-        df.to_csv(save_csv)
