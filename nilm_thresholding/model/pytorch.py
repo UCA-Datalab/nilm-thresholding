@@ -356,6 +356,9 @@ class TorchModel:
         power_true = np.concatenate(power_true, axis=0)
         status_predict = np.concatenate(status_predict, axis=0)
         power_predict = np.concatenate(power_predict, axis=0)
+        # Reconstructed power, and status from predicted power
+        power_reconstructed = loader.dataset.status_to_power(status_predict)
+        status_from_power = loader.dataset.power_to_status(power_predict)
         for idx, app in enumerate(self.appliances):
             dict_series.update(
                 {
@@ -364,6 +367,8 @@ class TorchModel:
                         "status": status_true[:, idx],
                         "power_pred": power_predict[:, idx],
                         "status_pred": status_predict[:, idx],
+                        "power_recon": power_reconstructed[:, idx],
+                        "status_from_power": status_from_power[:, idx],
                     }
                 }
             )
@@ -377,28 +382,7 @@ class TorchModel:
     def load(self, path_model: str):
         """Load the weights of the model"""
         self.model.load_state_dict(torch.load(path_model))
-
-    def process_outputs(
-        self, power_true, power_predict, status_predict, loader: DataLoader
-    ):
-        # Get status
-        status_predict = self.threshold.get_status(status_predict)
-
-        # Get power values from status
-        spower_predict = loader.dataset.status_to_power(status_predict)
-
-        # Get status from power values
-        pstatus_predict = self.threshold.get_status(power_predict)
-
-        return (
-            power_true,
-            power_predict,
-            status_predict,
-            spower_predict,
-            pstatus_predict,
-        )
-
-    # TODO: Redo score functions
+    
     def score(self, loader: DataLoader):
         """
         Returns its activation and power scores.
@@ -406,23 +390,17 @@ class TorchModel:
 
         # Test
         dict_pred = self.predictions_to_dictionary(loader)
-        power_reconstructed = loader.dataset.status_to_power(status_predict)
-        status_from_power = loader.dataset.power_to_status(power_predict)
 
         # classification scores
-        class_scores = classification_scores_dict(
-            status_predict, status_true, self.appliances
-        )
-        reg_scores = regression_scores_dict(
-            power_reconstructed, power_true, self.appliances
-        )
+        class_scores = classification_scores_dict(dict_pred)
+        reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
         act_scores = [class_scores, reg_scores]
 
         # regression scores
         class_scores = classification_scores_dict(
-            status_from_power, status_true, self.appliances
+            dict_pred, key_pred="status_from_power"
         )
-        reg_scores = regression_scores_dict(power_predict, power_true, self.appliances)
+        reg_scores = regression_scores_dict(dict_pred)
         pow_scores = [class_scores, reg_scores]
 
         return act_scores, pow_scores

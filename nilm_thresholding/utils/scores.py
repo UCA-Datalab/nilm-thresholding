@@ -24,7 +24,9 @@ def _assert_shape(y_pred, y_real, appliances):
         )
 
 
-def regression_scores_dict(y_pred, y_real, appliances):
+def regression_scores_dict(
+    dict_pred: dict, key_real: str = "power", key_pred: str = "power_pred"
+):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - MSE, Mean Square Error
@@ -32,16 +34,13 @@ def regression_scores_dict(y_pred, y_real, appliances):
 
     Parameters
     ----------
-    y_pred : numpy.array
-        shape = (num_series, series_len, num_appliances)
-        - num_series : Amount of time series.
-        - series_len : Length of each time series.
-        - num_appliances : Meters contained in the array.
-    y_real : numpy.array
-        shape = (num_series, series_len, num_appliances)
-    appliances : list
-        len = num_appliances
-        Must be sorted following the order of both y_pred and y_real
+    dict_pred : dict
+        Dictionary containing all the relevant data
+        returned by model.predictions_to_dictionary
+    key_real : str, optional
+        Key of the real value, by default "power"
+    key_pred : str, optional
+        Key of the predicted value, by default "power_pred"
 
     Returns
     -------
@@ -50,26 +49,12 @@ def regression_scores_dict(y_pred, y_real, appliances):
 
     """
 
-    appliances = to_list(appliances)
-    _assert_shape(y_pred, y_real, appliances)
-
-    if np.mean(y_real) <= 1:
-        print(
-            "Warning!\nThe predicted values appear to be normalized.\n"
-            "It is recommended to use the de-normalized values\n"
-            "when computing the regression errors"
-        )
-
     # Initialize dict
     scores = {}
 
-    for idx, app in enumerate(appliances):
-        if len(y_pred.shape) == 3:
-            app_pred = y_pred[:, :, idx].flatten()
-            app_real = y_real[:, :, idx].flatten()
-        else:
-            app_pred = y_pred[:, idx].flatten()
-            app_real = y_real[:, idx].flatten()
+    for app, values in dict_pred["appliance"].items():
+        app_real = values[key_real]
+        app_pred = values[key_pred]
 
         # MSE and RMSE
         app_mse = mean_squared_error(app_real, app_pred)
@@ -110,7 +95,9 @@ def regression_scores_dict(y_pred, y_real, appliances):
     return scores
 
 
-def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
+def classification_scores_dict(
+    dict_pred: dict, key_real: str = "status", key_pred: str = "status_pred"
+):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - Accuracy
@@ -120,18 +107,13 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
 
     Parameters
     ----------
-    y_pred : numpy.array
-        shape = (num_series, series_len, num_appliances)
-        - num_series : Amount of time series.
-        - series_len : Length of each time series.
-        - num_appliances : Meters contained in the array.
-    y_real : numpy.array
-        shape = (num_series, series_len, num_appliances)
-    appliances : list
-        len = num_appliances
-        Must be sorted following the order of both y_pred and y_real
-    threshold : float, default=0.5
-        Minimum value (form 0 to 1) at which we consider the appliance to be ON
+    dict_pred : dict
+        Dictionary containing all the relevant data
+        returned by model.predictions_to_dictionary
+    key_real : str, optional
+        Key of the real value, by default "status"
+    key_pred : str, optional
+        Key of the predicted value, by default "status_pred"
 
     Returns
     -------
@@ -140,36 +122,12 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
 
     """
 
-    appliances = to_list(appliances)
-    _assert_shape(y_pred, y_real, appliances)
-
-    if (
-        (y_pred.max() > 1).any()
-        or (y_real > 1).any()
-        or (y_pred.min() < 0).any()
-        or (y_real.min() < 0).any()
-    ):
-        raise ValueError("Classification values must be between 0 and 1.")
-
-    # Binarize the arrays
-    bin_pred = np.zeros(y_pred.shape)
-    bin_pred[y_pred >= threshold] = 1
-    bin_pred = bin_pred.astype(int)
-
-    bin_real = np.zeros(y_real.shape)
-    bin_real[y_real >= threshold] = 1
-    bin_real = bin_real.astype(int)
-
     # Initialize dict
     scores = {}
 
-    for idx, app in enumerate(appliances):
-        if len(y_pred.shape) == 3:
-            app_pred = bin_pred[:, :, idx].flatten()
-            app_real = bin_real[:, :, idx].flatten()
-        else:
-            app_pred = bin_pred[:, idx].flatten()
-            app_real = bin_real[:, idx].flatten()
+    for app, values in dict_pred["appliance"].items():
+        app_real = values[key_real]
+        app_pred = values[key_pred]
 
         # Precision
         app_accuracy = accuracy_score(app_real, app_pred)
