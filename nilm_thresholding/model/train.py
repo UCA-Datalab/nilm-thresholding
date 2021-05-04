@@ -104,20 +104,19 @@ def train_many_models(path_data, path_output, config):
 
     act_scores = [0] * config["num_models"]
     pow_scores = [0] * config["num_models"]
-    time_ellapsed = [0] * config["num_models"]
+    time_elapsed = [0.0] * config["num_models"]
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
 
+        # Initialize the model
         model = initialize_model(config)
 
         # Train
-        time_start = time.time()
-        model.train(
+        time_elapsed[i] = model.train(
             dataloader_train,
             dataloader_validation,
         )
-        time_ellapsed[i] = round(time.time() - time_start, 2)
 
         # Store the model
         path_model = os.path.join(path_output_folder, f"model_{i}.pth")
@@ -137,7 +136,7 @@ def train_many_models(path_data, path_output, config):
             path_output_folder,
             config,
             scores,
-            time_ellapsed[i],
+            time_elapsed[i],
             filename=filename,
         )
 
@@ -154,7 +153,7 @@ def train_many_models(path_data, path_output, config):
         path_output_folder,
         config,
         scores,
-        np.mean(time_ellapsed),
+        np.mean(time_elapsed),
     )
 
     remove_directory("temp_train")
@@ -177,7 +176,7 @@ def test_many_models(path_data, path_output, config):
 
     act_scores = []
     pow_scores = []
-    time_ellapsed = 0
+    time_elapsed = 0
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -205,7 +204,7 @@ def test_many_models(path_data, path_output, config):
             path_output_folder,
             config,
             scores,
-            time_ellapsed,
+            time_elapsed,
             filename=filename,
         )
 
@@ -221,7 +220,7 @@ def test_many_models(path_data, path_output, config):
     )
 
     # Store scores and plot
-    store_scores(path_output_folder, config, scores, time_ellapsed)
+    store_scores(path_output_folder, config, scores, time_elapsed)
 
     store_plots(
         path_output_folder,

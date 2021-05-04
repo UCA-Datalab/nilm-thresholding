@@ -1,7 +1,7 @@
 import os
+import time
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -187,6 +187,21 @@ class TorchModel:
         train_loader: DataLoader,
         valid_loader: DataLoader,
     ):
+        """Trains the model
+
+        Parameters
+        ----------
+        train_loader : DataLoader
+        valid_loader : DataLoader
+
+        Returns
+        ------
+        float
+            elapsed time, in seconds
+
+        """
+        # Time it
+        time_start = time.time()
 
         # to track the average training loss per epoch as the model trains
         avg_train_losses = [0] * self.epochs
@@ -232,6 +247,10 @@ class TorchModel:
         # load the last checkpoint with the best model
         self.load("model.pth")
         os.remove("model.pth")
+
+        # Return time (seconds)
+        time_elapsed = round(time.time() - time_start, 2)
+        return time_elapsed
 
     def predictions_to_dictionary(self, loader: DataLoader) -> dict:
         """Builds a dictionary with the following structure:
