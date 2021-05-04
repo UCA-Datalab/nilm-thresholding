@@ -207,8 +207,9 @@ class DataLoader(data.DataLoader):
                 # Loop through the set and extract all the values
                 for idx, (_, meters, _) in enumerate(self):
                     ser[idx] = meters[:, :, app_idx].flatten()
-                # Concatenate all values and denormalize them
-                ser = self.dataset.denormalize_power(np.concatenate(ser))
-                self.dataset.threshold.update_appliance_threshold(ser, app)
+                # Concatenate all values and update the threshold
+                self.dataset.threshold.update_appliance_threshold(
+                    np.concatenate(ser), app
+                )
             # Write the config file
             self.dataset.threshold.write_config(self.path_threshold)
