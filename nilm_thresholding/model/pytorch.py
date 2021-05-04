@@ -105,14 +105,14 @@ class TorchModel:
 
         Parameters
         ----------
-        data : tuple
+        data : tuple (torch.Tensor)
             x : shape [batch, input len]
             y_pow : shape [batch, output len, num appliances]
             y_sta : shape [batch, output len, num appliances]
 
         Returns
         -------
-        tuple
+        tuple (torch.Tensor)
             x : shape [batch, 1, input len]
             y_pow : shape [batch, num appliances, output len]
             y_sta : shape [batch, num appliances, output len]
@@ -127,6 +127,35 @@ class TorchModel:
         )
         y_sta = y_sta.to(device=self.device, dtype=torch.float).permute(0, 2, 1)
         return x, y_pow, y_sta
+
+    def _loader_data_to_numpy(self, data: tuple) -> tuple:
+        """Reads the data provided by the data loader, moves it to CPU, transforms to
+        numpy and reshapes it to ignore batch
+
+        Parameters
+        ----------
+        data : tuple (torch.Tensor)
+            x : shape [batch, input len]
+            y_pow : shape [batch, output len, num appliances]
+            y_sta : shape [batch, output len, num appliances]
+
+        Returns
+        -------
+        tuple (numpy.array)
+            x : shape [batch * output len]
+            y_pow : shape [batch * output len, num appliances]
+            y_sta : shape [batch * output len, num appliances]
+
+        """
+        x_raw, y_pow, y_sta = data
+        # (batch_size, out_len) -> (batch_size * out_len)
+        aggregated = (
+            x_raw[:, self._limit : -self._limit].detach().cpu().numpy().flatten()
+        )
+        # (batch_size, out_len, num_apps) -> (batch_size * out_len, num_apps)
+        status_true = y_sta.detach().cpu().numpy().reshape(-1, self.num_apps)
+        power_true = y_pow.detach().cpu().numpy().reshape(-1, self.num_apps)
+        return aggregated, power_true, status_true
 
     def _compute_loss(
         self,
@@ -252,6 +281,43 @@ class TorchModel:
         time_elapsed = round(time.time() - time_start, 2)
         return time_elapsed
 
+    def predict(self, x: torch.Tensor) -> tuple:
+        """
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            shape [batch size, input len]
+
+        Returns
+        -------
+        tuple (numpy.array)
+            power_predict : shape [batch size * output len, num appliances]
+            status_predict :shape [batch size * output len, num appliances]
+
+        """
+        self.model.eval()
+        pred_power, pred_status = self.model(x)
+
+        status_predict = (
+            torch.sigmoid(pred_status)
+            .permute(0, 2, 1)
+            .detach()
+            .cpu()
+            .numpy()
+            .reshape(-1, self.num_apps)
+        )
+
+        power_predict = (
+            self._denormalize_y(pred_power)
+            .permute(0, 2, 1)
+            .detach()
+            .cpu()
+            .numpy()
+            .reshape(-1, self.num_apps)
+        )
+        return power_predict, status_predict
+
     def predictions_to_dictionary(self, loader: DataLoader) -> dict:
         """Builds a dictionary with the following structure:
         {
@@ -265,51 +331,24 @@ class TorchModel:
         }
         """
         # Initialize arrays
-        aggregated = [0] * len(loader)
+        aggregated = [0.0] * len(loader)
         status_true = [0] * len(loader)
-        power_true = [0] * len(loader)
+        power_true = [0.0] * len(loader)
         status_predict = [0] * len(loader)
-        power_predict = [0] * len(loader)
-
-        self.model.eval()
+        power_predict = [0.0] * len(loader)
 
         with torch.no_grad():
             for batch, data in enumerate(loader):
-                x_raw, y_pow_raw, y_sta_raw = data
-                aggregated[batch] = (
-                    x_raw[:, self._limit : -self._limit]
-                    .detach()
-                    .cpu()
-                    .numpy()
-                    .flatten()
-                )
-                status_true[batch] = (
-                    y_sta_raw.detach().cpu().numpy().reshape(-1, self.num_apps)
-                )
-                power_true[batch] = (
-                    y_pow_raw.detach().cpu().numpy().reshape(-1, self.num_apps)
-                )
+                # Move torch tensors to CPU, change to numpy and reshape
+                (
+                    aggregated[batch],
+                    power_true[batch],
+                    status_true[batch],
+                ) = self._loader_data_to_numpy(data)
 
-                x, y_pow, y_sta = self._process_loader_data(data)
-                pred_power, pred_status = self.model(x)
+                x, _, _ = self._process_loader_data(data)
 
-                status_predict[batch] = (
-                    torch.sigmoid(pred_status)
-                    .permute(0, 2, 1)
-                    .detach()
-                    .cpu()
-                    .numpy()
-                    .reshape(-1, self.num_apps)
-                )
-
-                power_predict[batch] = (
-                    self._denormalize_y(pred_power)
-                    .permute(0, 2, 1)
-                    .detach()
-                    .cpu()
-                    .numpy()
-                    .reshape(-1, self.num_apps)
-                )
+                power_predict[batch], status_predict[batch] = self.predict(x)
 
         dict_series = {"aggregated": np.hstack(aggregated)}
         # True values

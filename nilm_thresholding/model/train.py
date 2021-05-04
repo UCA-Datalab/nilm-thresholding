@@ -1,9 +1,8 @@
 import os
-import time
+import shutil
 
 import numpy as np
 import pandas as pd
-import shutil
 
 from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.conv import ConvModel
@@ -48,7 +47,7 @@ def generate_temporal_data(loader: DataLoader, path: str = "data_temp"):
     file_num = 0
     files = loader.dataset.files.copy()
     # Iterate through the whole dataloader
-    for data, target_power, target_status in loader:
+    for data, target_power, target_status in iter(loader):
         data = data.cpu().detach().numpy()
         target_power = target_power.cpu().detach().numpy()
         target_status = target_status.cpu().detach().numpy()

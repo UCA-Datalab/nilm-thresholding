@@ -102,16 +102,56 @@ class DataSet(data.Dataset):
         self._idx_end = self.length - self.border
 
     def power_to_status(self, ser: np.array) -> np.array:
+        """Computes the status assigned to each power value
+
+        Parameters
+        ----------
+        ser : numpy.array
+            shape [num appliances, output len]
+
+        Returns
+        -------
+        numpy.array
+            shape [num appliances, output len]
+
+        """
         return self.threshold.get_status(ser)
 
     def status_to_power(self, ser: np.array) -> np.array:
+        """Computes the power assigned to each status
+
+        Parameters
+        ----------
+        ser : numpy.array
+            shape [num appliances, output len]
+
+        Returns
+        -------
+        numpy.array
+            shape [num appliances, output len]
+
+        """
         # Get power values from status
         power = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 0])
         power_on = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 1])
         power[ser == 1] = power_on[ser == 1]
         return power
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> tuple:
+        """Returns an element of the data loader
+
+        Parameters
+        ----------
+        index : int
+
+        Returns
+        -------
+        tuple (numpy.array)
+            x : shape [input len]
+            y : shape [num appliances, output len]
+            s : shape [num appliances, output len]
+
+        """
         path_file = self.files[index]
         df = self._open_file(path_file)
         x = df["aggregate"].values
