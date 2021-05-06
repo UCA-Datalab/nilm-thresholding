@@ -123,14 +123,11 @@ def train_many_models(path_data, path_output, config):
         dict_pred = model.predictions_to_dictionary(dataloader_test)
         list_dict_scores[i] = score_dict_predictions(dict_pred)
 
-        filename = f"scores_{i}.txt"
-
         store_scores(
-            path_output_folder,
             config,
             list_dict_scores[i],
             time_elapsed=time_elapsed[i],
-            filename=filename,
+            path_output=os.path.join(path_output_folder, f"scores_{i}.txt"),
         )
 
     # List of dicts to unique dict scores
@@ -138,10 +135,10 @@ def train_many_models(path_data, path_output, config):
 
     # Store scores and plot
     store_scores(
-        path_output_folder,
         config,
         dict_scores,
         time_elapsed=np.mean(time_elapsed),
+        path_output=os.path.join(path_output_folder, "scores.txt"),
     )
 
     plot_real_data(dict_pred, savefig=os.path.join(path_output_folder, "real_data.png"))
@@ -177,13 +174,11 @@ def test_many_models(path_data, path_output, config):
         dict_pred = model.predictions_to_dictionary(dataloader_test)
         list_dict_scores[i] = score_dict_predictions(dict_pred)
 
-        filename = f"scores_{i}.txt"
-
         store_scores(
             path_output_folder,
             config,
             list_dict_scores[i],
-            filename=filename,
+            path_output=os.path.join(path_output_folder, f"scores_{i}.txt"),
         )
 
         del model
@@ -192,4 +187,6 @@ def test_many_models(path_data, path_output, config):
     dict_scores = average_list_dict_scores(list_dict_scores)
 
     # Store scores and plot
-    store_scores(path_output_folder, config, dict_scores)
+    store_scores(
+        config, dict_scores, path_output=os.path.join(path_output_folder, "scores.txt")
+    )

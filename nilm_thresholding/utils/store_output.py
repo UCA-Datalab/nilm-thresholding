@@ -63,22 +63,20 @@ def generate_folder_name(path_output: str, config: dict):
 
 
 def store_scores(
-    path_output: str,
     config_model: dict,
     dict_scores: dict,
     time_elapsed: float = 0,
-    filename: str = "scores.txt",
+    path_output: str = "scores.txt",
 ):
     """
 
     Parameters
     ----------
-    path_output : str
     config_model : dict
     dict_scores : dict
         Output of utils.scores.score_dict_predictions
-    time_elapsed : float
-    filename : str
+    time_elapsed : float, optional
+    path_output : str, optional
 
     """
     # Load parameters
@@ -93,9 +91,7 @@ def store_scores(
     epochs = config_model["epochs"]
     patience = config_model["patience"]
 
-    path_scores = os.path.join(path_output, filename)
-
-    with open(path_scores, "w") as text_file:
+    with open(path_output, "w") as text_file:
         text_file.write(
             f"Train size: {train_size}\n"
             f"Validation size: {valid_size}\n"
