@@ -1,6 +1,3 @@
-from collections import defaultdict
-
-
 def to_list(x):
     """
     This utility just check if input X is a list
