@@ -87,7 +87,7 @@ class TorchModel:
 
         """
         # x data are subtracted their mean and normalized
-        return (x - x.mean(axis=1, keepdim=True)) / self.power_scale
+        return (x - x.mean(axis=2, keepdim=True)) / self.power_scale
 
     def _normalize_y(self, y: torch.Tensor) -> torch.Tensor:
         return y / self.power_scale
