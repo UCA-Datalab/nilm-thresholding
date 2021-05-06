@@ -5,18 +5,18 @@ import torch.optim as optim
 from nilm_thresholding.model.pytorch import TorchModel
 
 
-class _Dense(nn.Module):
+class Dense(nn.Module):
     def __init__(self, in_features, out_features):
-        super(_Dense, self).__init__()
+        super(Dense, self).__init__()
         self.linear = nn.Linear(in_features, out_features)
 
     def forward(self, x):
         return self.linear(x)
 
 
-class _BiGRU(nn.Module):
+class BiGRU(nn.Module):
     def __init__(self, input_len=510, output_len=480, out_channels=1, dropout=0.1):
-        super(_BiGRU, self).__init__()
+        super(BiGRU, self).__init__()
 
         padding = 2
         kernel_size = int((input_len - output_len + 4 * padding + 2) / 2)
@@ -29,7 +29,7 @@ class _BiGRU(nn.Module):
         self.gru1 = nn.GRU(8, 64, batch_first=True, bidirectional=True, dropout=dropout)
         self.gru2 = nn.GRU(128, 128, batch_first=True, bidirectional=True)
 
-        self.dense = _Dense(256, 64)
+        self.dense = Dense(256, 64)
         self.regressor = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
         self.activation = nn.Conv1d(64, out_channels, kernel_size=1, padding=0)
 
@@ -58,7 +58,7 @@ class GRUModel(TorchModel):
         msg = "Difference between input and output lens must be even"
         assert (self.input_len - self.output_len) % 2 == 0, msg
 
-        self.model = _BiGRU(
+        self.model = BiGRU(
             input_len=self.input_len,
             output_len=self.output_len,
             out_channels=len(self.appliances),
