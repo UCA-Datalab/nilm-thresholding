@@ -63,8 +63,24 @@ def generate_folder_name(path_output: str, config: dict):
 
 
 def store_scores(
-    path_output, config_model, scores, time_elapsed: float = 0, filename="scores.txt"
+    path_output: str,
+    config_model: dict,
+    dict_scores: dict,
+    time_elapsed: float = 0,
+    filename: str = "scores.txt",
 ):
+    """
+
+    Parameters
+    ----------
+    path_output : str
+    config_model : dict
+    dict_scores : dict
+        Output of utils.scores.score_dict_predictions
+    time_elapsed : float
+    filename : str
+
+    """
     # Load parameters
     class_w = config_model["classification_w"]
     reg_w = config_model["regression_w"]
@@ -92,7 +108,7 @@ def store_scores(
             f"Time per model (seconds): {time_elapsed}\n"
             f"=============================================\n"
         )
-        for key, dic1 in scores.items():
+        for key, dic1 in dict_scores.items():
 
             # Skip scores if weight is zero
             if (class_w == 0) and (key.startswith("class")):

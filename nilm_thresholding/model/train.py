@@ -7,16 +7,15 @@ import pandas as pd
 from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.conv import ConvModel
 from nilm_thresholding.model.gru import GRUModel
+from nilm_thresholding.utils.logging import logger
+from nilm_thresholding.utils.plot import plot_real_data
+from nilm_thresholding.utils.scores import score_dict_predictions
 from nilm_thresholding.utils.store_output import (
     generate_path_output,
     generate_folder_name,
     store_scores,
     list_scores,
 )
-from nilm_thresholding.utils.format_list import merge_dict_list
-from nilm_thresholding.utils.logging import logger
-from nilm_thresholding.utils.scores import score_dict_predictions
-from nilm_thresholding.utils.plot import plot_real_data
 
 
 def initialize_model(config: dict):
@@ -101,8 +100,7 @@ def train_many_models(path_data, path_output, config):
     generate_temporal_data(dataloader_validation, path="temp_valid")
 
     # Initialize lists
-    act_scores = [0] * config["num_models"]
-    pow_scores = [0] * config["num_models"]
+    scores = [{}] * config["num_models"]
     time_elapsed = [0.0] * config["num_models"]
     dict_pred = {}
 
@@ -123,20 +121,14 @@ def train_many_models(path_data, path_output, config):
         model.save(path_model)
 
         dict_pred = model.predictions_to_dictionary(dataloader_test)
-        pow_scores[i], act_scores[i] = score_dict_predictions(dict_pred)
-
-        # Store individual scores
-        act_dict = merge_dict_list(act_scores[i])
-        pow_dict = merge_dict_list(pow_scores[i])
-
-        scores = {"classification": act_dict, "regression": pow_dict}
+        scores[i] = score_dict_predictions(dict_pred)
 
         filename = f"scores_{i}.txt"
 
         store_scores(
             path_output_folder,
             config,
-            scores,
+            scores[i],
             time_elapsed=time_elapsed[i],
             filename=filename,
         )
@@ -144,8 +136,7 @@ def train_many_models(path_data, path_output, config):
     # List scores
     scores = list_scores(
         config["appliances"],
-        act_scores,
-        pow_scores,
+        scores,
         config["num_models"],
     )
 
@@ -176,8 +167,7 @@ def test_many_models(path_data, path_output, config):
     dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
     # Initialize lists
-    act_scores = [0] * config["num_models"]
-    pow_scores = [0] * config["num_models"]
+    scores = [{}] * config["num_models"]
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -189,20 +179,14 @@ def test_many_models(path_data, path_output, config):
         model.load(path_model)
 
         dict_pred = model.predictions_to_dictionary(dataloader_test)
-        pow_scores[i], act_scores[i] = score_dict_predictions(dict_pred)
-
-        # Store individual scores
-        act_dict = merge_dict_list(act_scores[i])
-        pow_dict = merge_dict_list(pow_scores[i])
-
-        scores = {"classification": act_dict, "regression": pow_dict}
+        scores[i] = score_dict_predictions(dict_pred)
 
         filename = f"scores_{i}.txt"
 
         store_scores(
             path_output_folder,
             config,
-            scores,
+            scores[i],
             filename=filename,
         )
 

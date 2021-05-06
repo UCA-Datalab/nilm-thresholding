@@ -142,14 +142,21 @@ def classification_scores_dict(
     return scores
 
 
-def score_dict_predictions(dict_pred: dict) -> tuple:
-    # classification scores
-    class_scores = classification_scores_dict(dict_pred)
-    reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
-    act_scores = [class_scores, reg_scores]
-
+def score_dict_predictions(dict_pred: dict) -> dict:
+    """Returns a dictionary, containing the scores for the predictions, one related
+    to regression, another to classification"""
     # regression scores
+    pow_scores = regression_scores_dict(dict_pred)
     class_scores = classification_scores_dict(dict_pred, key_pred="status_from_power")
-    reg_scores = regression_scores_dict(dict_pred)
-    pow_scores = [class_scores, reg_scores]
-    return pow_scores, act_scores
+    for app in pow_scores.keys():
+        pow_scores[app].update(class_scores[app])
+
+    # classification scores
+    act_scores = classification_scores_dict(dict_pred)
+    reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
+    for app in act_scores.keys():
+        act_scores[app].update(reg_scores[app])
+
+    dict_scores = {"classification": act_scores, "regression": pow_scores}
+
+    return dict_scores
