@@ -14,7 +14,7 @@ from nilm_thresholding.utils.store_output import (
     generate_path_output,
     generate_folder_name,
     store_scores,
-    list_scores,
+    average_list_dict_scores,
 )
 
 
@@ -100,7 +100,7 @@ def train_many_models(path_data, path_output, config):
     generate_temporal_data(dataloader_validation, path="temp_valid")
 
     # Initialize lists
-    scores = [{}] * config["num_models"]
+    list_dict_scores = [{}] * config["num_models"]
     time_elapsed = [0.0] * config["num_models"]
     dict_pred = {}
 
@@ -121,30 +121,26 @@ def train_many_models(path_data, path_output, config):
         model.save(path_model)
 
         dict_pred = model.predictions_to_dictionary(dataloader_test)
-        scores[i] = score_dict_predictions(dict_pred)
+        list_dict_scores[i] = score_dict_predictions(dict_pred)
 
         filename = f"scores_{i}.txt"
 
         store_scores(
             path_output_folder,
             config,
-            scores[i],
+            list_dict_scores[i],
             time_elapsed=time_elapsed[i],
             filename=filename,
         )
 
-    # List scores
-    scores = list_scores(
-        config["appliances"],
-        scores,
-        config["num_models"],
-    )
+    # List of dicts to unique dict scores
+    dict_scores = average_list_dict_scores(list_dict_scores)
 
     # Store scores and plot
     store_scores(
         path_output_folder,
         config,
-        scores,
+        dict_scores,
         time_elapsed=np.mean(time_elapsed),
     )
 
@@ -167,7 +163,7 @@ def test_many_models(path_data, path_output, config):
     dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
 
     # Initialize lists
-    scores = [{}] * config["num_models"]
+    list_dict_scores = [{}] * config["num_models"]
 
     for i in range(config["num_models"]):
         logger.debug(f"\nModel {i + 1}\n")
@@ -179,27 +175,21 @@ def test_many_models(path_data, path_output, config):
         model.load(path_model)
 
         dict_pred = model.predictions_to_dictionary(dataloader_test)
-        scores[i] = score_dict_predictions(dict_pred)
+        list_dict_scores[i] = score_dict_predictions(dict_pred)
 
         filename = f"scores_{i}.txt"
 
         store_scores(
             path_output_folder,
             config,
-            scores[i],
+            list_dict_scores[i],
             filename=filename,
         )
 
         del model
 
-    # List scores
-
-    scores = list_scores(
-        config["appliances"],
-        act_scores,
-        pow_scores,
-        config["num_models"],
-    )
+    # List of dicts to unique dict scores
+    dict_scores = average_list_dict_scores(list_dict_scores)
 
     # Store scores and plot
-    store_scores(path_output_folder, config, scores)
+    store_scores(path_output_folder, config, dict_scores)

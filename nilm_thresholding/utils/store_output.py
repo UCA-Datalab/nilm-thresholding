@@ -2,25 +2,25 @@ import collections
 import os
 
 
-def list_scores(appliances, act_scores, pow_scores, num_models):
+def average_list_dict_scores(list_dict_scores: list) -> dict:
     """
-    List scores in dictionary format.
+    Averages a list of dictionaries with the same format to a single dictionary
     """
+    num_models = len(list_dict_scores)
+    appliances = list(list_dict_scores[0]["classification"].keys())
     scores = {"classification": {}, "regression": {}}
 
     for app in appliances:
-        counter = collections.Counter()
-        for sc in act_scores:
-            counter.update(sc[app])
+        counter_class = collections.Counter()
+        counter_reg = collections.Counter()
+        for sc in list_dict_scores:
+            counter_class.update(sc["classification"][app])
+            counter_reg.update(sc["regression"][app])
         scores["classification"][app] = {
-            k: round(v, 6) / num_models for k, v in dict(counter).items()
+            k: round(v, 6) / num_models for k, v in dict(counter_class).items()
         }
-
-        counter = collections.Counter()
-        for sc in pow_scores:
-            counter.update(sc[app])
         scores["regression"][app] = {
-            k: round(v, 6) / num_models for k, v in dict(counter).items()
+            k: round(v, 6) / num_models for k, v in dict(counter_reg).items()
         }
 
     return scores
