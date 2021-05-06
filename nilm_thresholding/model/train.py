@@ -8,13 +8,15 @@ from nilm_thresholding.data.loader import DataLoader
 from nilm_thresholding.model.conv import ConvModel
 from nilm_thresholding.model.gru import GRUModel
 from nilm_thresholding.utils.logging import logger
-from nilm_thresholding.utils.plot import plot_real_data
-from nilm_thresholding.utils.scores import score_dict_predictions
+from nilm_thresholding.utils.scores import (
+    score_dict_predictions,
+    average_list_dict_scores,
+)
 from nilm_thresholding.utils.store_output import (
     generate_path_output,
     generate_folder_name,
     store_scores,
-    average_list_dict_scores,
+    store_plots,
 )
 
 
@@ -140,8 +142,7 @@ def train_many_models(path_data, path_output, config):
         time_elapsed=np.mean(time_elapsed),
         path_output=os.path.join(path_output_folder, "scores.txt"),
     )
-
-    plot_real_data(dict_pred, savefig=os.path.join(path_output_folder, "real_data.png"))
+    store_plots(dict_pred, path_output=path_output_folder)
 
     remove_directory("temp_train")
     remove_directory("temp_valid")

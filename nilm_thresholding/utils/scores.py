@@ -1,10 +1,14 @@
+import collections
+
 import numpy as np
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    recall_score,
+)
 
 
 def regression_scores_dict(
@@ -160,3 +164,27 @@ def score_dict_predictions(dict_pred: dict) -> dict:
     dict_scores = {"classification": act_scores, "regression": pow_scores}
 
     return dict_scores
+
+
+def average_list_dict_scores(list_dict_scores: list) -> dict:
+    """
+    Averages a list of dictionaries with the same format to a single dictionary
+    """
+    num_models = len(list_dict_scores)
+    appliances = list(list_dict_scores[0]["classification"].keys())
+    scores = {"classification": {}, "regression": {}}
+
+    for app in appliances:
+        counter_class = collections.Counter()
+        counter_reg = collections.Counter()
+        for sc in list_dict_scores:
+            counter_class.update(sc["classification"][app])
+            counter_reg.update(sc["regression"][app])
+        scores["classification"][app] = {
+            k: round(v, 6) / num_models for k, v in dict(counter_class).items()
+        }
+        scores["regression"][app] = {
+            k: round(v, 6) / num_models for k, v in dict(counter_reg).items()
+        }
+
+    return scores

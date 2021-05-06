@@ -1,29 +1,6 @@
-import collections
 import os
 
-
-def average_list_dict_scores(list_dict_scores: list) -> dict:
-    """
-    Averages a list of dictionaries with the same format to a single dictionary
-    """
-    num_models = len(list_dict_scores)
-    appliances = list(list_dict_scores[0]["classification"].keys())
-    scores = {"classification": {}, "regression": {}}
-
-    for app in appliances:
-        counter_class = collections.Counter()
-        counter_reg = collections.Counter()
-        for sc in list_dict_scores:
-            counter_class.update(sc["classification"][app])
-            counter_reg.update(sc["regression"][app])
-        scores["classification"][app] = {
-            k: round(v, 6) / num_models for k, v in dict(counter_class).items()
-        }
-        scores["regression"][app] = {
-            k: round(v, 6) / num_models for k, v in dict(counter_reg).items()
-        }
-
-    return scores
+from nilm_thresholding.utils.plot import plot_real_data, plot_real_vs_prediction
 
 
 def generate_path_output(path_output, model_name):
@@ -119,3 +96,14 @@ def store_scores(
                     text_file.write(f"{name}: {value}\n")
                 text_file.write("----------------------------------------------\n")
             text_file.write("==================================================\n")
+
+
+def store_plots(dict_pred: dict, path_output: str = "."):
+    plot_real_data(dict_pred, savefig=os.path.join(path_output, "real_data.png"))
+    # List appliances
+    list_app = list(dict_pred.keys())
+    list_app.remove("aggregated")
+    for app in list_app:
+        plot_real_vs_prediction(
+            dict_pred, app, savefig=os.path.join(path_output, f"{app}.png")
+        )
