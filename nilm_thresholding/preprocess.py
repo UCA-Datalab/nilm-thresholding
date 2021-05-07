@@ -1,11 +1,23 @@
+import os
+
 import typer
 
 from nilm_thresholding.data.ukdale import UkdalePreprocess
 from nilm_thresholding.utils.config import load_config
 
 
+def preprocess_ukdale(path_data: str, path_output: str, config: dict):
+    """Preprocess and store UK-DALE data"""
+    path_ukdale = os.path.join(path_data, "ukdale")
+
+    path_h5 = path_ukdale + ".h5"
+
+    prep = UkdalePreprocess(path_h5, path_ukdale, **config)
+    prep.store_preprocessed_data(path_output)
+
+
 def main(
-    path_data: str = "data/ukdale",
+    path_data: str = "data",
     path_output: str = "data-prep",
     path_config: str = "nilm_thresholding/config.toml",
 ):
@@ -27,11 +39,8 @@ def main(
     # Load config file
     config = load_config(path_config, "model")
     print("Done\n")
-
-    path_h5 = path_data + ".h5"
-
-    prep = UkdalePreprocess(path_h5, path_data, **config)
-    prep.store_preprocessed_data(path_output)
+    # Preprocess UK-DALE data
+    preprocess_ukdale(path_data, path_output, config)
 
 
 if __name__ == "__main__":
