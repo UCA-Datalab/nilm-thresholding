@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 
-from nilmth.data.loader import DataLoader
+from nilmth.data.dataloader import DataLoader
 from nilmth.data.temporal import remove_directory, generate_temporal_data
 from nilmth.model.conv import ConvModel
 from nilmth.model.gru import GRUModel

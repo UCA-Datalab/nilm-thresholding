@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from nilmth.data.loader import DataLoader
+from nilmth.data.dataloader import DataLoader
 from nilmth.data.threshold import Threshold
 from nilmth.utils.logging import logger
 

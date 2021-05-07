@@ -4,7 +4,7 @@ import shutil
 import numpy as np
 import pandas as pd
 
-from nilmth.data.loader import DataLoader
+from nilmth.data.dataloader import DataLoader
 
 
 def remove_directory(path: str):
