@@ -4,6 +4,7 @@ import typer
 
 from nilm_thresholding.data.ukdale import UkdalePreprocess
 from nilm_thresholding.utils.config import load_config
+from nilm_thresholding.utils.logging import logger
 
 
 def preprocess_ukdale(path_data: str, path_output: str, config: dict):
@@ -40,7 +41,10 @@ def main(
     config = load_config(path_config, "model")
     print("Done\n")
     # Preprocess UK-DALE data
-    preprocess_ukdale(path_data, path_output, config)
+    try:
+        preprocess_ukdale(path_data, path_output, config)
+    except FileNotFoundError:
+        logger.warning(f"UK-DALE not found in path: {path_data}")
 
 
 if __name__ == "__main__":
