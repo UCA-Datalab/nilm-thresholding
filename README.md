@@ -43,7 +43,11 @@ Source: [see publications](#publications)
        conda activate nilm-thresholding
        ```
  
-### Download UK-DALE
+## Data
+
+### UK-DALE
+
+#### Download UK-DALE
 
 UK-DALE dataset is hosted on the following link:
 [https://data.ukedc.rl.ac.uk/browse/edc/efficiency/residential
@@ -65,7 +69,19 @@ nilm-thresholding
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
-## Scripts
+#### Preprocess
+
+Once downloaded, you must preprocess the raw data.
+This is done by running the following script:
+
+```
+python nilm_thresholding/preprocess.py
+```
+
+This will generate a new folder, named 'data-prep',
+containing all the preprocessed data.
+
+## Train
 
 The folder [nilm_thresholding](/nilm_thresholding) contains an executable script to train the
  models. Run the following line on the root folder
