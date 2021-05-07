@@ -9,6 +9,8 @@ from nilmth.data.threshold import Threshold
 from nilmth.utils.config import ConfigError
 from nilmth.utils.logging import logger
 
+from typing import Union
+
 
 class DataSet(data.Dataset):
     files: list = list()
@@ -186,6 +188,22 @@ class DataLoader(data.DataLoader):
         self.path_threshold = path_threshold
         self.compute_thresholds()
 
+    def get_appliance_power_series(self, app: Union[str, int]) -> np.array:
+        """Returns the full series of power of an appliance"""
+        if type(app) == str:
+            try:
+                app_idx = self.dataset.appliances.index(app)
+            except ValueError:
+                raise ValueError(f"Appliance not found: {app}")
+        else:
+            app_idx = app
+        # Initialize list
+        ser = [0] * self.__len__()
+        # Loop through the set and extract all the values
+        for idx, (_, meters, _) in enumerate(self):
+            ser[idx] = meters[:, :, app_idx].flatten()
+        return np.concatenate(ser)
+
     def compute_thresholds(self):
         """Compute the thresholds of each appliance"""
         # First try to load the thresholds
@@ -202,15 +220,9 @@ class DataLoader(data.DataLoader):
             logger.debug("Threshold values not found. Computing them...")
             # Loop through each appliance
             for app_idx, app in enumerate(self.dataset.appliances):
-                # Initialize list
-                ser = [0] * self.__len__()
-                # Loop through the set and extract all the values
-                for idx, (_, meters, _) in enumerate(self):
-                    ser[idx] = meters[:, :, app_idx].flatten()
+                ser = self.get_appliance_power_series(app_idx)
                 # Concatenate all values and update the threshold
-                self.dataset.threshold.update_appliance_threshold(
-                    np.concatenate(ser), app
-                )
+                self.dataset.threshold.update_appliance_threshold(ser, app)
             # Write the config file
             self.dataset.threshold.write_config(self.path_threshold)
 
