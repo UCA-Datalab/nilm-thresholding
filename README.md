@@ -89,7 +89,7 @@ The folder [nilm_thresholding](/nilm_thresholding) contains an executable script
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python nilm_thresholding/train_model.py
+python nilm_thresholding/train.py
 ```
 
 This will train the CONV model using the default parameters.
@@ -107,19 +107,19 @@ If you want to use your own set of parameters, duplicate the aforementioned
   parameter). You can then use that config file with the following command:
  
  ```
-python nilm_thresholding/train_model.py  --path_config <path to your config file>
+python nilm_thresholding/train.py  --path_config <path to your config file>
 ```
 
 For more information about the script, run:
 
  ```
-python nilm_thresholding/train_model.py  --help
+python nilm_thresholding/train.py  --help
 ```
 
 Once the models are trained, test them with:
 
  ```
-python nilm_thresholding/test_model.py  --path_config <path to your config file>
+python nilm_thresholding/test.py  --path_config <path to your config file>
 ```
 
 #### Reproduce paper
@@ -132,7 +132,7 @@ nohup sh train_test_sequential.sh > log.out &
 ```
 
 This will first create a folder named configs, where the different configurations of the
-models are stored. Then, the script `train_test_models.py` will be called, using each
+models are stored. Then, the script `train.py` will be called, using each
  configuration each. The outputs will be stored in another created folder named outputs.
 
 ### Thresholding methods
