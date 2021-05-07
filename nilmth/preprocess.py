@@ -2,9 +2,9 @@ import os
 
 import typer
 
-from nilm_thresholding.data.ukdale import UkdalePreprocess
-from nilm_thresholding.utils.config import load_config
-from nilm_thresholding.utils.logging import logger
+from nilmth.data.ukdale import UkdalePreprocess
+from nilmth.utils.config import load_config
+from nilmth.utils.logging import logger
 
 
 def preprocess_ukdale(path_data: str, path_output: str, config: dict):
@@ -20,7 +20,7 @@ def preprocess_ukdale(path_data: str, path_output: str, config: dict):
 def main(
     path_data: str = "data",
     path_output: str = "data-prep",
-    path_config: str = "nilm_thresholding/config.toml",
+    path_config: str = "nilmth/config.toml",
 ):
     """Preprocess the raw data according to the configuration stated in config.toml
     Store the preprocessed data in other folder. This preprocessed data will then be
@@ -33,7 +33,7 @@ def main(
     path_output : str, optional
         Path to the results folder, by default "data-prep"
     path_config : str, optional
-        Path to the config toml file, by defaul "nilm_thresholding/config.toml"
+        Path to the config toml file, by defaul "nilmth/config.toml"
     """
 
     print(f"\nLoading config file from {path_config}")

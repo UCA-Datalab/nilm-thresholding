@@ -2,16 +2,16 @@ import os
 
 import numpy as np
 
-from nilm_thresholding.data.loader import DataLoader
-from nilm_thresholding.data.temporal import remove_directory, generate_temporal_data
-from nilm_thresholding.model.conv import ConvModel
-from nilm_thresholding.model.gru import GRUModel
-from nilm_thresholding.utils.logging import logger
-from nilm_thresholding.utils.scores import (
+from nilmth.data.loader import DataLoader
+from nilmth.data.temporal import remove_directory, generate_temporal_data
+from nilmth.model.conv import ConvModel
+from nilmth.model.gru import GRUModel
+from nilmth.utils.logging import logger
+from nilmth.utils.scores import (
     score_dict_predictions,
     average_list_dict_scores,
 )
-from nilm_thresholding.utils.store_output import (
+from nilmth.utils.store_output import (
     generate_path_output_model,
     generate_path_output_model_params,
     store_scores,

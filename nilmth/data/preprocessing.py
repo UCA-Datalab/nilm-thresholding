@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 
-from nilm_thresholding.utils.format_list import to_list
+from nilmth.utils.format_list import to_list
 
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 

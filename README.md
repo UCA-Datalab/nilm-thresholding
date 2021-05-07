@@ -59,7 +59,7 @@ Once you are done, your local directory should look like this:
 
 ```
 nilm-thresholding
-|_ nilm_thresholding
+|_ nilmth
    |_ [python scripts and subfolders]
 |_ data
    |_ ukdale
@@ -76,7 +76,7 @@ you must preprocess it.
 This is done by running the following script:
 
 ```
-python nilm_thresholding/preprocess.py
+python nilmth/preprocess.py
 ```
 
 This will generate a new folder, named 'data-prep',
@@ -84,12 +84,12 @@ containing all the preprocessed data.
 
 ## Train
 
-The folder [nilm_thresholding](/nilm_thresholding) contains an executable script to train the
+The folder [nilmth](/nilmth) contains an executable script to train the
  models. Run the following line on the root folder
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python nilm_thresholding/train.py
+python nilmth/train.py
 ```
 
 This will train the CONV model using the default parameters.
@@ -100,26 +100,26 @@ including:
 - .png files with a section of the validation data and the model's prediction
 
 The list with all the available parameters and their default values is stored in the
- [configuration file](nilm_thresholding/config.toml).
+ [configuration file](nilmth/config.toml).
 
 If you want to use your own set of parameters, duplicate the aforementioned
  configuration file and modify the paremeters you want to change (without deleting any
   parameter). You can then use that config file with the following command:
  
  ```
-python nilm_thresholding/train.py  --path_config <path to your config file>
+python nilmth/train.py  --path_config <path to your config file>
 ```
 
 For more information about the script, run:
 
  ```
-python nilm_thresholding/train.py  --help
+python nilmth/train.py  --help
 ```
 
 Once the models are trained, test them with:
 
  ```
-python nilm_thresholding/test.py  --path_config <path to your config file>
+python nilmth/test.py  --path_config <path to your config file>
 ```
 
 #### Reproduce paper

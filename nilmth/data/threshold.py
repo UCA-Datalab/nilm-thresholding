@@ -4,9 +4,9 @@ import numpy as np
 from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 
-from nilm_thresholding.utils.config import load_config, store_config, ConfigError
-from nilm_thresholding.utils.format_list import to_list
-from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
+from nilmth.utils.config import load_config, store_config, ConfigError
+from nilmth.utils.format_list import to_list
+from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
 
 # Power load thresholds (in watts) applied by AT thresholding
 THRESHOLDS = {"dishwasher": 10.0, "fridge": 50.0, "washingmachine": 20.0}

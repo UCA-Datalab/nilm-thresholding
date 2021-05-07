@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from nilm_thresholding.data.loader import DataLoader
-from nilm_thresholding.data.threshold import Threshold
-from nilm_thresholding.utils.logging import logger
+from nilmth.data.loader import DataLoader
+from nilmth.data.threshold import Threshold
+from nilmth.utils.logging import logger
 
 
 class TorchModel:

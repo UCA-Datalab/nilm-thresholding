@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 import torch.utils.data as data
 
-from nilm_thresholding.data.threshold import Threshold
-from nilm_thresholding.utils.config import ConfigError
-from nilm_thresholding.utils.logging import logger
+from nilmth.data.threshold import Threshold
+from nilmth.utils.config import ConfigError
+from nilmth.utils.logging import logger
 
 
 class DataSet(data.Dataset):

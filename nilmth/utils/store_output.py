@@ -1,6 +1,6 @@
 import os
 
-from nilm_thresholding.utils.plot import plot_real_data, plot_real_vs_prediction
+from nilmth.utils.plot import plot_real_data, plot_real_vs_prediction
 
 
 def generate_path_output_model(path_output: str, model_name: str) -> str:

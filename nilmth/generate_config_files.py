@@ -2,7 +2,7 @@ import toml
 import os
 import typer
 
-from nilm_thresholding.utils.config import load_config
+from nilmth.utils.config import load_config
 
 
 LIST_METHODS = ["mp", "vs", "at"]
@@ -26,7 +26,7 @@ LIST_CLASS_W = [
 ]
 
 
-def main(path_config="nilm_thresholding/config.toml", path_output="configs"):
+def main(path_config="nilmth/config.toml", path_output="configs"):
     config = load_config(path_config)
 
     if not os.path.exists(path_output):

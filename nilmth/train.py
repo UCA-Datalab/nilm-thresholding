@@ -5,14 +5,14 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import typer
 
-from nilm_thresholding.utils.model import test_many_models
-from nilm_thresholding.utils.config import load_config
+from nilmth.utils.model import train_many_models
+from nilmth.utils.config import load_config
 
 
 def main(
     path_data: str = "data-prep",
     path_output: str = "outputs",
-    path_config: str = "nilm_thresholding/config.toml",
+    path_config: str = "nilmth/config.toml",
 ):
     """
     Trains several CONV models under the same conditions
@@ -34,9 +34,9 @@ def main(
     print("Done\n")
 
     # Run main results
-    print(f"{config['name']}\n")
+    print(f"{config['model']}\n")
 
-    test_many_models(path_data, path_output, config)
+    train_many_models(path_data, path_output, config)
 
 
 if __name__ == "__main__":

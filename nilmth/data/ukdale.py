@@ -4,8 +4,8 @@ import pandas as pd
 from pandas import Series
 from pandas.io.pytables import HDFStore
 
-from nilm_thresholding.data.preprocessing import PreprocessWrapper
-from nilm_thresholding.utils.string import APPLIANCE_NAMES, homogenize_string
+from nilmth.data.preprocessing import PreprocessWrapper
+from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
 
 
 class UkdalePreprocess(PreprocessWrapper):
