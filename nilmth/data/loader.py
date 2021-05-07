@@ -213,3 +213,7 @@ class DataLoader(data.DataLoader):
                 )
             # Write the config file
             self.dataset.threshold.write_config(self.path_threshold)
+
+    def next(self):
+        """Returns the next data batch"""
+        return next(self.__iter__())
