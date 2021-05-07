@@ -1,17 +1,12 @@
-# Shut Future Warnings
-import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
 import typer
 
-from nilm_thresholding.model.train import train_many_models
+from nilm_thresholding.data.ukdale import UkdalePreprocess
 from nilm_thresholding.utils.config import load_config
 
 
 def main(
-    path_data: str = "data-prep",
-    path_output: str = "outputs",
+    path_data: str = "data/ukdale",
+    path_output: str = "data-prep",
     path_config: str = "nilm_thresholding/config.toml",
 ):
     """
@@ -21,7 +16,7 @@ def main(
     Parameters
     ----------
     path_data : str, optional
-        Path to UK-DALE data
+        Path to data
     path_output : str, optional
         Path to the results folder
     path_config : str, optional
@@ -33,10 +28,10 @@ def main(
     config = load_config(path_config, "model")
     print("Done\n")
 
-    # Run main results
-    print(f"{config['model']}\n")
+    path_h5 = path_data + ".h5"
 
-    train_many_models(path_data, path_output, config)
+    prep = UkdalePreprocess(path_h5, path_data, **config)
+    prep.store_preprocessed_data(path_output)
 
 
 if __name__ == "__main__":

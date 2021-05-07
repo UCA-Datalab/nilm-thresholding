@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from nilm_thresholding.model.architecture.base import TorchModel
+from nilm_thresholding.model.pytorch import TorchModel
 
 """
 Source: https://github.com/lmssdd/TPNILM
@@ -14,7 +14,7 @@ by Luca Massidda, Marino Marrocu and Simone Manca
 """
 
 
-class _Encoder(nn.Module):
+class Encoder(nn.Module):
     def __init__(
         self,
         in_features=3,
@@ -24,7 +24,7 @@ class _Encoder(nn.Module):
         stride=1,
         dropout=0.1,
     ):
-        super(_Encoder, self).__init__()
+        super(Encoder, self).__init__()
         self.conv = nn.Conv1d(
             in_features,
             out_features,
@@ -40,9 +40,9 @@ class _Encoder(nn.Module):
         return self.drop(self.bn(F.relu(self.conv(x))))
 
 
-class _TemporalPooling(nn.Module):
+class TemporalPooling(nn.Module):
     def __init__(self, in_features=3, out_features=1, kernel_size=2, dropout=0.1):
-        super(_TemporalPooling, self).__init__()
+        super(TemporalPooling, self).__init__()
         self.kernel_size = kernel_size
         self.pool = nn.AvgPool1d(kernel_size=self.kernel_size, stride=self.kernel_size)
         self.conv = nn.Conv1d(in_features, out_features, kernel_size=1, padding=0)
@@ -61,9 +61,9 @@ class _TemporalPooling(nn.Module):
         return x
 
 
-class _Decoder(nn.Module):
+class Decoder(nn.Module):
     def __init__(self, in_features=3, out_features=1, kernel_size=2, stride=2):
-        super(_Decoder, self).__init__()
+        super(Decoder, self).__init__()
         self.conv = nn.ConvTranspose1d(
             in_features,
             out_features,
@@ -77,18 +77,18 @@ class _Decoder(nn.Module):
         return self.conv(x)
 
 
-class _PTPNet(nn.Module):
+class PTPNet(nn.Module):
     def __init__(self, output_len=480, out_channels=1, init_features=32, dropout=0.1):
-        super(_PTPNet, self).__init__()
+        super(PTPNet, self).__init__()
 
         p = 2
         k = 1
         features = init_features
-        self.encoder1 = _Encoder(1, features, kernel_size=3, padding=0, dropout=dropout)
+        self.encoder1 = Encoder(1, features, kernel_size=3, padding=0, dropout=dropout)
         # (batch, input_len - 2, 32)
         self.pool1 = nn.MaxPool1d(kernel_size=p, stride=p)
 
-        self.encoder2 = _Encoder(
+        self.encoder2 = Encoder(
             features * 1 ** k,
             features * 2 ** k,
             kernel_size=3,
@@ -98,7 +98,7 @@ class _PTPNet(nn.Module):
         # (batch, [input_len - 6] / 2, 64)
         self.pool2 = nn.MaxPool1d(kernel_size=p, stride=p)
 
-        self.encoder3 = _Encoder(
+        self.encoder3 = Encoder(
             features * 2 ** k,
             features * 4 ** k,
             kernel_size=3,
@@ -108,7 +108,7 @@ class _PTPNet(nn.Module):
         # (batch, [input_len - 12] / 4, 128)
         self.pool3 = nn.MaxPool1d(kernel_size=p, stride=p)
 
-        self.encoder4 = _Encoder(
+        self.encoder4 = Encoder(
             features * 4 ** k,
             features * 8 ** k,
             kernel_size=3,
@@ -121,32 +121,32 @@ class _PTPNet(nn.Module):
         # (batch, S, 256)
         s = output_len / 8
 
-        self.tpool1 = _TemporalPooling(
+        self.tpool1 = TemporalPooling(
             features * 8 ** k,
             features * 2 ** k,
             kernel_size=int(s / 12),
             dropout=dropout,
         )
-        self.tpool2 = _TemporalPooling(
+        self.tpool2 = TemporalPooling(
             features * 8 ** k,
             features * 2 ** k,
             kernel_size=int(s / 6),
             dropout=dropout,
         )
-        self.tpool3 = _TemporalPooling(
+        self.tpool3 = TemporalPooling(
             features * 8 ** k,
             features * 2 ** k,
             kernel_size=int(s / 3),
             dropout=dropout,
         )
-        self.tpool4 = _TemporalPooling(
+        self.tpool4 = TemporalPooling(
             features * 8 ** k,
             features * 2 ** k,
             kernel_size=int(s / 2),
             dropout=dropout,
         )
 
-        self.decoder = _Decoder(
+        self.decoder = Decoder(
             2 * features * 8 ** k, features * 1 ** k, kernel_size=p ** 3, stride=p ** 3
         )
 
@@ -178,19 +178,8 @@ class _PTPNet(nn.Module):
 
 
 class ConvModel(TorchModel):
-    def __init__(
-        self,
-        input_len=None,
-        output_len=480,
-        border=16,
-        out_channels=1,
-        init_features=32,
-        learning_rate=0.001,
-        dropout=0.1,
-        classification_w=1,
-        regression_w=1,
-    ):
-        super(TorchModel, self).__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # The time series will undergo three convolutions + poolings
         # This will give a series of size (batch, S, 256)
@@ -198,26 +187,18 @@ class ConvModel(TorchModel):
         # That series will them pass by four different filters
         # The output of the four filters must have the same size
         # For this reason, S must be a multiple of 12
-        if output_len % 96 != 0:
-            s = round(output_len / 96)
+        if self.output_len % 96 != 0:
+            s = round(self.output_len / 96)
             raise ValueError(
-                f"output_len {output_len} is not valid.\nClosest"
+                f"output_len {self.output_len} is not valid.\nClosest"
                 f" valid value is {96 * s}"
             )
 
-        self.border = border
+        self.model = PTPNet(
+            output_len=self.output_len,
+            out_channels=len(self.appliances),
+            init_features=self.init_features,
+            dropout=self.dropout,
+        ).to(device=self.device)
 
-        self.model = _PTPNet(
-            output_len=output_len,
-            out_channels=out_channels,
-            init_features=init_features,
-            dropout=dropout,
-        ).cuda()
-
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.pow_criterion = nn.MSELoss()
-        self.act_criterion = nn.BCEWithLogitsLoss()
-        self.pow_w = regression_w
-        self.act_w = classification_w
-        self.pow_loss_avg = 0.0045
-        self.act_loss_avg = 0.68
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)

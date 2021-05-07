@@ -1,30 +1,19 @@
+import collections
+
 import numpy as np
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
-from sklearn.metrics import mean_absolute_error
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-
-from nilm_thresholding.utils.format_list import to_list
-
-
-def _assert_shape(y_pred, y_real, appliances):
-    if not y_pred.shape == y_real.shape:
-        raise ValueError(
-            "Array shape mismatch.\n"
-            f"y_pred shape: {y_pred.shape}\n"
-            f"y_real_shape: {y_real.shape}"
-        )
-    if y_pred.shape[-1] != len(appliances):
-        raise ValueError(
-            "Number of appliances mismatch.\n"
-            f"Appliances in y_pred array: {y_pred.shape[-1]}\n"
-            f"Appliances in appliances list: {len(appliances)}"
-        )
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    recall_score,
+)
 
 
-def regression_scores_dict(y_pred, y_real, appliances):
+def regression_scores_dict(
+    dict_pred: dict, key_real: str = "power", key_pred: str = "power_pred"
+):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - MSE, Mean Square Error
@@ -32,16 +21,13 @@ def regression_scores_dict(y_pred, y_real, appliances):
 
     Parameters
     ----------
-    y_pred : numpy.array
-        shape = (num_series, series_len, num_appliances)
-        - num_series : Amount of time series.
-        - series_len : Length of each time series.
-        - num_appliances : Meters contained in the array.
-    y_real : numpy.array
-        shape = (num_series, series_len, num_appliances)
-    appliances : list
-        len = num_appliances
-        Must be sorted following the order of both y_pred and y_real
+    dict_pred : dict
+        Dictionary containing all the relevant data
+        returned by model.predictions_to_dictionary
+    key_real : str, optional
+        Key of the real value, by default "power"
+    key_pred : str, optional
+        Key of the predicted value, by default "power_pred"
 
     Returns
     -------
@@ -50,26 +36,16 @@ def regression_scores_dict(y_pred, y_real, appliances):
 
     """
 
-    appliances = to_list(appliances)
-    _assert_shape(y_pred, y_real, appliances)
-
-    if np.mean(y_real) <= 1:
-        print(
-            "Warning!\nThe predicted values appear to be normalized.\n"
-            "It is recommended to use the de-normalized values\n"
-            "when computing the regression errors"
-        )
-
     # Initialize dict
     scores = {}
 
-    for idx, app in enumerate(appliances):
-        if len(y_pred.shape) == 3:
-            app_pred = y_pred[:, :, idx].flatten()
-            app_real = y_real[:, :, idx].flatten()
-        else:
-            app_pred = y_pred[:, idx].flatten()
-            app_real = y_real[:, idx].flatten()
+    for app, values in dict_pred.items():
+        # Skip aggregated power load
+        if app == "aggregated":
+            continue
+
+        app_real = values[key_real]
+        app_pred = values[key_pred]
 
         # MSE and RMSE
         app_mse = mean_squared_error(app_real, app_pred)
@@ -110,7 +86,9 @@ def regression_scores_dict(y_pred, y_real, appliances):
     return scores
 
 
-def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
+def classification_scores_dict(
+    dict_pred: dict, key_real: str = "status", key_pred: str = "status_pred"
+):
     """
     Returns a dictionary with some regression scores, for each appliance.
         - Accuracy
@@ -120,18 +98,13 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
 
     Parameters
     ----------
-    y_pred : numpy.array
-        shape = (num_series, series_len, num_appliances)
-        - num_series : Amount of time series.
-        - series_len : Length of each time series.
-        - num_appliances : Meters contained in the array.
-    y_real : numpy.array
-        shape = (num_series, series_len, num_appliances)
-    appliances : list
-        len = num_appliances
-        Must be sorted following the order of both y_pred and y_real
-    threshold : float, default=0.5
-        Minimum value (form 0 to 1) at which we consider the appliance to be ON
+    dict_pred : dict
+        Dictionary containing all the relevant data
+        returned by model.predictions_to_dictionary
+    key_real : str, optional
+        Key of the real value, by default "status"
+    key_pred : str, optional
+        Key of the predicted value, by default "status_pred"
 
     Returns
     -------
@@ -140,36 +113,16 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
 
     """
 
-    appliances = to_list(appliances)
-    _assert_shape(y_pred, y_real, appliances)
-
-    if (
-        (y_pred.max() > 1).any()
-        or (y_real > 1).any()
-        or (y_pred.min() < 0).any()
-        or (y_real.min() < 0).any()
-    ):
-        raise ValueError("Classification values must be between 0 and 1.")
-
-    # Binarize the arrays
-    bin_pred = np.zeros(y_pred.shape)
-    bin_pred[y_pred >= threshold] = 1
-    bin_pred = bin_pred.astype(int)
-
-    bin_real = np.zeros(y_real.shape)
-    bin_real[y_real >= threshold] = 1
-    bin_real = bin_real.astype(int)
-
     # Initialize dict
     scores = {}
 
-    for idx, app in enumerate(appliances):
-        if len(y_pred.shape) == 3:
-            app_pred = bin_pred[:, :, idx].flatten()
-            app_real = bin_real[:, :, idx].flatten()
-        else:
-            app_pred = bin_pred[:, idx].flatten()
-            app_real = bin_real[:, idx].flatten()
+    for app, values in dict_pred.items():
+        # Skip aggregated power load
+        if app == "aggregated":
+            continue
+
+        app_real = values[key_real].astype(int)
+        app_pred = values[key_pred].astype(int)
 
         # Precision
         app_accuracy = accuracy_score(app_real, app_pred)
@@ -188,6 +141,50 @@ def classification_scores_dict(y_pred, y_real, appliances, threshold=0.5):
             "f1": round(app_f1, 4),
             "precision": round(app_precision, 4),
             "recall": round(app_recall, 4),
+        }
+
+    return scores
+
+
+def score_dict_predictions(dict_pred: dict) -> dict:
+    """Returns a dictionary, containing the scores for the predictions, one related
+    to regression, another to classification"""
+    # regression scores
+    pow_scores = regression_scores_dict(dict_pred)
+    class_scores = classification_scores_dict(dict_pred, key_pred="status_from_power")
+    for app in pow_scores.keys():
+        pow_scores[app].update(class_scores[app])
+
+    # classification scores
+    act_scores = classification_scores_dict(dict_pred)
+    reg_scores = regression_scores_dict(dict_pred, key_pred="power_recon")
+    for app in act_scores.keys():
+        act_scores[app].update(reg_scores[app])
+
+    dict_scores = {"classification": act_scores, "regression": pow_scores}
+
+    return dict_scores
+
+
+def average_list_dict_scores(list_dict_scores: list) -> dict:
+    """
+    Averages a list of dictionaries with the same format to a single dictionary
+    """
+    num_models = len(list_dict_scores)
+    appliances = list(list_dict_scores[0]["classification"].keys())
+    scores = {"classification": {}, "regression": {}}
+
+    for app in appliances:
+        counter_class = collections.Counter()
+        counter_reg = collections.Counter()
+        for sc in list_dict_scores:
+            counter_class.update(sc["classification"][app])
+            counter_reg.update(sc["regression"][app])
+        scores["classification"][app] = {
+            k: round(v, 6) / num_models for k, v in dict(counter_class).items()
+        }
+        scores["regression"][app] = {
+            k: round(v, 6) / num_models for k, v in dict(counter_reg).items()
         }
 
     return scores

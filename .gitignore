@@ -1,6 +1,7 @@
 notebooks/
 plots/
 output*/
+*.csv
 
 # Log
 log.out
@@ -139,3 +140,4 @@ dmypy.json
 
 *.pth
 /configs/
+/threshold.toml

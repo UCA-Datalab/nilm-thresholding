@@ -26,7 +26,7 @@ setuptools.setup(
     install_requires=[
         "Keras==2.3.1",
         "matplotlib==3.2.1",
-        "numpy==1.18.1",
+        "numpy==1.18.5",
         "pandas==0.24.2",
         "scikit-learn==0.22.2.post1",
         "seaborn==0.10.0",

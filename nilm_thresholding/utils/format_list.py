@@ -1,6 +1,3 @@
-from collections import defaultdict
-
-
 def to_list(x):
     """
     This utility just check if input X is a list
@@ -18,7 +15,7 @@ def to_tuple(x):
     If not, turns X into a tuple of one element
     """
     if type(x) is not tuple:
-        return x,
+        return (x,)
     else:
         return x
 
@@ -39,12 +36,3 @@ def flatten_list(ls, no_duplicates=True, sort=True):
         flatlist = sorted(flatlist)
 
     return flatlist
-
-
-def merge_dict_list(dict_list):
-    d = defaultdict(dict)
-    for l in dict_list:
-        for elem in l:
-            d[elem].update(l[elem])
-
-    return d

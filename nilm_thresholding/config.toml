@@ -1,60 +1,49 @@
-[data]
-building_train = [1, 2, 5]
-building_valid = [1]
-building_test = [1]
+[model]
 appliances = ["fridge", "dish_washer", "washing_machine"]
+train_size = 0.8  # Train size, relative to 1
+valid_size = 0.1  # Validation size, relative to 1
 period = "1min"  # Time period of the sequence
-power_scale = 2000.0  # Power value by which we divide the load, normalizing it
+input_len = 510  # Number of records per data point
+border = 15  # Overlap between series
 max_power = 10000.0  # Maximum load power, in watts
+power_scale = 2000.0  # Power value by which we divide the load, normalizing it
+name = "ConvModel"  # Model to use
+batch_size = 32  # Batch size of the model
+epochs = 300  # Training epochs
+patience = 30  # Early stopping
+init_features = 32
+learning_rate = 1.0e-4
+dropout = 0.1
+regression_w = 1.0
+classification_w = 0.0
+num_models = 5 # Number of models to train. Their scores are then averaged
 
-[data.dates]  # Date range for each building
-1 = ["2013-04-12", "2014-12-15"]
-2 = ["2013-05-22", "2013-10-03 6:16"]
-5 =["2014-04-29", "2014-09-01"]
-
-[data.threshold]
-method = "mp"  # Thresholding method to use:
+[model.threshold]
+method = "vs"  # Thresholding method to use:
 # 'vs': Variance-Sensitive. Applies k-means and uses the std of each
 # cluster to move the threshold accordingly.
 # 'mp': Middle-Point. Applies k-means and sets the threshold in the
 # middle of the two cluster centroids.
 # 'at': Activation-Time. Takes the thresholds and activation times defined by J. Kelly.
 #'custom': Use custom thresholding, by providing the (!) parameters.
+num_status = 2
 
-list = ["mp", "vs", "at"]  # (!) Only used when threshold_method is 'custom'.
-# Thresholds per appliance, in watts.
-# If not provided, thresholds are computed using k-means.
+[model.dates.ukdale]  # Date range for each building
+1 = ["2013-04-12", "2014-12-15"]
+2 = ["2013-05-22", "2013-10-03 6:16"]
+5 =["2014-04-29", "2014-09-01"]
 
-std = true  # (!) Only used when threshold_method is 'custom'.
-# If the threshold is computed by k-means, use the standard deviation of each cluster
-# to move the threshold.
+[model.buildings]
+ukdale = [1, 2, 5]
 
-min_off = "None"  # (!) Only used when threshold_method is 'custom'.
-# Number of records that an appliance must be below the threshold to be considered
-# turned OFF. If not provided, thresholds are computed using k-means.
+[model.buildings.train]
+ukdale = [1, 2, 5]
 
-min_on = "None"  # (!) Only used when threshold_method is 'custom'.
-# Number of records that an appliance must be above the threshold to be considered
-# turned ON. If not provided, thresholds are computed using k-means.]
+[model.buildings.validation]
+ukdale = [1]
 
-[train]
-name = "ConvModel"
-train_size = 0.8  # Train size, relative to 1
-valid_size = 0.1  # Validation size, relative to 1
-batch_size = 32
-epochs = 300
-patience = 300
-num_models = 5 # Number of models to train. Their scores are then averaged
-return_means = true  # Return as last argument the computed means of each status
-
-[train.model]
-input_len = 510  # Input sequence of the model
-output_len = 480  # Output sequence of the model
-border = 16  # Border added to input sequences, so that input = output + 2 * border
-init_features = 32
-learning_rate = 1.0e-4
-dropout = 0.1
-classification_w = 0.0
+[model.buildings.test]
+ukdale = [1]
 
 [plot]
 f1_lim = [0.4, 1.0]

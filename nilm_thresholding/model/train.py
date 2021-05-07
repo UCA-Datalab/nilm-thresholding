@@ -1,0 +1,193 @@
+import os
+import shutil
+
+import numpy as np
+import pandas as pd
+
+from nilm_thresholding.data.loader import DataLoader
+from nilm_thresholding.model.conv import ConvModel
+from nilm_thresholding.model.gru import GRUModel
+from nilm_thresholding.utils.logging import logger
+from nilm_thresholding.utils.scores import (
+    score_dict_predictions,
+    average_list_dict_scores,
+)
+from nilm_thresholding.utils.store_output import (
+    generate_path_output,
+    generate_folder_name,
+    store_scores,
+    store_plots,
+)
+
+
+def initialize_model(config: dict):
+    """Initialize a model given a config dictionary"""
+    model_name = config["name"].lower()
+    if model_name.startswith("conv"):
+        model = ConvModel(**config)
+    elif model_name.startswith("gru"):
+        model = GRUModel(**config)
+    else:
+        raise ValueError(f"'{model_name}' not valid. Try using 'conv' or 'gru'")
+    return model
+
+
+def remove_directory(path: str):
+    """Removes a folder"""
+    try:
+        shutil.rmtree(path)
+    except FileNotFoundError:
+        pass
+
+
+def generate_temporal_data(loader: DataLoader, path: str = "data_temp"):
+    """Stores data ready to be used by the model, with the statuses already computed"""
+    # Create a new directory of temporal data
+    remove_directory(path)
+    os.mkdir(path)
+    # Initialize the file number and the list of files
+    file_num = 0
+    files = loader.dataset.files.copy()
+    # Iterate through the whole dataloader
+    for data, target_power, target_status in iter(loader):
+        data = data.cpu().detach().numpy()
+        target_power = target_power.cpu().detach().numpy()
+        target_status = target_status.cpu().detach().numpy()
+        # Add the border for appliance power and status
+        npad = ((0, 0), (loader.dataset.border, loader.dataset.border), (0, 0))
+        target_power = np.pad(
+            target_power, pad_width=npad, mode="constant", constant_values=0
+        )
+        target_status = np.pad(
+            target_status, pad_width=npad, mode="constant", constant_values=0
+        )
+        # Stack all arrays
+        mat = np.concatenate(
+            [np.expand_dims(data, axis=2), target_power, target_status], axis=2
+        )
+        # Store each series in a different csv
+        for m in mat:
+            df = pd.DataFrame(
+                m,
+                columns=["aggregate"]
+                + loader.dataset.appliances
+                + loader.dataset.status,
+            )
+            path_file = os.path.join(path, f"{file_num:04}.csv")
+            df.to_csv(path_file)
+            # Add the file to the file list
+            files[file_num] = path_file
+            file_num += 1
+    # Update the file list to match the temporal file list
+    loader.dataset.files = files
+
+
+def train_many_models(path_data, path_output, config):
+    """
+    Runs several models with the same conditions.
+    Stores plots and the average scores of those models.
+    """
+    # Set output path
+    path_output = generate_path_output(path_output, config["name"])
+    path_output_folder = generate_folder_name(path_output, config)
+
+    # Load dataloader
+    dataloader_train = DataLoader(path_data, subset="train", shuffle=True, **config)
+    dataloader_validation = DataLoader(
+        path_data, subset="validation", shuffle=True, **config
+    )
+    dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
+
+    generate_temporal_data(dataloader_train, path="temp_train")
+    generate_temporal_data(dataloader_validation, path="temp_valid")
+
+    # Initialize lists
+    list_dict_scores = [{}] * config["num_models"]
+    time_elapsed = [0.0] * config["num_models"]
+    dict_pred = {}
+
+    for i in range(config["num_models"]):
+        logger.debug(f"\nModel {i + 1}\n")
+
+        # Initialize the model
+        model = initialize_model(config)
+
+        # Train
+        time_elapsed[i] = model.train(
+            dataloader_train,
+            dataloader_validation,
+        )
+
+        # Store the model
+        path_model = os.path.join(path_output_folder, f"model_{i}.pth")
+        model.save(path_model)
+
+        dict_pred = model.predictions_to_dictionary(dataloader_test)
+        list_dict_scores[i] = score_dict_predictions(dict_pred)
+
+        store_scores(
+            config,
+            list_dict_scores[i],
+            time_elapsed=time_elapsed[i],
+            path_output=os.path.join(path_output_folder, f"scores_{i}.txt"),
+        )
+
+    # List of dicts to unique dict scores
+    dict_scores = average_list_dict_scores(list_dict_scores)
+
+    # Store scores and plot
+    store_scores(
+        config,
+        dict_scores,
+        time_elapsed=np.mean(time_elapsed),
+        path_output=os.path.join(path_output_folder, "scores.txt"),
+    )
+    store_plots(dict_pred, path_output=path_output_folder)
+
+    remove_directory("temp_train")
+    remove_directory("temp_valid")
+
+
+def test_many_models(path_data, path_output, config):
+    """
+    Runs several models with the same conditions.
+    Stores plots and the average scores of those models.
+    """
+    # Set output path
+    path_output = generate_path_output(path_output, config["name"])
+    path_output_folder = generate_folder_name(path_output, config)
+
+    # Load dataloader
+    dataloader_test = DataLoader(path_data, subset="test", shuffle=False, **config)
+
+    # Initialize lists
+    list_dict_scores = [{}] * config["num_models"]
+
+    for i in range(config["num_models"]):
+        logger.debug(f"\nModel {i + 1}\n")
+
+        model = initialize_model(config)
+
+        # Load the model
+        path_model = os.path.join(path_output_folder, f"model_{i}.pth")
+        model.load(path_model)
+
+        dict_pred = model.predictions_to_dictionary(dataloader_test)
+        list_dict_scores[i] = score_dict_predictions(dict_pred)
+
+        store_scores(
+            path_output_folder,
+            config,
+            list_dict_scores[i],
+            path_output=os.path.join(path_output_folder, f"scores_{i}.txt"),
+        )
+
+        del model
+
+    # List of dicts to unique dict scores
+    dict_scores = average_list_dict_scores(list_dict_scores)
+
+    # Store scores and plot
+    store_scores(
+        config, dict_scores, path_output=os.path.join(path_output_folder, "scores.txt")
+    )
