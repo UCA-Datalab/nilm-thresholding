@@ -3,9 +3,9 @@ import os
 from nilm_thresholding.utils.plot import plot_real_data, plot_real_vs_prediction
 
 
-def generate_path_output(path_output, model_name):
+def generate_path_output_model(path_output: str, model_name: str) -> str:
     """
-    Generates results folder.
+    Generates the output folder for a certain model, inside path_output
     """
     if not os.path.isdir(path_output):
         os.mkdir(path_output)
@@ -17,9 +17,9 @@ def generate_path_output(path_output, model_name):
     return path_output
 
 
-def generate_folder_name(path_output: str, config: dict):
+def generate_path_output_model_params(path_output: str, config: dict) -> str:
     """
-    Generates specific folder inside results.
+    Generates the output folder for a certain model configuration, inside path_output.
     """
     input_len = config["input_len"]
     period = config["period"]

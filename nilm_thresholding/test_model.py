@@ -5,7 +5,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 import typer
 
-from nilm_thresholding.model.train import test_many_models
+from nilm_thresholding.utils.model import test_many_models
 from nilm_thresholding.utils.config import load_config
 
 
