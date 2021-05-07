@@ -128,12 +128,17 @@ To reproduce the results shown in [our paper](#publications), activate the
  environment and then run:
 
 ```
-nohup sh train_test_sequential.sh > log.out & 
+nohup sh train_sequential.sh > log.out & 
 ```
 
 This will first create a folder named configs, where the different configurations of the
 models are stored. Then, the script `train.py` will be called, using each
- configuration each. The outputs will be stored in another created folder named outputs.
+ configuration each. This will store the model weights, which will be used
+ again during the test phase:
+ 
+ ```
+nohup sh test_sequential.sh > log.out & 
+```
 
 ### Thresholding methods
 
