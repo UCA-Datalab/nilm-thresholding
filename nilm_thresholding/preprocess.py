@@ -22,18 +22,18 @@ def main(
     path_output: str = "data-prep",
     path_config: str = "nilm_thresholding/config.toml",
 ):
-    """
-    Trains several CONV models under the same conditions
-    Stores scores and plots on results folder
+    """Preprocess the raw data according to the configuration stated in config.toml
+    Store the preprocessed data in other folder. This preprocessed data will then be
+    used by the model.
 
     Parameters
     ----------
     path_data : str, optional
-        Path to data
+        Path to raw data, by default "data"
     path_output : str, optional
-        Path to the results folder
+        Path to the results folder, by default "data-prep"
     path_config : str, optional
-        Path to the config toml file
+        Path to the config toml file, by defaul "nilm_thresholding/config.toml"
     """
 
     print(f"\nLoading config file from {path_config}")

@@ -69,9 +69,10 @@ nilm-thresholding
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
-#### Preprocess
+### Preprocess
 
-Once downloaded, you must preprocess the raw data.
+Once downloaded the raw data from any of the sources above,
+you must preprocess it.
 This is done by running the following script:
 
 ```
