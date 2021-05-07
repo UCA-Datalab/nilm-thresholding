@@ -2,6 +2,7 @@ import os
 import shutil
 
 import numpy as np
+import pandas as pd
 
 from nilm_thresholding.data.loader import DataLoader
 
