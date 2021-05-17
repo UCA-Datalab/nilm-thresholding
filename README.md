@@ -43,7 +43,11 @@ Source: [see publications](#publications)
        conda activate nilm-thresholding
        ```
  
-### Download UK-DALE
+## Data
+
+### UK-DALE
+
+#### Download UK-DALE
 
 UK-DALE dataset is hosted on the following link:
 [https://data.ukedc.rl.ac.uk/browse/edc/efficiency/residential
@@ -55,7 +59,7 @@ Once you are done, your local directory should look like this:
 
 ```
 nilm-thresholding
-|_ nilm_thresholding
+|_ nilmth
    |_ [python scripts and subfolders]
 |_ data
    |_ ukdale
@@ -65,14 +69,27 @@ nilm-thresholding
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
-## Scripts
+### Preprocess
 
-The folder [nilm_thresholding](/nilm_thresholding) contains an executable script to train the
+Once downloaded the raw data from any of the sources above,
+you must preprocess it.
+This is done by running the following script:
+
+```
+python nilmth/preprocess.py
+```
+
+This will generate a new folder, named 'data-prep',
+containing all the preprocessed data.
+
+## Train
+
+The folder [nilmth](/nilmth) contains an executable script to train the
  models. Run the following line on the root folder
 (make sure to have the enviroment active and the data downloaded):
 
 ```
-python nilm_thresholding/train_model.py
+python nilmth/train.py
 ```
 
 This will train the CONV model using the default parameters.
@@ -83,26 +100,26 @@ including:
 - .png files with a section of the validation data and the model's prediction
 
 The list with all the available parameters and their default values is stored in the
- [configuration file](nilm_thresholding/config.toml).
+ [configuration file](nilmth/config.toml).
 
 If you want to use your own set of parameters, duplicate the aforementioned
  configuration file and modify the paremeters you want to change (without deleting any
   parameter). You can then use that config file with the following command:
  
  ```
-python nilm_thresholding/train_model.py  --path_config <path to your config file>
+python nilmth/train.py  --path_config <path to your config file>
 ```
 
 For more information about the script, run:
 
  ```
-python nilm_thresholding/train_model.py  --help
+python nilmth/train.py  --help
 ```
 
 Once the models are trained, test them with:
 
  ```
-python nilm_thresholding/test_model.py  --path_config <path to your config file>
+python nilmth/test.py  --path_config <path to your config file>
 ```
 
 #### Reproduce paper
@@ -111,12 +128,17 @@ To reproduce the results shown in [our paper](#publications), activate the
  environment and then run:
 
 ```
-nohup sh train_test_sequential.sh > log.out & 
+nohup sh train_sequential.sh > log.out & 
 ```
 
 This will first create a folder named configs, where the different configurations of the
-models are stored. Then, the script `train_test_models.py` will be called, using each
- configuration each. The outputs will be stored in another created folder named outputs.
+models are stored. Then, the script `train.py` will be called, using each
+ configuration each. This will store the model weights, which will be used
+ again during the test phase:
+ 
+ ```
+nohup sh test_sequential.sh > log.out & 
+```
 
 ### Thresholding methods
 
