@@ -52,7 +52,7 @@ class DataSet(data.Dataset):
     @property
     def datapoints(self) -> int:
         return len(self.files)
-    
+
     def __len__(self):
         return self.datapoints
 

@@ -38,8 +38,16 @@ class DataLoader(data.DataLoader):
         return self.dataset.appliances
 
     @property
-    def status(self):
+    def status(self) -> list:
         return self.dataset.status
+
+    @property
+    def files(self) -> list:
+        return self.dataset.files
+
+    @property
+    def border(self) -> int:
+        return self.dataset.border
 
     def __repr__(self):
         """This message is returned any time the object is called"""

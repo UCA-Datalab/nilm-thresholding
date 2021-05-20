@@ -22,14 +22,14 @@ def generate_temporal_data(loader: DataLoader, path: str = "data_temp"):
     os.mkdir(path)
     # Initialize the file number and the list of files
     file_num = 0
-    files = loader.dataset.files.copy()
+    files = loader.files.copy()
     # Iterate through the whole dataloader
     for data, target_power, target_status in iter(loader):
         data = data.cpu().detach().numpy()
         target_power = target_power.cpu().detach().numpy()
         target_status = target_status.cpu().detach().numpy()
         # Add the border for appliance power and status
-        npad = ((0, 0), (loader.dataset.border, loader.dataset.border), (0, 0))
+        npad = ((0, 0), (loader.border, loader.border), (0, 0))
         target_power = np.pad(
             target_power, pad_width=npad, mode="constant", constant_values=0
         )
