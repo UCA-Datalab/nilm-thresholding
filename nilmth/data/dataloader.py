@@ -4,6 +4,7 @@ import numpy as np
 import torch.utils.data as data
 
 from nilmth.data.dataset import DataSet
+from nilmth.data.threshold import Threshold
 from nilmth.utils.config import ConfigError
 from nilmth.utils.logging import logger
 
@@ -28,11 +29,23 @@ class DataLoader(data.DataLoader):
         self.path_threshold = path_threshold
         self.compute_thresholds()
 
+    @property
+    def threshold(self) -> Threshold:
+        return self.dataset.threshold
+
+    @property
+    def appliances(self) -> list:
+        return self.dataset.appliances
+
+    def __repr__(self):
+        """This message is returned any time the object is called"""
+        return f"Dataloader > {self.dataset}"
+
     def get_appliance_power_series(self, app: Union[str, int]) -> np.array:
         """Returns the full series of power of an appliance"""
         if type(app) == str:
             try:
-                app_idx = self.dataset.appliances.index(app)
+                app_idx = self.appliances.index(app)
             except ValueError:
                 raise ValueError(f"Appliance not found: {app}")
         else:
@@ -48,7 +61,7 @@ class DataLoader(data.DataLoader):
         """Compute the thresholds of each appliance"""
         # First try to load the thresholds
         try:
-            self.dataset.threshold.read_config(self.path_threshold)
+            self.threshold.read_config(self.path_threshold)
             return
         # If not possible, compute them
         except ConfigError:
@@ -59,12 +72,12 @@ class DataLoader(data.DataLoader):
                 )
             logger.debug("Threshold values not found. Computing them...")
             # Loop through each appliance
-            for app_idx, app in enumerate(self.dataset.appliances):
+            for app_idx, app in enumerate(self.appliances):
                 ser = self.get_appliance_power_series(app_idx)
                 # Concatenate all values and update the threshold
-                self.dataset.threshold.update_appliance_threshold(ser, app)
+                self.threshold.update_appliance_threshold(ser, app)
             # Write the config file
-            self.dataset.threshold.write_config(self.path_threshold)
+            self.threshold.write_config(self.path_threshold)
 
     def next(self):
         """Returns the next data batch"""
