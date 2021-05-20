@@ -20,6 +20,7 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 
 class Threshold:
+    num_status: int = 2
     thresholds: np.array = None  # (appliance, status)
     centroids: np.array = None  # (appliance, status)
     use_std: bool = False
@@ -314,3 +315,29 @@ class Threshold:
             config = dict_config
         store_config(path_config, config)
         logging.debug(f"Config stored at {path_config}\n")
+
+    def set_thresholds_and_centroids(
+        self, thresholds: np.array, centroids: np.array
+    ):
+        """Change threshold and centroid values to given ones
+
+        Parameters
+        ----------
+        thresholds : numpy.array
+            New threshold values
+        centroids : numpy.array
+            New centroid values
+
+        """
+        assert len(thresholds.shape), "Array must have two dimensions"
+        assert (
+            thresholds.shape[0] == self.num_apps
+        ), f"Axis 0 must have length {self.num_apps}"
+        assert (
+            thresholds.shape == centroids.shape
+        ), "Both arrays must have same dimension"
+        self.num_status = thresholds.shape[1]
+        self.thresholds = thresholds
+        self.centroids = centroids
+        self.method = "custom"
+        self._status_fun = self._compute_status
