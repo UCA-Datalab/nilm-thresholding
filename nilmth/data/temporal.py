@@ -44,9 +44,7 @@ def generate_temporal_data(loader: DataLoader, path: str = "data_temp"):
         for m in mat:
             df = pd.DataFrame(
                 m,
-                columns=["aggregate"]
-                + loader.dataset.appliances
-                + loader.dataset.status,
+                columns=["aggregate"] + loader.appliances + loader.status,
             )
             path_file = os.path.join(path, f"{file_num:04}.csv")
             df.to_csv(path_file)

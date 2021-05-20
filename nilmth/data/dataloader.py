@@ -37,6 +37,10 @@ class DataLoader(data.DataLoader):
     def appliances(self) -> list:
         return self.dataset.appliances
 
+    @property
+    def status(self):
+        return self.dataset.status
+
     def __repr__(self):
         """This message is returned any time the object is called"""
         return f"Dataloader > {self.dataset}"
