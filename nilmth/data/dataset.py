@@ -12,13 +12,13 @@ from nilmth.utils.logging import logger
 class DataSet(data.Dataset):
     files: list = list()
     appliances: list = list()
-    num_apps: int = 0
     status: list = list()
     threshold: Threshold = None
 
     def __init__(
         self,
         path_data: str,
+        appliances: list = None,
         subset: str = "train",
         input_len: int = 510,
         border: int = 15,
@@ -31,6 +31,7 @@ class DataSet(data.Dataset):
         **kwargs,
     ):
         self.subset = subset
+        self.appliances = appliances
         self.border = border
         self.len_series = input_len
         self.buildings = {} if buildings is None else buildings[subset]
@@ -53,12 +54,19 @@ class DataSet(data.Dataset):
     def datapoints(self) -> int:
         return len(self.files)
 
+    @property
+    def num_apps(self) -> int:
+        return len(self.appliances)
+
     def __len__(self):
         return self.datapoints
 
     def __repr__(self):
         """This message is returned any time the object is called"""
-        return f"Dataset | Data points: {self.datapoints} | Input length: {self.len_series}"
+        return (
+            f"Dataset | Data points: {self.datapoints} | "
+            f"Input length: {self.len_series}"
+        )
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
@@ -100,10 +108,16 @@ class DataSet(data.Dataset):
     def _get_parameters_from_file(self):
         """Updates class parameters from sample csv file"""
         df = self._open_file(self.files[0])
+        # List appliances in file
         appliances = [t for t in df.columns if not t.endswith("_status")]
-        appliances.remove("aggregate")
-        self.appliances = sorted(appliances)
-        self.num_apps = len(appliances)
+        # Ensure our list of appliances is contained in the dataset
+        # If we have no list, take the whole dataset
+        if self.appliances is None:
+            self.appliances = appliances
+        else:
+            for app in self.appliances:
+                assert app in appliances, f"Appliance missing in dataset: {app}"
+        # List the status columns
         self.status = [app + "_status" for app in self.appliances]
         self.len_series = df.shape[0]
         self._idx_start = self.border
