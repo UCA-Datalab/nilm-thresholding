@@ -41,6 +41,10 @@ class Threshold:
         self._status_fun = self._compute_status
         self._initialize_params()
 
+    def __repr__(self):
+        """This message is returned any time the object is called"""
+        return f"Threshold | Method: {self.method} | Statuses: {self.num_status}"
+
     def _initialize_params(self):
         """
         Given the method name and list of appliances,
