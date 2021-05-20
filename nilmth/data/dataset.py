@@ -11,7 +11,6 @@ from nilmth.utils.logging import logger
 
 class DataSet(data.Dataset):
     files: list = list()
-    datapoints: int = 0
     appliances: list = list()
     num_apps: int = 0
     status: list = list()
@@ -50,6 +49,17 @@ class DataSet(data.Dataset):
             f"Dataset received extra kwargs, not used:\n     {', '.join(kwargs.keys())}"
         )
 
+    @property
+    def datapoints(self) -> int:
+        return len(self.files)
+    
+    def __len__(self):
+        return self.datapoints
+
+    def __repr__(self):
+        """This message is returned any time the object is called"""
+        return f"Dataset | Data points: {self.datapoints} | Input length: {self.length}"
+
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
         """Opens a csv as a pandas.DataFrame"""
@@ -85,7 +95,6 @@ class DataSet(data.Dataset):
                     files += files_of_building[test_idx:]
         # Update the class parameters
         self.files = files
-        self.datapoints = len(files)
         logger.info(f"{self.datapoints} data points found for {self.subset}")
 
     def _get_parameters_from_file(self):
@@ -160,6 +169,3 @@ class DataSet(data.Dataset):
         except KeyError:
             s = self.power_to_status(y)
         return x, y, s
-
-    def __len__(self):
-        return self.datapoints
