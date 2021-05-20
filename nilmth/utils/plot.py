@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def plot_real_data(
@@ -66,3 +66,34 @@ def plot_real_vs_prediction(
     else:
         plt.savefig(savefig)
         plt.close()
+
+
+def plot_power_distribution(
+    ser: np.array, app: str, bins: int = 20, figsize: tuple = (3, 3)
+):
+    """Plot the histogram of power distribution
+
+    Parameters
+    ----------
+    ser : numpy.array
+        Contains all the power values
+    app : label
+        Name of the appliance
+    bins : int, optional
+        Histogram splits, by default 20
+    figsize : tuple, optional
+        Figure size, by default (3, 3)
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    matplotlib.axes._subplots.AxesSubplot
+
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.hist(ser, bins=bins)
+    ax.set_title(app.capitalize().replace("_", " "))
+    ax.set_xlabel("Power (watts)")
+    ax.set_ylabel("Frequency")
+    ax.grid()
+    return fig, ax
