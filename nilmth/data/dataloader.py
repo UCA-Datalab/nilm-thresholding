@@ -53,8 +53,23 @@ class DataLoader(data.DataLoader):
         """This message is returned any time the object is called"""
         return f"Dataloader > {self.dataset}"
 
-    def get_appliance_power_series(self, app: Union[str, int]) -> np.array:
-        """Returns the full series of power of an appliance"""
+    def get_appliance_series(
+        self, app: Union[str, int], target: str = "power"
+    ) -> np.array:
+        """Returns the full series of power of an appliance
+
+        Parameters
+        ----------
+        app : str
+            Appliance label
+        target : str, optional
+            Target value (power or status), by default "power"
+
+        Returns
+        -------
+        numpy.array
+
+        """
         if type(app) == str:
             try:
                 app_idx = self.appliances.index(app)
@@ -65,8 +80,14 @@ class DataLoader(data.DataLoader):
         # Initialize list
         ser = [0] * self.__len__()
         # Loop through the set and extract all the values
-        for idx, (_, meters, _) in enumerate(self):
-            ser[idx] = meters[:, :, app_idx].flatten()
+        if target.lower() == "power":
+            for idx, (_, meters, _) in enumerate(self):
+                ser[idx] = meters[:, :, app_idx].flatten()
+        elif target.lower() == "status":
+            for idx, (_, _, meters) in enumerate(self):
+                ser[idx] = meters[:, :, app_idx].flatten()
+        else:
+            raise ValueError(f"Target not available: {target}")
         return np.concatenate(ser)
 
     def compute_thresholds(self):
@@ -85,7 +106,7 @@ class DataLoader(data.DataLoader):
             logger.debug("Threshold values not found. Computing them...")
             # Loop through each appliance
             for app_idx, app in enumerate(self.appliances):
-                ser = self.get_appliance_power_series(app_idx)
+                ser = self.get_appliance_series(app_idx)
                 # Concatenate all values and update the threshold
                 self.threshold.update_appliance_threshold(ser, app)
             # Write the config file
