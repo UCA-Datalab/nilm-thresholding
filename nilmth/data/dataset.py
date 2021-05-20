@@ -140,10 +140,7 @@ class DataSet(data.Dataset):
 
         """
         # Get power values from status
-        power = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 0])
-        power_on = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 1])
-        power[ser == 1] = power_on[ser == 1]
-        return power
+        return np.take_along_axis(self.threshold.centroids, ser.T, axis=1).T
 
     def __getitem__(self, index: int) -> tuple:
         """Returns an element of the data loader
