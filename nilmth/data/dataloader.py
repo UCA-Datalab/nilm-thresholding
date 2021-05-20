@@ -38,6 +38,10 @@ class DataLoader(data.DataLoader):
         return self.dataset.appliances
 
     @property
+    def num_apps(self) -> int:
+        return self.dataset.num_apps
+
+    @property
     def status(self) -> list:
         return self.dataset.status
 
@@ -56,14 +60,15 @@ class DataLoader(data.DataLoader):
     def get_appliance_series(
         self, app: Union[str, int], target: str = "power"
     ) -> np.array:
-        """Returns the full series of power of an appliance
+        """Returns the full series of an appliance, being it power, status or
+        reconstructed power
 
         Parameters
         ----------
         app : str
             Appliance label
         target : str, optional
-            Target value (power or status), by default "power"
+            Target value (power, status or reconstructed), by default "power"
 
         Returns
         -------
@@ -79,16 +84,30 @@ class DataLoader(data.DataLoader):
             app_idx = app
         # Initialize list
         ser = [0] * self.__len__()
-        # Loop through the set and extract all the values
-        if target.lower() == "power":
+        # Set target string to lowercase
+        target = target.lower()
+        # Choose the target, then loop through the set and extract all the values
+        # Power
+        if target.startswith("p"):
             for idx, (_, meters, _) in enumerate(self):
                 ser[idx] = meters[:, :, app_idx].flatten()
-        elif target.lower() == "status":
+            return np.concatenate(ser)
+        # Status or reconstructed power (taken from status)
+        elif target.startswith("s") | target.startswith("r"):
             for idx, (_, _, meters) in enumerate(self):
                 ser[idx] = meters[:, :, app_idx].flatten()
+            # If status, return it directly
+            if target.startswith("s"):
+                return np.concatenate(ser)
+            # If reconstructed power, compute its value from status
+            else:
+                ser = np.concatenate(ser)
+                ser = np.repeat(
+                    np.expand_dims(ser, axis=1), repeats=self.num_apps, axis=1
+                )
+                return self.dataset.status_to_power(ser)[:, app_idx]
         else:
             raise ValueError(f"Target not available: {target}")
-        return np.concatenate(ser)
 
     def compute_thresholds(self):
         """Compute the thresholds of each appliance"""
