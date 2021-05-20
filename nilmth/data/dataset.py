@@ -32,7 +32,7 @@ class DataSet(data.Dataset):
     ):
         self.subset = subset
         self.border = border
-        self.length = input_len
+        self.len_series = input_len
         self.buildings = {} if buildings is None else buildings[subset]
         self.train_size = train_size
         self.validation_size = valid_size
@@ -58,7 +58,7 @@ class DataSet(data.Dataset):
 
     def __repr__(self):
         """This message is returned any time the object is called"""
-        return f"Dataset | Data points: {self.datapoints} | Input length: {self.length}"
+        return f"Dataset | Data points: {self.datapoints} | Input length: {self.len_series}"
 
     @staticmethod
     def _open_file(path_file: str) -> pd.DataFrame:
@@ -105,9 +105,9 @@ class DataSet(data.Dataset):
         self.appliances = sorted(appliances)
         self.num_apps = len(appliances)
         self.status = [app + "_status" for app in self.appliances]
-        self.length = df.shape[0]
+        self.len_series = df.shape[0]
         self._idx_start = self.border
-        self._idx_end = self.length - self.border
+        self._idx_end = self.len_series - self.border
 
     def power_to_status(self, ser: np.array) -> np.array:
         """Computes the status assigned to each power value
