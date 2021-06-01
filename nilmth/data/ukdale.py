@@ -78,17 +78,14 @@ class Ukdale(Preprocessing):
         # Homogenize input label
         label = homogenize_label(label)
 
-        # Series placeholder
-        s = None
-
         # Iterate through all the existing labels, searching for the input label
         for i in labels:
             lab = homogenize_label(labels[i])
             # When we find the input label, we load the meter records
             if lab == label:
                 s = self._load_meter(house, i)
-
-        if s is None:
+                break
+        else:
             raise ValueError(
                 f"Label {label} not found on house {house}\n"
                 f"Valid labels are: {list(labels.values())}"
