@@ -2,7 +2,7 @@ import os
 
 import typer
 
-from nilmth.data.ukdale import UkdalePreprocess
+from nilmth.data.ukdale import Ukdale
 from nilmth.utils.config import load_config
 from nilmth.utils.logging import logger
 
@@ -13,7 +13,7 @@ def preprocess_ukdale(path_data: str, path_output: str, config: dict):
 
     path_h5 = path_ukdale + ".h5"
 
-    prep = UkdalePreprocess(path_h5, path_ukdale, **config)
+    prep = Ukdale(path_h5, path_ukdale, **config)
     prep.store_preprocessed_data(path_output)
 
 

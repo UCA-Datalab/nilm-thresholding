@@ -1,5 +1,6 @@
 import logging
 import os
+from abc import abstractmethod
 
 import pandas as pd
 
@@ -8,8 +9,8 @@ from nilmth.utils.format_list import to_list
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
-class PreprocessWrapper:
-    dataset: str = "wrapper"
+class Preprocessing:
+    dataset: str = "Wrapper"
 
     def __init__(
         self,
@@ -64,9 +65,10 @@ class PreprocessWrapper:
             f"    {', '.join(kwargs.keys())}\n"
         )
 
+    @abstractmethod
     def load_house_meters(self, house: int) -> pd.DataFrame:
         """Placeholder function, this should load the household meters and status"""
-        return pd.DataFrame()
+        pass
 
     def store_preprocessed_data(self, path_output: str):
         """Stores preprocessed data in output folder"""

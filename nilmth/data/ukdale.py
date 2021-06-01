@@ -4,16 +4,16 @@ import pandas as pd
 from pandas import Series
 from pandas.io.pytables import HDFStore
 
-from nilmth.data.preprocessing import PreprocessWrapper
+from nilmth.data.preprocessing import Preprocessing
 from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
 
 
-class UkdalePreprocess(PreprocessWrapper):
+class Ukdale(Preprocessing):
     dataset: str = "ukdale"
     datastore: HDFStore = None
 
     def __init__(self, path_h5: str, path_labels: str, **kwargs):
-        super(UkdalePreprocess, self).__init__(**kwargs)
+        super(Ukdale, self).__init__(**kwargs)
         self._path_h5 = path_h5
         self._path_labels = path_labels
         # Load the datastore
