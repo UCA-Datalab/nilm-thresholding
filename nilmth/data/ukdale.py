@@ -5,7 +5,7 @@ from pandas import Series
 from pandas.io.pytables import HDFStore
 
 from nilmth.data.preprocessing import Preprocessing
-from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
+from nilmth.utils.string import homogenize_label
 
 
 class Ukdale(Preprocessing):
@@ -76,16 +76,14 @@ class Ukdale(Preprocessing):
         ).to_dict()[1]
 
         # Homogenize input label
-        label = homogenize_string(label)
-        label = APPLIANCE_NAMES.get(label, label)
+        label = homogenize_label(label)
 
         # Series placeholder
         s = None
 
         # Iterate through all the existing labels, searching for the input label
         for i in labels:
-            lab = homogenize_string(labels[i])
-            lab = APPLIANCE_NAMES.get(lab, lab)
+            lab = homogenize_label(labels[i])
             # When we find the input label, we load the meter records
             if lab == label:
                 s = self._load_meter(house, i)
