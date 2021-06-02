@@ -120,4 +120,9 @@ class Dataport(Preprocessing):
         return appliances
 
     def load_house_meters(self, house: int) -> pd.DataFrame:
-        pass
+        # List available appliances
+        appliances = self.get_appliances(house)
+        # Get the file path, open it and extract target house
+        path_file = self._dict_houses[house]
+        df = pd.read_csv(path_file).query(f"dataid == {house}")[appliances]
+        return df
