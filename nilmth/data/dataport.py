@@ -8,6 +8,20 @@ from nilmth.data.preprocessing import Preprocessing
 from nilmth.utils.logging import logger
 
 
+LIST_NOT_APPLIANCES = [
+    "active_record",
+    "audit_2011",
+    "survey_2011",
+    "survey_2013",
+    "survey_2014",
+    "survey_2017",
+    "survey_2019",
+    "program_baseline",
+    "program_energy_internet_demo",
+    "program_shines",
+]
+
+
 class Dataport(Preprocessing):
     dataset: str = "dataport"
     datastore: HDFStore = None
@@ -101,6 +115,7 @@ class Dataport(Preprocessing):
     def get_appliances(self, house: int) -> list:
         dict_house = self.get_metadata(house)
         appliances = [k for k, v in dict_house.items() if v is True]
+        appliances = list(set(appliances) - set(LIST_NOT_APPLIANCES))
         return appliances
 
     def load_house_meters(self, house: int) -> pd.DataFrame:
