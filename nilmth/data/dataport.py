@@ -113,9 +113,10 @@ class Dataport(Preprocessing):
         return dict_house
 
     def get_appliances(self, house: int) -> list:
+        """List the available appliances of target house"""
         dict_house = self.get_metadata(house)
         appliances = [k for k, v in dict_house.items() if v is True]
-        appliances = list(set(appliances) - set(LIST_NOT_APPLIANCES))
+        appliances = sorted(set(appliances) - set(LIST_NOT_APPLIANCES))
         return appliances
 
     def load_house_meters(self, house: int) -> pd.DataFrame:
