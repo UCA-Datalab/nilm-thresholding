@@ -91,12 +91,17 @@ class Dataport(Preprocessing):
         )
         logger.debug("Done reading the metadata")
 
-    def get_metadata(self, house: int):
+    def get_metadata(self, house: int) -> dict:
         """Returns the metadata of a house given its ID"""
         dict_house = self.metadata.query(f"dataid == {house}").to_dict("r")[0]
         # Include path to file
         dict_house.update({"path": self._dict_houses[house]})
         return dict_house
+
+    def get_appliances(self, house: int) -> list:
+        dict_house = self.get_metadata(house)
+        appliances = [k for k, v in dict_house.items() if v is True]
+        return appliances
 
     def load_house_meters(self, house: int) -> pd.DataFrame:
         pass
