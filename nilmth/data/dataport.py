@@ -7,7 +7,6 @@ from pandas.io.pytables import HDFStore
 from nilmth.data.preprocessing import Preprocessing
 from nilmth.utils.logging import logger
 
-
 LIST_NOT_APPLIANCES = [
     "active_record",
     "audit_2011",
@@ -19,6 +18,7 @@ LIST_NOT_APPLIANCES = [
     "program_baseline",
     "program_energy_internet_demo",
     "program_shines",
+    "pv",
 ]
 
 
@@ -119,10 +119,20 @@ class Dataport(Preprocessing):
         appliances = sorted(set(appliances) - set(LIST_NOT_APPLIANCES))
         return appliances
 
-    def load_house_meters(self, house: int) -> pd.DataFrame:
+    def load_house_meters(self, house: int, chunksize: int = 1e6) -> pd.DataFrame:
         # List available appliances
         appliances = self.get_appliances(house)
         # Get the file path, open it and extract target house
         path_file = self._dict_houses[house]
-        df = pd.read_csv(path_file).query(f"dataid == {house}")[appliances]
-        return df
+        # List target columns
+        columns = ["dataid", "localminute"] + appliances
+        # Initialize list of dataframes
+        list_df = []
+        # Iterate through the whole file and take the chunks corresponding to that house
+        for chunk in pd.read_csv(path_file, chunksize=chunksize, usecols=columns):
+            list_df.append(chunk.query(f"dataid == {house}"))
+        # Concatenate the chunks
+        df = pd.concat(list_df).set_index("localminute")[appliances]
+        # Index to datetime
+        df.index = pd.to_datetime(df.index, format="%Y-%m-%d %H:%M:%S.%f")
+        return df.sort_index(ascending=True)
