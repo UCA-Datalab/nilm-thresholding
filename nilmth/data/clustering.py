@@ -1,11 +1,11 @@
 import itertools
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster, cophenet
-from scipy.spatial.distance import pdist
-
 from nilmth.utils.plot import plot_power_distribution
+from scipy.cluster.hierarchy import cophenet, dendrogram, fcluster, linkage
+from scipy.spatial.distance import pdist
 
 
 class HierarchicalClustering:
@@ -22,16 +22,24 @@ class HierarchicalClustering:
         self.n_cluster = n_cluster
         self.criterion = criterion
 
-    def perform_clustering(self, ser: np.array, method: str = None):
+    def perform_clustering(
+        self, ser: np.array, method: Optional[str] = None
+    ) -> np.array:
         """Performs the actual clustering, using the linkage function
+
+        Parameters
+        ----------
+        ser : np.array
+            Series of points to group in clusters
+        method : str, optional
+            Clustering method, by default None (takes the one from the class)
 
         Returns
         -------
-        numpy.array
+        np.array
             Z[i] will tell us which clusters were merged in the i-th iteration
         """
-        if method is not None:
-            self.method = method
+        self.method = method if method is not None else self.method
         # The shape of our X matrix must be (n, m)
         # n = samples, m = features
         self.x = np.expand_dims(ser, axis=1)
@@ -43,7 +51,20 @@ class HierarchicalClustering:
         c, coph_dists = cophenet(self.z, pdist(self.x))
         return c
 
-    def plot_dendrogram(self, p=6, max_d=None, figsize=(3, 3)):
+    def plot_dendrogram(
+        self, p: int = 6, max_d: Optional[float] = None, figsize: Tuple[int] = (3, 3)
+    ):
+        """Plots the dendrogram
+
+        Parameters
+        ----------
+        p : int, optional
+            Last split, by default 6
+        max_d : Optional[float], optional
+            Maximum distance between splits, by default None
+        figsize : Tuple[int], optional
+            Figure size, by default (3, 3)
+        """
         fig, ax = plt.subplots(figsize=figsize)
         self.dendrogram = dendrogram(
             self.z,
@@ -61,7 +82,14 @@ class HierarchicalClustering:
     def dendrogram_distance(self):
         return sorted(set(itertools.chain(*self.dendrogram["dcoord"])), reverse=True)
 
-    def plot_dendrogram_distance(self, figsize=(10, 3)):
+    def plot_dendrogram_distance(self, figsize: Tuple[int] = (10, 3)):
+        """Plots the dendrogram distances
+
+        Parameters
+        ----------
+        figsize : Tuple[int], optional
+            Size of the figure, by default (10, 3)
+        """
         # Initialize plots
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
         # Dendrogram distance
@@ -82,12 +110,24 @@ class HierarchicalClustering:
         return fig, (ax1, ax2)
 
     def compute_thresholds_and_centroids(
-        self, n_cluster: int = None, criterion: str = None, centroid: str = "median"
+        self,
+        n_cluster: Optional[int] = None,
+        criterion: Optional[str] = None,
+        centroid: str = "median",
     ):
-        if n_cluster is not None:
-            self.n_cluster = n_cluster
-        if criterion is not None:
-            self.criterion = criterion
+        """Computes the thresholds and centroids of each group
+
+        Parameters
+        ----------
+        n_cluster : Optional[int], optional
+            Number of clusters, by default None
+        criterion : Optional[str], optional
+            Criterion used to compute the clusters, by default None
+        centroid : str, optional
+            Method to compute the centroids (median or mean), by default "median"
+        """
+        self.n_cluster = n_cluster if n_cluster is not None else self.n_cluster
+        self.criterion = criterion if criterion is not None else self.criterion
         clusters = fcluster(self.z, self.n_cluster, self.criterion)
         # Get centroids
         if centroid == "median":
@@ -106,7 +146,16 @@ class HierarchicalClustering:
         )
         self.thresh = np.divide(np.array(x_min[1:]) + np.array(x_max[:-1]), 2)
 
-    def plot_cluster_distribution(self, label="", bins=100):
+    def plot_cluster_distribution(self, label: str = "", bins: int = 100):
+        """Plots the power distribution, and the lines splitting each cluster
+
+        Parameters
+        ----------
+        label : str, optional
+            Label of the distribution, by default ""
+        bins : int, optional
+            Number of bins, by default 100
+        """
         fig, ax = plot_power_distribution(self.x, label, bins=bins)
         [ax.axvline(t, color="r", linestyle="--") for t in self.thresh]
         return fig, ax

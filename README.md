@@ -106,19 +106,19 @@ If you want to use your own set of parameters, duplicate the aforementioned
  configuration file and modify the paremeters you want to change (without deleting any
   parameter). You can then use that config file with the following command:
  
- ```
+```
 python nilmth/train.py  --path_config <path to your config file>
 ```
 
 For more information about the script, run:
 
- ```
+```
 python nilmth/train.py  --help
 ```
 
 Once the models are trained, test them with:
 
- ```
+```
 python nilmth/test.py  --path_config <path to your config file>
 ```
 
@@ -136,7 +136,7 @@ models are stored. Then, the script `train.py` will be called, using each
  configuration each. This will store the model weights, which will be used
  again during the test phase:
  
- ```
+```
 nohup sh test_sequential.sh > log.out & 
 ```
 
