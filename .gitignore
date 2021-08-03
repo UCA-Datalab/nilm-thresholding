@@ -2,6 +2,7 @@ notebooks/
 plots/
 output*/
 *.csv
+*.ipynb
 
 # Log
 log.out

@@ -72,3 +72,9 @@ def homogenize_string(string, remove_dieresis_u=True):
     string_low_deaccent = deaccent(
         string_low, remove_dieresis_u=remove_dieresis_u)
     return string_low_deaccent
+
+
+def homogenize_label(label: str) -> str:
+    """Homogenizes the input label (which is the name of an appliance or meter)"""
+    label = homogenize_string(label)
+    return APPLIANCE_NAMES.get(label, label)
