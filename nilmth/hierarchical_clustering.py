@@ -1,8 +1,11 @@
 import os
+from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import typer
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 
 from nilmth.data.clustering import HierarchicalClustering
 from nilmth.data.dataloader import DataLoader
@@ -20,6 +23,70 @@ LIST_LINKAGE = [
 ]
 
 
+def plot_intrinsic_error(intr_error: Iterable[float], ax: Axes):
+    """Plots the intrinsic error depending on the number of splits
+
+    Parameters
+    ----------
+    intr_error : Iterable[float]
+        List of intrinsic error values
+    ax : Axes
+        Axes where the graph is plotted
+    """
+    ax.plot(LIST_CLUSTER, intr_error, ".--")
+    ax.set_ylabel("Intrinsic Error (NDE)")
+    ax.set_xlabel("Number of status")
+    ax.grid()
+
+
+def plot_error_reduction(intr_error: Iterable[float], ax: Axes):
+    """Plots the intrinsic error reduction depending on the number of splits
+
+    Parameters
+    ----------
+    intr_error : Iterable[float]
+        List of intrinsic error values
+    ax : Axes
+        Axes where the graph is plotted
+    """
+    rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
+    ax.plot(LIST_CLUSTER[1:], rel_error, ".--")
+    ax.set_ylabel("Reduction of Intrinsic Error (%)")
+    ax.set_xlabel("Number of status")
+    ax.set_ylim(0, 100)
+    ax.grid()
+
+
+def plot_cluster_distribution(
+    ser: np.array,
+    thresh: Iterable[float],
+    ax: Axes,
+    app: str = "",
+    bins: int = 100,
+):
+    """Plots the power distribution, and the lines splitting each cluster
+
+    Parameters
+    ----------
+    ser : numpy.array
+        Contains all the power values
+    thresh : Iterable[float]
+        Contains all the threshold values
+    ax : Axes
+        Axes where the graph is plotted
+    app : str, optional
+        Name of the appliance, by default ""
+    bins : int, optional
+        Histogram splits, by default 100
+    """
+    ax.hist(ser, bins=bins)
+    ax.set_title(app.capitalize().replace("_", " "))
+    ax.set_xlabel("Power (watts)")
+    ax.set_ylabel("Frequency")
+    ax.grid()
+    [ax.axvline(t, color="r", linestyle="--") for t in thresh]
+
+
 def main(
     limit: int = 20000,
     path_data: str = "data-prep",
@@ -27,7 +94,6 @@ def main(
     path_config: str = "nilmth/config.toml",
     path_output: str = "outputs/hieclust",
 ):
-
     # Read config file
     config = load_config(path_config, "model")
 
@@ -75,22 +141,12 @@ def main(
                 dict_scores = regression_scores_dict(dict_app)
                 intr_error[idx] = dict_scores[appliance]["nde"]
             # Initialize plots
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+            fig, axis = plt.subplots(2, 2, figsize=(12, 8))
             fig.suptitle(f"{appliance}, Linkage: {method}")
-            # Plot intrinsic error
-            ax1.plot(LIST_CLUSTER, intr_error, ".--")
-            ax1.set_title(f"Intrinsic Error")
-            ax1.set_ylabel("NDE")
-            ax1.set_xlabel("Number of status")
-            ax1.grid()
-            # Plot proportional reduction
-            rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
-            ax2.plot(LIST_CLUSTER[1:], rel_error, ".--")
-            ax2.set_title("Reduction of Intrinsic Error")
-            ax2.set_ylabel("Reduction (%)")
-            ax2.set_xlabel("Number of status")
-            ax2.set_ylim(0, 100)
-            ax2.grid()
+            # Plots
+            plot_cluster_distribution(hie.x, hie.thresh, axis[0, 0])
+            plot_intrinsic_error(intr_error, axis[1, 0])
+            plot_error_reduction(intr_error, axis[1, 1])
             # Save and close the figure
             path_fig = os.path.join(path_output, f"{app}_{method}.png")
             fig.savefig(path_fig)
