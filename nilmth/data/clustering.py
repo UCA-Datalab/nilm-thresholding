@@ -145,17 +145,3 @@ class HierarchicalClustering:
             [np.min(self.x[clusters == (c + 1)]) for c in range(self.n_cluster)]
         )
         self.thresh = np.divide(np.array(x_min[1:]) + np.array(x_max[:-1]), 2)
-
-    def plot_cluster_distribution(self, label: str = "", bins: int = 100):
-        """Plots the power distribution, and the lines splitting each cluster
-
-        Parameters
-        ----------
-        label : str, optional
-            Label of the distribution, by default ""
-        bins : int, optional
-            Number of bins, by default 100
-        """
-        fig, ax = plot_power_distribution(self.x, label, bins=bins)
-        [ax.axvline(t, color="r", linestyle="--") for t in self.thresh]
-        return fig, ax
