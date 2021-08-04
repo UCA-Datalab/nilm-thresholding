@@ -79,12 +79,14 @@ def plot_cluster_distribution(
     bins : int, optional
         Histogram splits, by default 100
     """
-    ax.hist(ser, bins=bins)
+    y, x, _ = ax.hist(ser, bins=bins)
     ax.set_title(app.capitalize().replace("_", " "))
     ax.set_xlabel("Power (watts)")
     ax.set_ylabel("Frequency")
     ax.grid()
-    [ax.axvline(t, color="r", linestyle="--") for t in thresh]
+    for idx, t in enumerate(thresh):
+        ax.axvline(t, color="r", linestyle="--")
+        ax.text(t + 0.01 * x.max(), y.max(), idx, rotation=0, color="r")
 
 
 def main(
@@ -94,6 +96,23 @@ def main(
     path_config: str = "nilmth/config.toml",
     path_output: str = "outputs/hieclust",
 ):
+    """Performs the hierarchical clustering on the given list of appliances,
+    testing different linkaged methods and number of splits. For each combination,
+    outputs an image with several informative graphs.
+
+    Parameters
+    ----------
+    limit : int, optional
+        Number of data points to use, by default 20000
+    path_data : str, optional
+        Path to the preprocessed data folder, by default "data-prep"
+    path_threshold : str, optional
+        Path to the threshold configuration, by default "threshold.toml"
+    path_config : str, optional
+        Path to the config file, by default "nilmth/config.toml"
+    path_output : str, optional
+        Path to the outputs folder, by default "outputs/hieclust"
+    """
     # Read config file
     config = load_config(path_config, "model")
 
@@ -122,9 +141,10 @@ def main(
             # Clustering
             hie = HierarchicalClustering()
             hie.perform_clustering(ser, method=method)
-            # Initialize the list of intrinsic error
-            # per number of clusters
+            # Initialize the list of intrinsic error per number of clusters
             intr_error = [0] * len(LIST_CLUSTER)
+            # Initialize the empty list of thresholds (sorted)
+            thresh_sorted = []
             # Compute thresholds per number of clusters
             for idx, n_cluster in enumerate(LIST_CLUSTER):
                 hie.compute_thresholds_and_centroids(n_cluster=n_cluster)
@@ -140,11 +160,14 @@ def main(
                 # Compute the scores
                 dict_scores = regression_scores_dict(dict_app)
                 intr_error[idx] = dict_scores[appliance]["nde"]
+                # Update the sorted list of thresholds
+                thresh = list(set(hie.thresh) - set(thresh_sorted))
+                thresh_sorted.append(thresh[0])
             # Initialize plots
             fig, axis = plt.subplots(2, 2, figsize=(12, 8))
             fig.suptitle(f"{appliance}, Linkage: {method}")
             # Plots
-            plot_cluster_distribution(hie.x, hie.thresh, axis[0, 0])
+            plot_cluster_distribution(hie.x, thresh_sorted, axis[0, 0])
             plot_intrinsic_error(intr_error, axis[1, 0])
             plot_error_reduction(intr_error, axis[1, 1])
             # Save and close the figure
