@@ -1,4 +1,66 @@
-# NILM: classification VS regression
+<!-- README template: https://github.com/othneildrew/Best-README-Template -->
+
+<!-- PROJECT SHIELDS -->
+<!--
+*** I'm using markdown "reference style" links for readability.
+*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
+*** See the bottom of this document for the declaration of the reference variables
+*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
+*** https://www.markdownguide.org/basic-syntax/#reference-style-links
+-->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![LinkedIn][linkedin-shield]][linkedin-url]
+
+<!-- PROJECT LOGO -->
+<br />
+<p align="center">
+  <a href="https://github.com/UCA-Datalab/nilm-thresholding">
+    <img src="images/logo.png" alt="Logo" width="400" height="80">
+  </a>
+
+  <h3 align="center">NILM: classification VS regression</h3>
+</p>
+
+
+<!-- TABLE OF CONTENTS -->
+<details open="open">
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+    </li>
+    <li>
+      <a href="#getting-started">Getting Started</a>
+      <ul>
+        <li><a href="#create-the-environment">Create the Environment</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#data">Data</a>
+      <ul>
+        <li><a href="#uk-dale">UK-DALE</a></li>
+      </ul>
+      <ul>
+        <li><a href="#preprocess">Preprocess</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#train">Train</a>
+      <ul>
+         <li><a href="#reproduce-the-paper">Reproduce the Paper</a></li>
+         <li><a href="#thresholding-methods">Thresholding Methods</a></li>
+      </ul>
+    </li>
+    <li><a href="#publications">Publications</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgements">Acknowledgements</a></li>
+  </ol>
+</details>
+
+## About the project
 
 Non-Intrusive Load Monitoring (NILM)  aims to predict the status
 or consumption of  domestic appliances in a household only by knowing
@@ -14,10 +76,10 @@ deep learning state-of-the-art architectures on both the regression and
 classification problems, introducing criteria to select the most convenient
 thresholding method.
 
-Source: [see publications](#publications)
+## Getting started
+### Create the Environment
 
-## Set up
-### Create the environment using Conda
+To create the environment using Conda:
 
   1. Install miniconda
      
@@ -122,7 +184,7 @@ Once the models are trained, test them with:
 python nilmth/test.py  --path_config <path to your config file>
 ```
 
-#### Reproduce paper
+### Reproduce the Paper
 
 To reproduce the results shown in [our paper](#publications), activate the
  environment and then run:
@@ -140,7 +202,7 @@ models are stored. Then, the script `train.py` will be called, using each
 nohup sh test_sequential.sh > log.out & 
 ```
 
-### Thresholding methods
+### Thresholding Methods
 
 There are three threshold methods available. Read [our paper](#publications)
 to understand how each threshold works.
@@ -151,13 +213,32 @@ to understand how each threshold works.
 
 ## Publications
 
-[NILM as a regression versus classification problem:
+* [NILM as a regression versus classification problem:
 the importance of thresholding](https://www.researchgate.net/project/Non-Intrusive-Load-Monitoring-6)
 
-## Contact information
+## Contact
 
-Author: Daniel Precioso, PhD student at Universidad de Cádiz
-- Email: daniel.precioso@uca.es
-- [Github](https://github.com/daniprec)
-- [LinkedIn](https://www.linkedin.com/in/daniel-precioso-garcelan/)
-- [ResearchGate](https://www.researchgate.net/profile/Daniel_Precioso_Garcelan)
+Daniel Precioso - [daniprec](https://github.com/daniprec) -  daniel.precioso@uca.es
+
+Project link: [https://github.com/UCA-Datalab/nilm-thresholding](https://github.com/UCA-Datalab/nilm-thresholding)
+
+ResearhGate link: [https://www.researchgate.net/project/NILM-classification-VS-regression](https://www.researchgate.net/project/NILM-classification-VS-regression)
+
+## Acknowledgements
+
+* [UCA DataLab](http://datalab.uca.es/)
+* [David Gómez-Ullate](https://www.linkedin.com/in/david-g%C3%B3mez-ullate-oteiza-87a820b/?originalSubdomain=en)
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/UCA-Datalab/nilm-thresholding.svg?style=for-the-badge
+[contributors-url]: https://github.com/UCA-Datalab/nilm-thresholding/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/UCA-Datalab/nilm-thresholding.svg?style=for-the-badge
+[forks-url]: https://github.com/UCA-Datalab/nilm-thresholding/network/members
+[stars-shield]: https://img.shields.io/github/stars/UCA-Datalab/nilm-thresholding.svg?style=for-the-badge
+[stars-url]: https://github.com/UCA-Datalab/nilm-thresholding/stargazers
+[issues-shield]: https://img.shields.io/github/issues/UCA-Datalab/nilm-thresholding.svg?style=for-the-badge
+[issues-url]: https://github.com/UCA-Datalab/nilm-thresholding/issues
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://www.linkedin.com/in/daniel-precioso-garcelan/
