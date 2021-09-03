@@ -39,13 +39,14 @@
       </ul>
     </li>
     <li>
-      <a href="#data">Data</a>
+      <a href="#datasets">Datasets</a>
       <ul>
         <li><a href="#uk-dale">UK-DALE</a></li>
       </ul>
       <ul>
-        <li><a href="#preprocess">Preprocess</a></li>
+        <li><a href="#pecan-street-dataport">Pecan Street Dataport</a></li>
       </ul>
+   <li><a href="#preprocess-the-data">Preprocess the Data</a></li>
     </li>
     <li>
       <a href="#train">Train</a>
@@ -105,11 +106,9 @@ To create the environment using Conda:
        conda activate nilm-thresholding
        ```
  
-## Data
+## Datasets
 
 ### UK-DALE
-
-#### Download UK-DALE
 
 UK-DALE dataset is hosted on the following link:
 [https://data.ukedc.rl.ac.uk/browse/edc/efficiency/residential
@@ -131,7 +130,15 @@ nilm-thresholding
 
 Credit: [Jack Kelly](https://jack-kelly.com/data/)
 
-### Preprocess
+### Pecan Street Dataport
+
+We are aiming to include this dataset in a future release. You can check the issue here: [https://github.com/UCA-Datalab/nilm-thresholding/issues/8](https://github.com/UCA-Datalab/nilm-thresholding/issues/8)
+
+Any help and suggestions are welcome!
+
+Credit: [Pecan Street](https://dataport.pecanstreet.org/)
+
+## Preprocess the Data
 
 Once downloaded the raw data from any of the sources above,
 you must preprocess it.
