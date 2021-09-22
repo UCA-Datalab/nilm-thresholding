@@ -17,7 +17,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/UCA-Datalab/nilm-thresholding">
+  <a href="https://github.com/UCA-Datalab">
     <img src="images/logo.png" alt="Logo" width="400" height="80">
   </a>
 
