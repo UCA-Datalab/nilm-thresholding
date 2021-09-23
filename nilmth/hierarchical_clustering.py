@@ -1,5 +1,5 @@
 import os
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,45 +23,7 @@ LIST_LINKAGE = [
 ]
 
 
-def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None):
-    """Plots the intrinsic error depending on the number of splits
-
-    Parameters
-    ----------
-    intr_error : Iterable[float]
-        List of intrinsic error values
-    ax : Axes, optional
-        Axes where the graph is plotted
-    """
-    if ax is None:
-        ax = plt.gca()
-    ax.plot(LIST_CLUSTER, intr_error, ".--")
-    ax.set_ylabel("Intrinsic Error (NDE)")
-    ax.set_xlabel("Number of status")
-    ax.grid()
-
-
-def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None):
-    """Plots the intrinsic error reduction depending on the number of splits
-
-    Parameters
-    ----------
-    intr_error : Iterable[float]
-        List of intrinsic error values
-    ax : Axes, optional
-        Axes where the graph is plotted
-    """
-    if ax is None:
-        ax = plt.gca()
-    rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
-    ax.plot(LIST_CLUSTER[1:], rel_error, ".--")
-    ax.set_ylabel("Reduction of Intrinsic Error (%)")
-    ax.set_xlabel("Number of status")
-    ax.set_ylim(0, 100)
-    ax.grid()
-
-
-def plot_cluster_distribution(
+def plot_thresholds_on_distribution(
     ser: np.array,
     thresh: Iterable[float],
     ax: Optional[Axes] = None,
@@ -89,10 +51,85 @@ def plot_cluster_distribution(
     ax.set_title(app.capitalize().replace("_", " "))
     ax.set_xlabel("Power (watts)")
     ax.set_ylabel("Frequency")
+    ax.set_title("Thresholds on power distribution")
     ax.grid()
+    # Plot the thresholds
     for idx, t in enumerate(thresh):
         ax.axvline(t, color="r", linestyle="--")
-        ax.text(t + 0.01 * x.max(), y.max(), idx, rotation=0, color="r")
+        ax.text(t + 0.01 * x.max(), y.max(), idx + 1, rotation=0, color="r")
+
+
+def plot_thresholds_on_series(
+    ser: np.array, thresh: Iterable[float], size: int = 500, ax: Optional[Axes] = None
+):
+    """Plots the thresholds on a sample time series
+
+    Parameters
+    ----------
+    ser : numpy.array
+        Contains all the power values
+    thresh : Iterable[float]
+        Contains all the threshold values
+    ax : Axes, optional
+        Axes where the graph is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+    # Take sample of the series and plot it
+    idx = np.argmax(ser)
+    idx_min = int(max(0, idx - size / 2))
+    idx_max = int(min(len(ser), idx + size / 2))
+    power = ser[idx_min:idx_max]
+    time = np.arange(0, len(power)) * 6
+    ax.plot(time, power)
+    # Plot the thresholds
+    for idx, thresh in enumerate(thresh):
+        ax.axhline(thresh, color="r", linestyle="--")
+        ax.text(time.max(), thresh + power.max() * 0.01, idx + 1, rotation=0, color="r")
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Power (watts)")
+    ax.set_title("Thresholds on sample time series")
+    ax.grid()
+
+
+def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None):
+    """Plots the intrinsic error depending on the number of splits
+
+    Parameters
+    ----------
+    intr_error : Iterable[float]
+        List of intrinsic error values
+    ax : Axes, optional
+        Axes where the graph is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+    ax.plot(LIST_CLUSTER, intr_error, ".--")
+    ax.set_ylabel("Intrinsic Error (NDE)")
+    ax.set_xlabel("Number of status")
+    ax.set_title("Intrinsic Error depending on splits")
+    ax.grid()
+
+
+def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None):
+    """Plots the intrinsic error reduction depending on the number of splits
+
+    Parameters
+    ----------
+    intr_error : Iterable[float]
+        List of intrinsic error values
+    ax : Axes, optional
+        Axes where the graph is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+    rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
+    ax.plot(LIST_CLUSTER[1:], rel_error, ".--")
+    ax.set_ylim(0, 100)
+    ax.set_ylabel("Reduction of Intrinsic Error (%)")
+    ax.set_xlabel("Number of status")
+    ax.set_title("Error reduction with each subsequent split")
+    ax.grid()
 
 
 def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "average"):
@@ -136,9 +173,12 @@ def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "averag
     # Initialize plots
     fig, axis = plt.subplots(2, 2, figsize=(12, 8))
     # Plots
-    plot_cluster_distribution(power, thresh_sorted, ax=axis[0, 0])
+    plot_thresholds_on_distribution(power, thresh_sorted, ax=axis[0, 0])
+    plot_thresholds_on_series(power, thresh_sorted, ax=axis[0, 1])
     plot_intrinsic_error(intr_error, ax=axis[1, 0])
     plot_error_reduction(intr_error, ax=axis[1, 1])
+    # Set the space between subplots
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
 
 def main(
