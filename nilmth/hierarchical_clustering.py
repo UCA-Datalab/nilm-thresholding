@@ -1,5 +1,5 @@
 import os
-from typing import Iterable
+from typing import Iterable, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,32 +23,36 @@ LIST_LINKAGE = [
 ]
 
 
-def plot_intrinsic_error(intr_error: Iterable[float], ax: Axes):
+def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None):
     """Plots the intrinsic error depending on the number of splits
 
     Parameters
     ----------
     intr_error : Iterable[float]
         List of intrinsic error values
-    ax : Axes
+    ax : Axes, optional
         Axes where the graph is plotted
     """
+    if ax is None:
+        ax = plt.gca()
     ax.plot(LIST_CLUSTER, intr_error, ".--")
     ax.set_ylabel("Intrinsic Error (NDE)")
     ax.set_xlabel("Number of status")
     ax.grid()
 
 
-def plot_error_reduction(intr_error: Iterable[float], ax: Axes):
+def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None):
     """Plots the intrinsic error reduction depending on the number of splits
 
     Parameters
     ----------
     intr_error : Iterable[float]
         List of intrinsic error values
-    ax : Axes
+    ax : Axes, optional
         Axes where the graph is plotted
     """
+    if ax is None:
+        ax = plt.gca()
     rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
     ax.plot(LIST_CLUSTER[1:], rel_error, ".--")
     ax.set_ylabel("Reduction of Intrinsic Error (%)")
@@ -60,7 +64,7 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Axes):
 def plot_cluster_distribution(
     ser: np.array,
     thresh: Iterable[float],
-    ax: Axes,
+    ax: Optional[Axes] = None,
     app: str = "",
     bins: int = 100,
 ):
@@ -72,13 +76,15 @@ def plot_cluster_distribution(
         Contains all the power values
     thresh : Iterable[float]
         Contains all the threshold values
-    ax : Axes
+    ax : Axes, optional
         Axes where the graph is plotted
     app : str, optional
         Name of the appliance, by default ""
     bins : int, optional
         Histogram splits, by default 100
     """
+    if ax is None:
+        ax = plt.gca()
     y, x, _ = ax.hist(ser, bins=bins)
     ax.set_title(app.capitalize().replace("_", " "))
     ax.set_xlabel("Power (watts)")
@@ -87,6 +93,52 @@ def plot_cluster_distribution(
     for idx, t in enumerate(thresh):
         ax.axvline(t, color="r", linestyle="--")
         ax.text(t + 0.01 * x.max(), y.max(), idx, rotation=0, color="r")
+
+
+def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "average"):
+    """Plots the results of applying a certain clustering method
+    on the given series
+
+    Parameters
+    ----------
+    ser : np.array
+        Contains all the power values
+    dl : DataLoader
+        Required to apply the thresholds on the series
+    method : str, optional
+        Clustering method, by default "average"
+    """
+    # Clustering
+    hie = HierarchicalClustering()
+    hie.perform_clustering(ser, method=method)
+    # Initialize the list of intrinsic error per number of clusters
+    intr_error = [0] * len(LIST_CLUSTER)
+    # Initialize the empty list of thresholds (sorted)
+    thresh_sorted = []
+    # Compute thresholds per number of clusters
+    for idx, n_cluster in enumerate(LIST_CLUSTER):
+        hie.compute_thresholds_and_centroids(n_cluster=n_cluster)
+        # Update thresholds and centroids
+        thresh = np.insert(np.expand_dims(hie.thresh, axis=0), 0, 0, axis=1)
+        centroids = np.expand_dims(hie.centroids, axis=0)
+        dl.threshold.set_thresholds_and_centroids(thresh, centroids)
+        # Create the dictionary of power series
+        power = np.expand_dims(ser, axis=1)
+        sta = dl.dataset.power_to_status(power)
+        recon = dl.dataset.status_to_power(sta)
+        dict_app = {"app": {"power": power, "power_pred": recon}}
+        # Compute the scores
+        dict_scores = regression_scores_dict(dict_app)
+        intr_error[idx] = dict_scores["app"]["nde"]
+        # Update the sorted list of thresholds
+        thresh = list(set(hie.thresh) - set(thresh_sorted))
+        thresh_sorted.append(thresh[0])
+    # Initialize plots
+    fig, axis = plt.subplots(2, 2, figsize=(12, 8))
+    # Plots
+    plot_cluster_distribution(power, thresh_sorted, ax=axis[0, 0])
+    plot_intrinsic_error(intr_error, ax=axis[1, 0])
+    plot_error_reduction(intr_error, ax=axis[1, 1])
 
 
 def main(
@@ -120,6 +172,7 @@ def main(
     if not os.path.exists(path_output):
         os.mkdir(path_output)
 
+    # Loop through the list of appliances
     for app in LIST_APPLIANCES:
         config["appliances"] = [app]
 
@@ -134,46 +187,17 @@ def main(
 
         # Take an appliance series
         ser = dl.get_appliance_series(app)[:limit]
-        # Name
+        # Appliance name
         appliance = app.capitalize().replace("_", " ")
-
+        # Loop through methods
         for method in LIST_LINKAGE:
-            # Clustering
-            hie = HierarchicalClustering()
-            hie.perform_clustering(ser, method=method)
-            # Initialize the list of intrinsic error per number of clusters
-            intr_error = [0] * len(LIST_CLUSTER)
-            # Initialize the empty list of thresholds (sorted)
-            thresh_sorted = []
-            # Compute thresholds per number of clusters
-            for idx, n_cluster in enumerate(LIST_CLUSTER):
-                hie.compute_thresholds_and_centroids(n_cluster=n_cluster)
-                # Update thresholds and centroids
-                thresh = np.insert(np.expand_dims(hie.thresh, axis=0), 0, 0, axis=1)
-                centroids = np.expand_dims(hie.centroids, axis=0)
-                dl.threshold.set_thresholds_and_centroids(thresh, centroids)
-                # Create the dictionary of power series
-                power = np.expand_dims(ser, axis=1)
-                sta = dl.dataset.power_to_status(power)
-                recon = dl.dataset.status_to_power(sta)
-                dict_app = {appliance: {"power": power, "power_pred": recon}}
-                # Compute the scores
-                dict_scores = regression_scores_dict(dict_app)
-                intr_error[idx] = dict_scores[appliance]["nde"]
-                # Update the sorted list of thresholds
-                thresh = list(set(hie.thresh) - set(thresh_sorted))
-                thresh_sorted.append(thresh[0])
-            # Initialize plots
-            fig, axis = plt.subplots(2, 2, figsize=(12, 8))
-            fig.suptitle(f"{appliance}, Linkage: {method}")
-            # Plots
-            plot_cluster_distribution(hie.x, thresh_sorted, axis[0, 0])
-            plot_intrinsic_error(intr_error, axis[1, 0])
-            plot_error_reduction(intr_error, axis[1, 1])
+            plot_clustering_results(ser, dl, method=method)
+            # Place title in figure
+            plt.gcf().suptitle(f"{appliance}, Linkage: {method}")
             # Save and close the figure
             path_fig = os.path.join(path_output, f"{app}_{method}.png")
-            fig.savefig(path_fig)
-            plt.close(fig)
+            plt.savefig(path_fig)
+            plt.close()
 
 
 if __name__ == "__main__":
