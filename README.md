@@ -181,7 +181,7 @@ python nilmth/train.py  --path_config <path to your config file>
 
 For more information about the script, run:
 
- ```
+```
 python nilmth/train.py  --help
 ```
 
