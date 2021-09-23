@@ -69,7 +69,7 @@ def plot_real_vs_prediction(
 
 
 def plot_power_distribution(
-    ser: np.array, app: str, bins: int = 20, figsize: tuple = (3, 3)
+    ser: np.array, app: str = "", bins: int = 20, figsize: tuple = (3, 3)
 ):
     """Plot the histogram of power distribution
 
@@ -77,8 +77,8 @@ def plot_power_distribution(
     ----------
     ser : numpy.array
         Contains all the power values
-    app : label
-        Name of the appliance
+    app : str, optional
+        Name of the appliance, by default ""
     bins : int, optional
         Histogram splits, by default 20
     figsize : tuple, optional
