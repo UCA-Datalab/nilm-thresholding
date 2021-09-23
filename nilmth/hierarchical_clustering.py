@@ -9,6 +9,7 @@ from matplotlib.axes import Axes
 
 from nilmth.data.clustering import HierarchicalClustering
 from nilmth.data.dataloader import DataLoader
+from nilmth.data.threshold import Threshold
 from nilmth.utils.config import load_config
 from nilmth.utils.scores import regression_scores_dict
 
@@ -132,7 +133,7 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
     ax.grid()
 
 
-def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "average"):
+def plot_clustering_results(ser: np.array, th: Threshold, method: str = "average"):
     """Plots the results of applying a certain clustering method
     on the given series
 
@@ -140,7 +141,7 @@ def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "averag
     ----------
     ser : np.array
         Contains all the power values
-    dl : DataLoader
+    th : Threshold
         Required to apply the thresholds on the series
     method : str, optional
         Clustering method, by default "average"
@@ -158,11 +159,11 @@ def plot_clustering_results(ser: np.array, dl: DataLoader, method: str = "averag
         # Update thresholds and centroids
         thresh = np.insert(np.expand_dims(hie.thresh, axis=0), 0, 0, axis=1)
         centroids = np.expand_dims(hie.centroids, axis=0)
-        dl.threshold.set_thresholds_and_centroids(thresh, centroids)
+        th.set_thresholds_and_centroids(thresh, centroids)
         # Create the dictionary of power series
         power = np.expand_dims(ser, axis=1)
-        sta = dl.dataset.power_to_status(power)
-        recon = dl.dataset.status_to_power(sta)
+        sta = th.power_to_status(power)
+        recon = th.status_to_power(sta)
         dict_app = {"app": {"power": power, "power_pred": recon}}
         # Compute the scores
         dict_scores = regression_scores_dict(dict_app)
@@ -231,7 +232,7 @@ def main(
         appliance = app.capitalize().replace("_", " ")
         # Loop through methods
         for method in LIST_LINKAGE:
-            plot_clustering_results(ser, dl, method=method)
+            plot_clustering_results(ser, dl.threshold, method=method)
             # Place title in figure
             plt.gcf().suptitle(f"{appliance}, Linkage: {method}")
             # Save and close the figure

@@ -262,7 +262,7 @@ class Threshold:
         ser_bin = np.stack(ser_bin).T
         return ser_bin
 
-    def get_status(self, ser: np.array) -> np.array:
+    def power_to_status(self, ser: np.array) -> np.array:
         """
 
         Parameters
@@ -283,6 +283,23 @@ class Threshold:
         ser_bin = self._status_fun(ser).astype(int)
 
         return ser_bin
+
+    def status_to_power(self, ser: np.array) -> np.array:
+        """Computes the power assigned to each status
+
+        Parameters
+        ----------
+        ser : numpy.array
+            shape [output len, num appliances]
+
+        Returns
+        -------
+        numpy.array
+            shape [output len, num appliances]
+
+        """
+        # Get power values from status
+        return np.take_along_axis(self.centroids, ser.T, axis=1).T
 
     @property
     def config_key(self):
@@ -316,9 +333,7 @@ class Threshold:
         store_config(path_config, config)
         logging.debug(f"Config stored at {path_config}\n")
 
-    def set_thresholds_and_centroids(
-        self, thresholds: np.array, centroids: np.array
-    ):
+    def set_thresholds_and_centroids(self, thresholds: np.array, centroids: np.array):
         """Change threshold and centroid values to given ones
 
         Parameters
