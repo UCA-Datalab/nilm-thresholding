@@ -47,11 +47,11 @@ def plot_thresholds_on_distribution(
     """
     if ax is None:
         ax = plt.gca()
-    y, x, _ = ax.hist(ser, bins=bins)
+    y, x, _ = ax.hist(ser, bins=bins, range=(3, ser.max()))
     ax.set_title(app.capitalize().replace("_", " "))
     ax.set_xlabel("Power (watts)")
     ax.set_ylabel("Frequency")
-    ax.set_title("Thresholds on power distribution")
+    ax.set_title("Thresholds on power distribution (>=3 watts)")
     ax.grid()
     # Plot the thresholds
     for idx, t in enumerate(thresh):
