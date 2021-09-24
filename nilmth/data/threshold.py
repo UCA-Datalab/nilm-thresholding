@@ -34,7 +34,7 @@ class Threshold:
         num_status: int = 2,
     ):
         # Set thresholding method parameters
-        self.appliances = [] if appliances is None else sorted(to_list(appliances))
+        self.appliances = ["App"] if appliances is None else sorted(to_list(appliances))
         self.num_apps = len(self.appliances)
         self.method = method
         self.num_status = num_status

@@ -133,7 +133,7 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
     ax.grid()
 
 
-def plot_clustering_results(ser: np.array, th: Threshold, method: str = "average"):
+def plot_clustering_results(ser: np.array, method: str = "average"):
     """Plots the results of applying a certain clustering method
     on the given series
 
@@ -141,8 +141,6 @@ def plot_clustering_results(ser: np.array, th: Threshold, method: str = "average
     ----------
     ser : np.array
         Contains all the power values
-    th : Threshold
-        Required to apply the thresholds on the series
     method : str, optional
         Clustering method, by default "average"
     """
@@ -151,6 +149,8 @@ def plot_clustering_results(ser: np.array, th: Threshold, method: str = "average
     hie.perform_clustering(ser, method=method)
     # Initialize the list of intrinsic error per number of clusters
     intr_error = [0] * len(LIST_CLUSTER)
+    # Initialize threshold class
+    th = Threshold()
     # Initialize the empty list of thresholds (sorted)
     thresh_sorted = []
     # Compute thresholds per number of clusters
@@ -232,7 +232,7 @@ def main(
         appliance = app.capitalize().replace("_", " ")
         # Loop through methods
         for method in LIST_LINKAGE:
-            plot_clustering_results(ser, dl.threshold, method=method)
+            plot_clustering_results(ser, method=method)
             # Place title in figure
             plt.gcf().suptitle(f"{appliance}, Linkage: {method}")
             # Save and close the figure
