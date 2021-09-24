@@ -133,7 +133,9 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
     ax.grid()
 
 
-def plot_clustering_results(ser: np.array, method: str = "average"):
+def plot_clustering_results(
+    ser: np.array, method: str = "average", centroid: str = "mean"
+):
     """Plots the results of applying a certain clustering method
     on the given series
 
@@ -143,19 +145,21 @@ def plot_clustering_results(ser: np.array, method: str = "average"):
         Contains all the power values
     method : str, optional
         Clustering method, by default "average"
+    centroid : str, optional
+            Method to compute the centroids (median or mean), by default "mean"
     """
     # Clustering
     hie = HierarchicalClustering()
     hie.perform_clustering(ser, method=method)
     # Initialize the list of intrinsic error per number of clusters
     intr_error = [0] * len(LIST_CLUSTER)
-    # Initialize threshold class
-    th = Threshold()
     # Initialize the empty list of thresholds (sorted)
     thresh_sorted = []
     # Compute thresholds per number of clusters
     for idx, n_cluster in enumerate(LIST_CLUSTER):
-        hie.compute_thresholds_and_centroids(n_cluster=n_cluster)
+        hie.compute_thresholds_and_centroids(n_cluster=n_cluster, centroid=centroid)
+        # Initialize threshold class
+        th = Threshold(method="custom")
         # Update thresholds and centroids
         thresh = np.insert(np.expand_dims(hie.thresh, axis=0), 0, 0, axis=1)
         centroids = np.expand_dims(hie.centroids, axis=0)
@@ -216,7 +220,6 @@ def main(
     # Loop through the list of appliances
     for app in LIST_APPLIANCES:
         config["appliances"] = [app]
-
         # Prepare data loader with train data
         dl = DataLoader(
             path_data=path_data,
@@ -225,7 +228,6 @@ def main(
             path_threshold=path_threshold,
             **config,
         )
-
         # Take an appliance series
         ser = dl.get_appliance_series(app)[:limit]
         # Appliance name
