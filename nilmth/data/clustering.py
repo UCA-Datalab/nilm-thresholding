@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from nilmth.utils.plot import plot_power_distribution
 from scipy.cluster.hierarchy import cophenet, dendrogram, fcluster, linkage
 from scipy.spatial.distance import pdist
 
