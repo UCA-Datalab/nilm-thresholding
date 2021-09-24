@@ -1,10 +1,10 @@
 import os
+import random
 from typing import Iterable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import typer
-from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 
 from nilmth.data.clustering import HierarchicalClustering
@@ -14,7 +14,7 @@ from nilmth.utils.config import load_config
 from nilmth.utils.scores import regression_scores_dict
 
 LIST_APPLIANCES = ["dish_washer", "fridge", "washing_machine"]
-LIST_CLUSTER = [2, 3, 4, 5, 6]
+LIST_CLUSTER = [2, 3, 4, 5]
 LIST_DISTANCE = [
     "average",
     "weighted",
@@ -133,6 +133,25 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
     ax.grid()
 
 
+def plot_series_reconstruction(power: np.array, recon: np.array):
+    """Plots the original and reconstructed series
+
+    Parameters
+    ----------
+    power : np.array
+        Original series
+    recon : np.array
+        Reconstructed series
+    """
+    time = np.arange(0, len(power)) * 6
+    plt.plot(time, power, label="Original")
+    plt.plot(time, recon, alpha=0.8, label="Reconstructed")
+    plt.grid()
+    plt.legend()
+    plt.ylabel("Power (watts)")
+    plt.xlabel("Time (s)")
+
+
 def plot_clustering_results(
     ser: np.array, distance: str = "average", centroid: str = "median"
 ):
@@ -175,6 +194,12 @@ def plot_clustering_results(
         # Update the sorted list of thresholds
         thresh = list(set(hie.thresh) - set(thresh_sorted))
         thresh_sorted.append(thresh[0])
+        # Plot
+        plt.figure(figsize=(12, 4))
+        plot_series_reconstruction(power, recon)
+        plt.title(f"Series reconstruction from {n_cluster} statuses")
+        plt.show()
+        plt.close()
     # Initialize plots
     fig, axis = plt.subplots(2, 2, figsize=(12, 8))
     # Plots
@@ -184,6 +209,56 @@ def plot_clustering_results(
     plot_error_reduction(intr_error, ax=axis[1, 1])
     # Set the space between subplots
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+
+def build_synthetic_series(
+    size: int = 1500,
+    list_power: Optional[Iterable] = None,
+    period_min: int = 50,
+    period_max: int = 100,
+    noise_mean: float = 0,
+    noise_std: float = 10,
+) -> np.array:
+    """Builds a synthetic series
+
+    Parameters
+    ----------
+    size : int, optional
+        Size of the series, by default 1500
+    list_power : Optional[Iterable], optional
+        List of allowed power (statuses), by default None
+    period_min : int, optional
+        Minimum time period, by default 50
+    period_max : int, optional
+        Maximum time period, by default 100
+    noise_mean : float, optional
+        Mean of the noise, by default 0
+    noise_std : float, optional
+        Standard deviation of the noise, by default 10
+
+    Returns
+    -------
+    np.array
+        synthetic series
+    """
+    list_power = [0, 30, 90] if list_power is None else list_power
+    # Initialize series and indexes
+    ser = np.empty(size)
+    t_start = 0
+    t_end = 0
+    idx = 0
+    while t_end < size:
+        t_start = t_end
+        t_end = min(size, t_end + random.randint(period_min, period_max))
+        ser[t_start:t_end] = list_power[idx]
+        idx += 1
+        if idx >= len(list_power):
+            idx = 0
+            random.shuffle(list_power)
+    # Add noise
+    ser += np.random.normal(noise_mean, noise_std, size)
+    ser[ser < 0] = 0
+    return ser
 
 
 def main(
