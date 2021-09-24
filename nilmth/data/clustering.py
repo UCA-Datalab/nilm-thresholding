@@ -16,14 +16,14 @@ class HierarchicalClustering:
     dendrogram: dict = None
 
     def __init__(
-        self, method: str = "average", n_cluster: int = 2, criterion: str = "maxclust"
+        self, distance: str = "average", n_cluster: int = 2, criterion: str = "maxclust"
     ):
-        self.method = method
+        self.distance = distance
         self.n_cluster = n_cluster
         self.criterion = criterion
 
     def perform_clustering(
-        self, ser: np.array, method: Optional[str] = None
+        self, ser: np.array, distance: Optional[str] = None
     ) -> np.array:
         """Performs the actual clustering, using the linkage function
 
@@ -31,19 +31,19 @@ class HierarchicalClustering:
         ----------
         ser : np.array
             Series of points to group in clusters
-        method : str, optional
-            Clustering method, by default None (takes the one from the class)
+        distance : str, optional
+            Clustering distance criteria, by default None (takes the one from the class)
 
         Returns
         -------
         np.array
             Z[i] will tell us which clusters were merged in the i-th iteration
         """
-        self.method = method if method is not None else self.method
+        self.distance = distance if distance is not None else self.distance
         # The shape of our X matrix must be (n, m)
         # n = samples, m = features
         self.x = np.expand_dims(ser, axis=1)
-        self.z = linkage(self.x, method=self.method)
+        self.z = linkage(self.x, method=self.distance)
 
     @property
     def cophenet(self):

@@ -15,7 +15,7 @@ from nilmth.utils.scores import regression_scores_dict
 
 LIST_APPLIANCES = ["dish_washer", "fridge", "washing_machine"]
 LIST_CLUSTER = [2, 3, 4, 5, 6]
-LIST_LINKAGE = [
+LIST_DISTANCE = [
     "average",
     "weighted",
     "centroid",
@@ -134,7 +134,7 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
 
 
 def plot_clustering_results(
-    ser: np.array, method: str = "average", centroid: str = "mean"
+    ser: np.array, distance: str = "average", centroid: str = "median"
 ):
     """Plots the results of applying a certain clustering method
     on the given series
@@ -143,14 +143,14 @@ def plot_clustering_results(
     ----------
     ser : np.array
         Contains all the power values
-    method : str, optional
-        Clustering method, by default "average"
+    distance : str, optional
+        Clustering linkage criteria, by default "average"
     centroid : str, optional
             Method to compute the centroids (median or mean), by default "mean"
     """
     # Clustering
     hie = HierarchicalClustering()
-    hie.perform_clustering(ser, method=method)
+    hie.perform_clustering(ser, distance=distance)
     # Initialize the list of intrinsic error per number of clusters
     intr_error = [0] * len(LIST_CLUSTER)
     # Initialize the empty list of thresholds (sorted)
@@ -194,7 +194,7 @@ def main(
     path_output: str = "outputs/hieclust",
 ):
     """Performs the hierarchical clustering on the given list of appliances,
-    testing different linkaged methods and number of splits. For each combination,
+    testing different linkage methods and number of splits. For each combination,
     outputs an image with several informative graphs.
 
     Parameters
@@ -232,13 +232,13 @@ def main(
         ser = dl.get_appliance_series(app)[:limit]
         # Appliance name
         appliance = app.capitalize().replace("_", " ")
-        # Loop through methods
-        for method in LIST_LINKAGE:
-            plot_clustering_results(ser, method=method)
+        # Loop through distances
+        for distance in LIST_DISTANCE:
+            plot_clustering_results(ser, distance=distance)
             # Place title in figure
-            plt.gcf().suptitle(f"{appliance}, Linkage: {method}")
+            plt.gcf().suptitle(f"{appliance}, Linkage: {distance}")
             # Save and close the figure
-            path_fig = os.path.join(path_output, f"{app}_{method}.png")
+            path_fig = os.path.join(path_output, f"{app}_{distance}.png")
             plt.savefig(path_fig)
             plt.close()
 
