@@ -143,4 +143,5 @@ class HierarchicalClustering:
         x_min = sorted(
             [np.min(self.x[clusters == (c + 1)]) for c in range(self.n_cluster)]
         )
-        self.thresh = np.divide(np.array(x_min[1:]) + np.array(x_max[:-1]), 2)
+        thresh = np.divide(np.array(x_min[1:]) + np.array(x_max[:-1]), 2)
+        self.thresh = np.insert(thresh, 0, 0, axis=0)

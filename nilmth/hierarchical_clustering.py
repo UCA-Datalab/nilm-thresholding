@@ -13,12 +13,13 @@ from nilmth.data.threshold import Threshold
 from nilmth.utils.config import load_config
 from nilmth.utils.scores import regression_scores_dict
 
+
 LIST_APPLIANCES = ["dish_washer", "fridge", "washing_machine"]
-LIST_CLUSTER = [2, 3, 4, 5]
+LIST_CLUSTER = [1, 2, 3, 4, 5, 6]
 LIST_DISTANCE = [
     "average",
-    "weighted",
-    "centroid",
+    # "weighted",
+    # "centroid",
     "median",
     "ward",  # Ward variance minimization algorithm
 ]
@@ -71,6 +72,8 @@ def plot_thresholds_on_series(
         Contains all the power values
     thresh : Iterable[float]
         Contains all the threshold values
+    size : int, optional
+        Length of the sample series array, by default 500
     ax : Axes, optional
         Axes where the graph is plotted
     """
@@ -106,6 +109,8 @@ def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None)
     if ax is None:
         ax = plt.gca()
     ax.plot(LIST_CLUSTER, intr_error, ".--")
+    ymax = min(max(intr_error), 1)
+    ax.set_ylim(0, ymax)
     ax.set_ylabel("Intrinsic Error (NDE)")
     ax.set_xlabel("Number of status")
     ax.set_title("Intrinsic Error depending on splits")
@@ -153,7 +158,11 @@ def plot_series_reconstruction(power: np.array, recon: np.array):
 
 
 def plot_clustering_results(
-    ser: np.array, distance: str = "average", centroid: str = "median"
+    ser: np.array,
+    distance: str = "average",
+    centroid: str = "median",
+    error: str = "nde",
+    plot_recon: bool = False,
 ):
     """Plots the results of applying a certain clustering method
     on the given series
@@ -165,7 +174,11 @@ def plot_clustering_results(
     distance : str, optional
         Clustering linkage criteria, by default "average"
     centroid : str, optional
-            Method to compute the centroids (median or mean), by default "mean"
+        Method to compute the centroids (median or mean), by default "mean"
+    error : str, optional
+        Error metric (mse, mae, rmse, sae, nde), by default "nde"
+    plot_recon : bool, optional
+        If True, plots the reconstructed series, by default False
     """
     # Clustering
     hie = HierarchicalClustering()
@@ -180,8 +193,9 @@ def plot_clustering_results(
         # Initialize threshold class
         th = Threshold(method="custom")
         # Update thresholds and centroids
-        thresh = np.insert(np.expand_dims(hie.thresh, axis=0), 0, 0, axis=1)
+        thresh = np.expand_dims(hie.thresh, axis=0)
         centroids = np.expand_dims(hie.centroids, axis=0)
+        centroids[centroids < 1] += 1e-1
         th.set_thresholds_and_centroids(thresh, centroids)
         # Create the dictionary of power series
         power = np.expand_dims(ser, axis=1)
@@ -190,16 +204,17 @@ def plot_clustering_results(
         dict_app = {"app": {"power": power, "power_pred": recon}}
         # Compute the scores
         dict_scores = regression_scores_dict(dict_app)
-        intr_error[idx] = dict_scores["app"]["nde"]
+        intr_error[idx] = dict_scores["app"][error]
         # Update the sorted list of thresholds
         thresh = list(set(hie.thresh) - set(thresh_sorted))
         thresh_sorted.append(thresh[0])
         # Plot
-        plt.figure(figsize=(12, 4))
-        plot_series_reconstruction(power, recon)
-        plt.title(f"Series reconstruction from {n_cluster} statuses")
-        plt.show()
-        plt.close()
+        if plot_recon:
+            plt.figure(figsize=(12, 4))
+            plot_series_reconstruction(power, recon)
+            plt.title(f"Series reconstruction from {n_cluster} statuses")
+            plt.show()
+            plt.close()
     # Initialize plots
     fig, axis = plt.subplots(2, 2, figsize=(12, 8))
     # Plots
@@ -263,6 +278,7 @@ def build_synthetic_series(
 
 def main(
     limit: int = 20000,
+    error: str = "nde",
     path_data: str = "data-prep",
     path_threshold: str = "threshold.toml",
     path_config: str = "nilmth/config.toml",
@@ -276,6 +292,8 @@ def main(
     ----------
     limit : int, optional
         Number of data points to use, by default 20000
+    error : str, optional
+        Error metric (mse, mae, rmse, sae, nde), by default "nde"
     path_data : str, optional
         Path to the preprocessed data folder, by default "data-prep"
     path_threshold : str, optional
@@ -294,6 +312,7 @@ def main(
 
     # Loop through the list of appliances
     for app in LIST_APPLIANCES:
+        print(f"=====\nAppliance: {app}")
         config["appliances"] = [app]
         # Prepare data loader with train data
         dl = DataLoader(
@@ -305,11 +324,13 @@ def main(
         )
         # Take an appliance series
         ser = dl.get_appliance_series(app)[:limit]
+
         # Appliance name
         appliance = app.capitalize().replace("_", " ")
         # Loop through distances
         for distance in LIST_DISTANCE:
-            plot_clustering_results(ser, distance=distance)
+            print(f"-----\nAppliance: {app} | Distance: {distance}")
+            plot_clustering_results(ser, distance=distance, error=error)
             # Place title in figure
             plt.gcf().suptitle(f"{appliance}, Linkage: {distance}")
             # Save and close the figure
