@@ -20,13 +20,6 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 
 class Threshold:
-    num_status: int = 2
-    thresholds: np.array = None  # (appliance, status)
-    centroids: np.array = None  # (appliance, status)
-    use_std: bool = False
-    min_on: list = None
-    min_off: list = None
-
     def __init__(
         self,
         appliances: list = None,
@@ -40,6 +33,18 @@ class Threshold:
         self.num_status = num_status
         # Set the default status function
         self._status_fun = self._compute_status
+
+        # Attributes filled by `_initialize_params`
+        self.thresholds = np.zeros(
+            (self.num_apps, self.num_status)
+        )  # (appliance, status)
+        self.centroids = np.zeros(
+            (self.num_apps, self.num_status)
+        )  # (appliance, status)
+        self.use_std = False
+        self.min_on = list()
+        self.min_off = list()
+
         self._initialize_params()
 
     def __repr__(self):
@@ -51,8 +56,6 @@ class Threshold:
         Given the method name and list of appliances,
         this function defines the necessary parameters to use the method
         """
-        self.thresholds = np.zeros((self.num_apps, self.num_status))
-        self.centroids = np.zeros((self.num_apps, self.num_status))
         if self.method == "vs":
             # Variance-Sensitive threshold
             self.use_std = True

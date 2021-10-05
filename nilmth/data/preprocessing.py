@@ -10,10 +10,9 @@ logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
 class Preprocessing:
-    dataset: str = "Wrapper"
-
     def __init__(
         self,
+        dataset: str = "Wrapper",
         appliances: list = None,
         buildings: dict = None,
         dates: dict = None,
@@ -28,6 +27,8 @@ class Preprocessing:
 
         Parameters
         ----------
+        dataset : str, optional
+            Name of the dataset, by default "Wrapper"
         appliances : list, optional
             List of appliances, by default empty
         buildings : dict, optional
@@ -49,6 +50,7 @@ class Preprocessing:
         kwargs
             Additional arguments, not taken into account
         """
+        self.dataset = dataset
         # Read parameters from config files
         self.appliances = [] if appliances is None else sorted(to_list(appliances))
         self.buildings = [] if buildings is None else buildings[self.dataset]

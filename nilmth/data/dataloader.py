@@ -10,8 +10,6 @@ from nilmth.utils.logging import logger
 
 
 class DataLoader(data.DataLoader):
-    dataset: DataSet = None
-
     def __init__(
         self,
         path_data: str,

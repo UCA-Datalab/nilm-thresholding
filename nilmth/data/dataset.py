@@ -10,11 +10,6 @@ from nilmth.utils.logging import logger
 
 
 class DataSet(data.Dataset):
-    files: list = list()
-    appliances: list = list()
-    status: list = list()
-    threshold: Threshold = None
-
     def __init__(
         self,
         path_data: str,
@@ -39,6 +34,13 @@ class DataSet(data.Dataset):
         self.validation_size = valid_size
         self.random_split = random_split
         self.random_seed = random_seed
+
+        # Attributes filled by `_list_files`
+        self.files = list()  # List of files
+
+        # Attributes filled by `_get_parameters_from_file`
+        self.status = list()  # List of status columns
+
         self._list_files(path_data)
         self._get_parameters_from_file()
 
