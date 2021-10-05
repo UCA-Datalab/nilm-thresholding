@@ -2,8 +2,6 @@ import itertools
 import os
 
 import pandas as pd
-from pandas.io.pytables import HDFStore
-
 from nilmth.data.preprocessing import Preprocessing
 from nilmth.utils.logging import logger
 
@@ -23,19 +21,24 @@ LIST_NOT_APPLIANCES = [
 
 
 class Dataport(Preprocessing):
-    dataset: str = "dataport"
-    datastore: HDFStore = None
-    metadata: pd.DataFrame = None
-    _dict_houses: dict = {}
-    _list_path_files: list = []
-    _list_path_metadata: list = []
-
     def __init__(self, path_data: str, **kwargs):
-        super(Dataport, self).__init__(**kwargs)
+        """Dataport preprocessing object
+
+        Parameters
+        ----------
+        path_data : str
+            Path to data files and metadata of Dataport
+        """
+        super(Dataport, self).__init__(dataset="dataport", **kwargs)
         self._path_data = path_data
-        # List paths and locate houses
+        # List paths
+        self._list_path_files = []
+        self._list_path_metadata = []
         self._list_paths()
+        # Locate houses
+        self._dict_houses = {}
         self._locate_houses()
+        self.metadata = pd.DataFrame()
         self._read_metadata()
 
     def _list_paths(self):
