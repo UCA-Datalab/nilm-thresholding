@@ -10,11 +10,6 @@ from nilmth.utils.logging import logger
 
 
 class DataSet(data.Dataset):
-    files: list = list()
-    appliances: list = list()
-    status: list = list()
-    threshold: Threshold = None
-
     def __init__(
         self,
         path_data: str,
@@ -39,6 +34,13 @@ class DataSet(data.Dataset):
         self.validation_size = valid_size
         self.random_split = random_split
         self.random_seed = random_seed
+
+        # Attributes filled by `_list_files`
+        self.files = list()  # List of files
+
+        # Attributes filled by `_get_parameters_from_file`
+        self.status = list()  # List of status columns
+
         self._list_files(path_data)
         self._get_parameters_from_file()
 
@@ -137,7 +139,7 @@ class DataSet(data.Dataset):
             shape [output len, num appliances]
 
         """
-        return self.threshold.get_status(ser)
+        return self.threshold.power_to_status(ser)
 
     def status_to_power(self, ser: np.array) -> np.array:
         """Computes the power assigned to each status
@@ -154,7 +156,7 @@ class DataSet(data.Dataset):
 
         """
         # Get power values from status
-        return np.take_along_axis(self.threshold.centroids, ser.T, axis=1).T
+        return self.threshold.status_to_power(ser)
 
     def __getitem__(self, index: int) -> tuple:
         """Returns an element of the data loader

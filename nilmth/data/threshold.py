@@ -20,13 +20,6 @@ MAX_POWER = {"dishwasher": 2500, "fridge": 300, "washingmachine": 2500}
 
 
 class Threshold:
-    num_status: int = 2
-    thresholds: np.array = None  # (appliance, status)
-    centroids: np.array = None  # (appliance, status)
-    use_std: bool = False
-    min_on: list = None
-    min_off: list = None
-
     def __init__(
         self,
         appliances: list = None,
@@ -34,12 +27,24 @@ class Threshold:
         num_status: int = 2,
     ):
         # Set thresholding method parameters
-        self.appliances = [] if appliances is None else sorted(to_list(appliances))
+        self.appliances = ["App"] if appliances is None else sorted(to_list(appliances))
         self.num_apps = len(self.appliances)
         self.method = method
         self.num_status = num_status
         # Set the default status function
         self._status_fun = self._compute_status
+
+        # Attributes filled by `_initialize_params`
+        self.thresholds = np.zeros(
+            (self.num_apps, self.num_status)
+        )  # (appliance, status)
+        self.centroids = np.zeros(
+            (self.num_apps, self.num_status)
+        )  # (appliance, status)
+        self.use_std = False
+        self.min_on = list()
+        self.min_off = list()
+
         self._initialize_params()
 
     def __repr__(self):
@@ -51,8 +56,6 @@ class Threshold:
         Given the method name and list of appliances,
         this function defines the necessary parameters to use the method
         """
-        self.thresholds = np.zeros((self.num_apps, self.num_status))
-        self.centroids = np.zeros((self.num_apps, self.num_status))
         if self.method == "vs":
             # Variance-Sensitive threshold
             self.use_std = True
@@ -262,7 +265,7 @@ class Threshold:
         ser_bin = np.stack(ser_bin).T
         return ser_bin
 
-    def get_status(self, ser: np.array) -> np.array:
+    def power_to_status(self, ser: np.array) -> np.array:
         """
 
         Parameters
@@ -283,6 +286,23 @@ class Threshold:
         ser_bin = self._status_fun(ser).astype(int)
 
         return ser_bin
+
+    def status_to_power(self, ser: np.array) -> np.array:
+        """Computes the power assigned to each status
+
+        Parameters
+        ----------
+        ser : numpy.array
+            shape [output len, num appliances]
+
+        Returns
+        -------
+        numpy.array
+            shape [output len, num appliances]
+
+        """
+        # Get power values from status
+        return np.take_along_axis(self.centroids, ser.T, axis=1).T
 
     @property
     def config_key(self):
@@ -316,9 +336,7 @@ class Threshold:
         store_config(path_config, config)
         logging.debug(f"Config stored at {path_config}\n")
 
-    def set_thresholds_and_centroids(
-        self, thresholds: np.array, centroids: np.array
-    ):
+    def set_thresholds_and_centroids(self, thresholds: np.array, centroids: np.array):
         """Change threshold and centroid values to given ones
 
         Parameters
