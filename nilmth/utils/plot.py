@@ -1,3 +1,4 @@
+from typing import Iterable
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -96,4 +97,31 @@ def plot_power_distribution(
     ax.set_xlabel("Power (watts)")
     ax.set_ylabel("Frequency")
     ax.grid()
+    return fig, ax
+
+
+def plot_cluster_distribution(
+    ser: np.array,
+    thresh: Iterable[float],
+    app: str = "",
+    bins: int = 20,
+    figsize: tuple = (3, 3),
+):
+    """Plots the power distribution, and the lines splitting each cluster
+
+    Parameters
+    ----------
+    ser : numpy.array
+        Contains all the power values
+    thresh : Iterable[float]
+        Contains all the threshold values
+    app : str, optional
+        Name of the appliance, by default ""
+    bins : int, optional
+        Histogram splits, by default 20
+    figsize : tuple, optional
+        Figure size, by default (3, 3)
+    """
+    fig, ax = plot_power_distribution(ser, app=app, bins=bins, figsize=figsize)
+    [ax.axvline(t, color="r", linestyle="--") for t in thresh]
     return fig, ax

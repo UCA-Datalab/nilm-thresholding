@@ -137,7 +137,7 @@ class DataSet(data.Dataset):
             shape [output len, num appliances]
 
         """
-        return self.threshold.get_status(ser)
+        return self.threshold.power_to_status(ser)
 
     def status_to_power(self, ser: np.array) -> np.array:
         """Computes the power assigned to each status
@@ -154,7 +154,7 @@ class DataSet(data.Dataset):
 
         """
         # Get power values from status
-        return np.take_along_axis(self.threshold.centroids, ser.T, axis=1).T
+        return self.threshold.status_to_power(ser)
 
     def __getitem__(self, index: int) -> tuple:
         """Returns an element of the data loader
