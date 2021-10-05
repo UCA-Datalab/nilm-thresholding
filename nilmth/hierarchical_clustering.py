@@ -15,7 +15,6 @@ from nilmth.utils.scores import regression_scores_dict
 
 
 LIST_APPLIANCES = ["dish_washer", "fridge", "washing_machine"]
-LIST_CLUSTER = [1, 2, 3, 4, 5, 6]
 LIST_DISTANCE = [
     "average",
     # "weighted",
@@ -29,6 +28,7 @@ def plot_thresholds_on_distribution(
     ser: np.array,
     thresh: Iterable[float],
     ax: Optional[Axes] = None,
+    power_min: int = 0,
     app: str = "",
     bins: int = 100,
 ):
@@ -49,16 +49,19 @@ def plot_thresholds_on_distribution(
     """
     if ax is None:
         ax = plt.gca()
-    y, x, _ = ax.hist(ser, bins=bins, range=(3, ser.max()))
+    y, x, _ = ax.hist(ser, bins=bins, range=(power_min, ser.max()))
     ax.set_title(app.capitalize().replace("_", " "))
     ax.set_xlabel("Power (watts)")
     ax.set_ylabel("Frequency")
-    ax.set_title("Thresholds on power distribution (>=3 watts)")
+    title = "Thresholds on power distribution"
+    if power_min > 0:
+        title += f" (>={power_min} watts)"
+    ax.set_title(title)
     ax.grid()
     # Plot the thresholds
     for idx, t in enumerate(thresh):
         ax.axvline(t, color="r", linestyle="--")
-        ax.text(t + 0.01 * x.max(), y.max(), idx + 1, rotation=0, color="r")
+        ax.text(t + 0.01 * x.max(), y.max(), idx, rotation=0, color="r")
 
 
 def plot_thresholds_on_series(
@@ -89,18 +92,22 @@ def plot_thresholds_on_series(
     # Plot the thresholds
     for idx, thresh in enumerate(thresh):
         ax.axhline(thresh, color="r", linestyle="--")
-        ax.text(time.max(), thresh + power.max() * 0.01, idx + 1, rotation=0, color="r")
+        ax.text(time.max(), thresh + power.max() * 0.01, idx, rotation=0, color="r")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Power (watts)")
     ax.set_title("Thresholds on sample time series")
     ax.grid()
 
 
-def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None):
+def plot_intrinsic_error(
+    list_states: Iterable[int], intr_error: Iterable[float], ax: Optional[Axes] = None
+):
     """Plots the intrinsic error depending on the number of splits
 
     Parameters
     ----------
+    list_states : Iterable[int]
+        List of states (number of clusters)
     intr_error : Iterable[float]
         List of intrinsic error values
     ax : Axes, optional
@@ -108,20 +115,22 @@ def plot_intrinsic_error(intr_error: Iterable[float], ax: Optional[Axes] = None)
     """
     if ax is None:
         ax = plt.gca()
-    ax.plot(LIST_CLUSTER, intr_error, ".--")
-    ymax = min(max(intr_error), 1)
-    ax.set_ylim(0, ymax)
-    ax.set_ylabel("Intrinsic Error (NDE)")
+    ax.plot(list_states, intr_error, ".--")
+    ax.set_ylabel("Intrinsic Error")
     ax.set_xlabel("Number of status")
     ax.set_title("Intrinsic Error depending on splits")
     ax.grid()
 
 
-def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None):
+def plot_error_reduction(
+    list_states: Iterable[int], intr_error: Iterable[float], ax: Optional[Axes] = None
+):
     """Plots the intrinsic error reduction depending on the number of splits
 
     Parameters
     ----------
+    list_states : Iterable[int]
+        List of states (number of clusters)
     intr_error : Iterable[float]
         List of intrinsic error values
     ax : Axes, optional
@@ -130,7 +139,7 @@ def plot_error_reduction(intr_error: Iterable[float], ax: Optional[Axes] = None)
     if ax is None:
         ax = plt.gca()
     rel_error = -100 * np.divide(np.diff(intr_error), intr_error[:-1])
-    ax.plot(LIST_CLUSTER[1:], rel_error, ".--")
+    ax.plot(list_states[1:], rel_error, ".--")
     ax.set_ylim(0, 100)
     ax.set_ylabel("Reduction of Intrinsic Error (%)")
     ax.set_xlabel("Number of status")
@@ -159,9 +168,10 @@ def plot_series_reconstruction(power: np.array, recon: np.array):
 
 def plot_clustering_results(
     ser: np.array,
+    max_clusters: int = 10,
     distance: str = "average",
     centroid: str = "median",
-    error: str = "nde",
+    error: str = "mae",
     plot_recon: bool = False,
 ):
     """Plots the results of applying a certain clustering method
@@ -171,12 +181,14 @@ def plot_clustering_results(
     ----------
     ser : np.array
         Contains all the power values
+    max_clusters : int, optional
+        Maximum number of clusters, by default 10
     distance : str, optional
         Clustering linkage criteria, by default "average"
     centroid : str, optional
         Method to compute the centroids (median or mean), by default "mean"
     error : str, optional
-        Error metric (mse, mae, rmse, sae, nde), by default "nde"
+        Error metric (mse, mae, rmse, sae, nde), by default "mae"
     plot_recon : bool, optional
         If True, plots the reconstructed series, by default False
     """
@@ -184,11 +196,12 @@ def plot_clustering_results(
     hie = HierarchicalClustering()
     hie.perform_clustering(ser, distance=distance)
     # Initialize the list of intrinsic error per number of clusters
-    intr_error = [0] * len(LIST_CLUSTER)
+    intr_error = [0] * max_clusters
+    list_states = [n + 1 for n in range(max_clusters)]
     # Initialize the empty list of thresholds (sorted)
     thresh_sorted = []
     # Compute thresholds per number of clusters
-    for idx, n_cluster in enumerate(LIST_CLUSTER):
+    for idx, n_cluster in enumerate(list_states):
         hie.compute_thresholds_and_centroids(n_cluster=n_cluster, centroid=centroid)
         # Initialize threshold class
         th = Threshold(method="custom")
@@ -216,12 +229,12 @@ def plot_clustering_results(
             plt.show()
             plt.close()
     # Initialize plots
-    fig, axis = plt.subplots(2, 2, figsize=(12, 8))
+    fig, axis = plt.subplots(2, 2, figsize=(12, 8), dpi=150)
     # Plots
     plot_thresholds_on_distribution(power, thresh_sorted, ax=axis[0, 0])
     plot_thresholds_on_series(power, thresh_sorted, ax=axis[0, 1])
-    plot_intrinsic_error(intr_error, ax=axis[1, 0])
-    plot_error_reduction(intr_error, ax=axis[1, 1])
+    plot_intrinsic_error(list_states, intr_error, ax=axis[1, 0])
+    plot_error_reduction(list_states, intr_error, ax=axis[1, 1])
     # Set the space between subplots
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
 
@@ -278,7 +291,8 @@ def build_synthetic_series(
 
 def main(
     limit: int = 20000,
-    error: str = "nde",
+    max_clusters: int = 10,
+    error: str = "mae",
     path_data: str = "data-prep",
     path_threshold: str = "threshold.toml",
     path_config: str = "nilmth/config.toml",
@@ -292,8 +306,10 @@ def main(
     ----------
     limit : int, optional
         Number of data points to use, by default 20000
+    max_clusters : int, optional
+        Maximum number of clusters, by default 10
     error : str, optional
-        Error metric (mse, mae, rmse, sae, nde), by default "nde"
+        Error metric (mse, mae, rmse, sae, nde), by default "mae"
     path_data : str, optional
         Path to the preprocessed data folder, by default "data-prep"
     path_threshold : str, optional
@@ -330,7 +346,9 @@ def main(
         # Loop through distances
         for distance in LIST_DISTANCE:
             print(f"-----\nAppliance: {app} | Distance: {distance}")
-            plot_clustering_results(ser, distance=distance, error=error)
+            plot_clustering_results(
+                ser, max_clusters=max_clusters, distance=distance, error=error
+            )
             # Place title in figure
             plt.gcf().suptitle(f"{appliance}, Linkage: {distance}")
             # Save and close the figure
