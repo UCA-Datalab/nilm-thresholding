@@ -8,18 +8,36 @@ from scipy.spatial.distance import pdist
 
 
 class HierarchicalClustering:
-    x: np.array = None
-    z: np.array = None
-    thresh: np.array = None
-    centroids: np.array = None
-    dendrogram: dict = None
-
     def __init__(
         self, distance: str = "average", n_cluster: int = 2, criterion: str = "maxclust"
     ):
+        """This object is able to perform Hierarchical Clustering on a given set of points
+
+        Parameters
+        ----------
+        distance : str, optional
+            Clustering distance criteria, by default "average"
+        n_cluster : int, optional
+            Number of clusters to form, by default 2
+        criterion : str, optional
+            Criterion used to compute the clusters, by default "maxclust"
+        """
         self.distance = distance
         self.n_cluster = n_cluster
         self.criterion = criterion
+
+        # Attributes filled with `perform_clustering`
+        self.x = np.empty(0)  # Set of data points
+        self.z = np.empty(0)  # The hierarchical clustering encoded as a linkage matrix
+        # z[i] will tell us which clusters were merged in the i-th iteration
+
+        # Attributes filled with `plot_dendogram`
+        self.dendrogram = {}
+        # A dictionary of data structures computed to render the dendrogram
+
+        # Attributes filled with `compute_thresholds_and_centroids`
+        self.thresh = np.empty(0)
+        self.centroids = np.empty(0)
 
     def perform_clustering(
         self, ser: np.array, distance: Optional[str] = None
@@ -32,11 +50,6 @@ class HierarchicalClustering:
             Series of points to group in clusters
         distance : str, optional
             Clustering distance criteria, by default None (takes the one from the class)
-
-        Returns
-        -------
-        np.array
-            Z[i] will tell us which clusters were merged in the i-th iteration
         """
         self.distance = distance if distance is not None else self.distance
         # The shape of our X matrix must be (n, m)
