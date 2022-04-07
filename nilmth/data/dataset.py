@@ -10,16 +10,10 @@ from nilmth.utils.logging import logger
 
 
 class DataSet(data.Dataset):
-    files: list = list()
-    datapoints: int = 0
-    appliances: list = list()
-    num_apps: int = 0
-    status: list = list()
-    threshold: Threshold = None
-
     def __init__(
         self,
         path_data: str,
+        appliances: list = None,
         subset: str = "train",
         input_len: int = 510,
         border: int = 15,
@@ -32,13 +26,21 @@ class DataSet(data.Dataset):
         **kwargs,
     ):
         self.subset = subset
+        self.appliances = appliances
         self.border = border
-        self.length = input_len
+        self.len_series = input_len
         self.buildings = {} if buildings is None else buildings[subset]
         self.train_size = train_size
         self.validation_size = valid_size
         self.random_split = random_split
         self.random_seed = random_seed
+
+        # Attributes filled by `_list_files`
+        self.files = list()  # List of files
+
+        # Attributes filled by `_get_parameters_from_file`
+        self.status = list()  # List of status columns
+
         self._list_files(path_data)
         self._get_parameters_from_file()
 
@@ -48,6 +50,24 @@ class DataSet(data.Dataset):
 
         logger.debug(
             f"Dataset received extra kwargs, not used:\n     {', '.join(kwargs.keys())}"
+        )
+
+    @property
+    def datapoints(self) -> int:
+        return len(self.files)
+
+    @property
+    def num_apps(self) -> int:
+        return len(self.appliances)
+
+    def __len__(self):
+        return self.datapoints
+
+    def __repr__(self):
+        """This message is returned any time the object is called"""
+        return (
+            f"Dataset | Data points: {self.datapoints} | "
+            f"Input length: {self.len_series}"
         )
 
     @staticmethod
@@ -85,20 +105,25 @@ class DataSet(data.Dataset):
                     files += files_of_building[test_idx:]
         # Update the class parameters
         self.files = files
-        self.datapoints = len(files)
         logger.info(f"{self.datapoints} data points found for {self.subset}")
 
     def _get_parameters_from_file(self):
         """Updates class parameters from sample csv file"""
         df = self._open_file(self.files[0])
+        # List appliances in file
         appliances = [t for t in df.columns if not t.endswith("_status")]
-        appliances.remove("aggregate")
-        self.appliances = sorted(appliances)
-        self.num_apps = len(appliances)
+        # Ensure our list of appliances is contained in the dataset
+        # If we have no list, take the whole dataset
+        if self.appliances is None:
+            self.appliances = appliances
+        else:
+            for app in self.appliances:
+                assert app in appliances, f"Appliance missing in dataset: {app}"
+        # List the status columns
         self.status = [app + "_status" for app in self.appliances]
-        self.length = df.shape[0]
+        self.len_series = df.shape[0]
         self._idx_start = self.border
-        self._idx_end = self.length - self.border
+        self._idx_end = self.len_series - self.border
 
     def power_to_status(self, ser: np.array) -> np.array:
         """Computes the status assigned to each power value
@@ -114,7 +139,7 @@ class DataSet(data.Dataset):
             shape [output len, num appliances]
 
         """
-        return self.threshold.get_status(ser)
+        return self.threshold.power_to_status(ser)
 
     def status_to_power(self, ser: np.array) -> np.array:
         """Computes the power assigned to each status
@@ -131,10 +156,7 @@ class DataSet(data.Dataset):
 
         """
         # Get power values from status
-        power = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 0])
-        power_on = np.multiply(np.ones(ser.shape), self.threshold.centroids[:, 1])
-        power[ser == 1] = power_on[ser == 1]
-        return power
+        return self.threshold.status_to_power(ser)
 
     def __getitem__(self, index: int) -> tuple:
         """Returns an element of the data loader
@@ -160,6 +182,3 @@ class DataSet(data.Dataset):
         except KeyError:
             s = self.power_to_status(y)
         return x, y, s
-
-    def __len__(self):
-        return self.datapoints

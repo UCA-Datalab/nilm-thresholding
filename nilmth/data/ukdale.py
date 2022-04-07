@@ -2,21 +2,27 @@ import os
 
 import pandas as pd
 from pandas import Series
-from pandas.io.pytables import HDFStore
 
-from nilmth.data.preprocessing import PreprocessWrapper
-from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
+from nilmth.data.preprocessing import Preprocessing
+from nilmth.utils.string import homogenize_label
 
 
-class UkdalePreprocess(PreprocessWrapper):
-    dataset: str = "ukdale"
-    datastore: HDFStore = None
-
+class Ukdale(Preprocessing):
     def __init__(self, path_h5: str, path_labels: str, **kwargs):
-        super(UkdalePreprocess, self).__init__(**kwargs)
+        """UK-DALE preprocessing object
+
+        Parameters
+        ----------
+        path_h5 : str
+            Path to the h5 file
+        path_labels : str
+            Path to the labels folder
+        """
+        super(Ukdale, self).__init__(dataset="ukdale", **kwargs)
         self._path_h5 = path_h5
         self._path_labels = path_labels
         # Load the datastore
+        self.datastore = None  # HDFStore
         self._load_datastore()
 
     def _load_datastore(self):
@@ -76,21 +82,16 @@ class UkdalePreprocess(PreprocessWrapper):
         ).to_dict()[1]
 
         # Homogenize input label
-        label = homogenize_string(label)
-        label = APPLIANCE_NAMES.get(label, label)
-
-        # Series placeholder
-        s = None
+        label = homogenize_label(label)
 
         # Iterate through all the existing labels, searching for the input label
         for i in labels:
-            lab = homogenize_string(labels[i])
-            lab = APPLIANCE_NAMES.get(lab, lab)
+            lab = homogenize_label(labels[i])
             # When we find the input label, we load the meter records
             if lab == label:
                 s = self._load_meter(house, i)
-
-        if s is None:
+                break
+        else:
             raise ValueError(
                 f"Label {label} not found on house {house}\n"
                 f"Valid labels are: {list(labels.values())}"

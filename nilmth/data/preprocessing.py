@@ -1,5 +1,6 @@
 import logging
 import os
+from abc import abstractmethod
 
 import pandas as pd
 
@@ -8,11 +9,10 @@ from nilmth.utils.format_list import to_list
 logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
 
-class PreprocessWrapper:
-    dataset: str = "wrapper"
-
+class Preprocessing:
     def __init__(
         self,
+        dataset: str = "Wrapper",
         appliances: list = None,
         buildings: dict = None,
         dates: dict = None,
@@ -27,6 +27,8 @@ class PreprocessWrapper:
 
         Parameters
         ----------
+        dataset : str, optional
+            Name of the dataset, by default "Wrapper"
         appliances : list, optional
             List of appliances, by default empty
         buildings : dict, optional
@@ -48,6 +50,7 @@ class PreprocessWrapper:
         kwargs
             Additional arguments, not taken into account
         """
+        self.dataset = dataset
         # Read parameters from config files
         self.appliances = [] if appliances is None else sorted(to_list(appliances))
         self.buildings = [] if buildings is None else buildings[self.dataset]
@@ -64,9 +67,10 @@ class PreprocessWrapper:
             f"    {', '.join(kwargs.keys())}\n"
         )
 
+    @abstractmethod
     def load_house_meters(self, house: int) -> pd.DataFrame:
         """Placeholder function, this should load the household meters and status"""
-        return pd.DataFrame()
+        pass
 
     def store_preprocessed_data(self, path_output: str):
         """Stores preprocessed data in output folder"""
