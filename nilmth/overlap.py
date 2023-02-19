@@ -13,6 +13,12 @@ def main(
     path_data: str = "./data-prep",
     path_out: str = "overlap.csv",
 ):
+    """
+    Reads all available config files from `path_configs` and generates
+    a csv with one row per configuration, stating the percentage of overlapping
+    ON activations across the whole dataset, for that specific threshold
+    configuration
+    """
     path_configs = Path(path_configs)
     # Initialize the list that will contain the overlaps for each configuration
     list_counts = []
