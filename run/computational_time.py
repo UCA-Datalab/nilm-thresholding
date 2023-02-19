@@ -13,7 +13,7 @@ from nilmth.utils.model import initialize_model
 
 
 def main(
-    epochs: int = 10,
+    epochs: int = 20,
     path_config: str = "./nilmth/config.toml",
     path_data: str = "./data-prep",
     path_out: str = "computational_time.csv",
@@ -71,7 +71,15 @@ def main(
             remove_directory("temp_train")
             remove_directory("temp_valid")
             # Store results in the list of dataframes
-            df = pd.DataFrame({"appliances": app, "model": name, "time": time_elapsed})
+            df = pd.DataFrame(
+                {
+                    "appliances": "+".join(app),
+                    "amount": len(app),
+                    "model": name,
+                    "time": time_elapsed,
+                },
+                index=[0],
+            )
             list_df.append(df)
             # Concatenate the list and output the list after every iteration
             df = pd.concat(list_df)
