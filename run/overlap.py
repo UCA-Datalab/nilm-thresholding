@@ -21,6 +21,15 @@ def main(
 
     WARNING: config files should be generated first with
     `python nilmth/generate_config_files.py`
+
+    Parameters
+    ----------
+    path_configs : str, optional
+        Path to the folder with config files, by default "./configs"
+    path_data : str, optional
+        Path to the processed data, by default "./data-prep"
+    path_out : str, optional
+        Path where the csv is stored, by default "overlap.csv"
     """
     path_configs = Path(path_configs)
     # Initialize the list that will contain the overlaps for each configuration
