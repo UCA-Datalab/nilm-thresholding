@@ -18,6 +18,9 @@ def main(
     a csv with one row per configuration, stating the percentage of overlapping
     ON activations across the whole dataset, for that specific threshold
     configuration
+
+    WARNING: config files should be generated first with
+    `python nilmth/generate_config_files.py`
     """
     path_configs = Path(path_configs)
     # Initialize the list that will contain the overlaps for each configuration
