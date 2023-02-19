@@ -142,3 +142,4 @@ dmypy.json
 *.pth
 /configs/
 /threshold.toml
+/.vscode
