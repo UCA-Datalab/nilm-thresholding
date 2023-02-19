@@ -1,12 +1,7 @@
-# Shut Future Warnings
-import warnings
-
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
 import typer
 
-from nilmth.utils.model import test_many_models
 from nilmth.utils.config import load_config
+from nilmth.utils.model import test_many_models
 
 
 def main(

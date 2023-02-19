@@ -1,9 +1,9 @@
-import toml
 import os
+
+import toml
 import typer
 
 from nilmth.utils.config import load_config
-
 
 LIST_METHODS = ["mp", "vs", "at"]
 LIST_MODELS = ["ConvModel", "GRUModel"]
