@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -7,9 +8,15 @@ import typer
 from nilmth.data.dataloader import DataLoader
 from nilmth.utils.config import load_config
 
+LIST_CONFIGS = [
+    "./configs/ConvModel_mp_classw_1.toml",
+    "./configs/ConvModel_vs_classw_1.toml",
+    "./configs/ConvModel_at_classw_1.toml",
+]
+
 
 def main(
-    path_configs: str = "./configs",
+    path_configs: Optional[str] = None,
     path_data: str = "./data-prep",
     path_out: str = "overlap.csv",
 ):
@@ -25,24 +32,30 @@ def main(
     Parameters
     ----------
     path_configs : str, optional
-        Path to the folder with config files, by default "./configs"
+        Path to the folder with config files, by default None
     path_data : str, optional
         Path to the processed data, by default "./data-prep"
     path_out : str, optional
         Path where the csv is stored, by default "overlap.csv"
     """
-    path_configs = Path(path_configs)
+    if path_configs is None:
+        list_configs = [Path(s) for s in LIST_CONFIGS]
+    else:
+        path_configs = Path(path_configs)
+        list_configs = list(path_configs.iterdir())
     # Initialize the list that will contain the overlaps for each configuration
     list_counts = []
 
     # Loop over all possible configurations
-    for path_config in path_configs.iterdir():
-        name = path_config.stem  # Name of the configuration
+    for path_config in list_configs:
         config = load_config(path_config, "model")
         # Loop over both subsets
         for subset in ["train", "test"]:
             loader = DataLoader(
-                path_data, subset=subset, path_threshold=path_config, **config
+                path_data,
+                subset=subset,
+                path_threshold="threshold_overlap.toml",
+                **config
             )
 
             ser = np.stack(
@@ -52,15 +65,17 @@ def main(
                 ]
             )
             status, count = np.unique(ser.sum(axis=0), return_counts=True)
-            list_counts.append(
-                pd.Series(
-                    100 * count / count.sum(), index=status, name=f"{name}_{subset}"
-                )
+            dic = {"threshold": config["threshold"]["method"], "subset": subset}
+            dic.update(dict(zip(status.astype(str), 100 * count / count.sum())))
+            dic.update(
+                dict(zip(loader.appliances, 100 * ser.sum(axis=1) / count.sum()))
             )
+            list_counts.append(pd.DataFrame(dic, index=[0]))
+            del loader
 
         # Update the csv every iteration
-        df = pd.DataFrame(list_counts)
-        df.to_csv(path_out)
+        df = pd.concat(list_counts)
+        df.to_csv(path_out, index=False)
 
 
 if __name__ == "__main__":

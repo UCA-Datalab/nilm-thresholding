@@ -5,6 +5,7 @@ import pandas as pd
 import typer
 
 from nilmth.data.dataloader import DataLoader
+from nilmth.data.temporal import generate_temporal_data, remove_directory
 from nilmth.generate_config_files import LIST_MODELS
 from nilmth.utils.config import load_config
 from nilmth.utils.model import initialize_model
@@ -38,21 +39,35 @@ def main(
     list_df: List[pd.DataFrame] = []
     # Loop over the appliance combinations and models
     for app in list_combinations:
-        for model in LIST_MODELS:
+        for name in LIST_MODELS:
             # Update the configuration with these
-            config.update({"name": model, "appliances": list(app)})
+            config.update({"name": name, "appliances": list(app)})
             # Load dataloader
             dataloader_train = DataLoader(
-                path_data, subset="train", shuffle=True, **config
+                path_data,
+                subset="train",
+                shuffle=True,
+                path_threshold=path_config,
+                **config
             )
             dataloader_validation = DataLoader(
-                path_data, subset="validation", shuffle=True, **config
+                path_data,
+                subset="validation",
+                shuffle=True,
+                path_threshold=path_config,
+                **config
             )
+
+            generate_temporal_data(dataloader_train, path="temp_train")
+            generate_temporal_data(dataloader_validation, path="temp_valid")
             # Initialize and train the model
             model = initialize_model(config)
             time_elapsed = model.train(dataloader_train, dataloader_validation)
+
+            remove_directory("temp_train")
+            remove_directory("temp_valid")
             # Store results in the list of dataframes
-            df = pd.DataFrame({"appliances": app, "model": model, "time": time_elapsed})
+            df = pd.DataFrame({"appliances": app, "model": name, "time": time_elapsed})
             list_df.append(df)
             # Concatenate the list and output the list after every iteration
             df = pd.concat(list_df)
