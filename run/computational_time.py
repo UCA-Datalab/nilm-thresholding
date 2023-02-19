@@ -10,10 +10,11 @@ from nilmth.data.temporal import generate_temporal_data, remove_directory
 from nilmth.generate_config_files import LIST_MODELS
 from nilmth.utils.config import load_config
 from nilmth.utils.model import initialize_model
+from nilmth.utils.scores import score_dict_predictions
 
 
 def main(
-    epochs: int = 20,
+    epochs: int = 300,
     path_config: str = "./nilmth/config.toml",
     path_data: str = "./data-prep",
     path_out: str = "computational_time.csv",
@@ -61,6 +62,14 @@ def main(
                 path_threshold=path_threshold,
                 **config
             )
+            # Load dataloader
+            dataloader_test = DataLoader(
+                path_data,
+                subset="test",
+                shuffle=False,
+                path_threshold=path_threshold,
+                **config
+            )
 
             generate_temporal_data(dataloader_train, path="temp_train")
             generate_temporal_data(dataloader_validation, path="temp_valid")
@@ -68,25 +77,30 @@ def main(
             model = initialize_model(config)
             time_elapsed = model.train(dataloader_train, dataloader_validation)
 
+            # Score the model
+            dict_pred = model.predictions_to_dictionary(dataloader_test)
+            dict_scores = score_dict_predictions(dict_pred)["regression"]
+            dict_scores = dict([(k, v["mae"]) for k, v in dict_scores.items()])
+
+            # Remove the temporal directories and threshold
             remove_directory("temp_train")
             remove_directory("temp_valid")
+            os.remove(path_threshold)
+
             # Store results in the list of dataframes
-            df = pd.DataFrame(
-                {
-                    "appliances": "+".join(app),
-                    "amount": len(app),
-                    "model": name,
-                    "time": time_elapsed,
-                },
-                index=[0],
-            )
+            dict_df = {
+                "appliances": "+".join(app),
+                "amount": len(app),
+                "model": name,
+                "time": time_elapsed,
+            }
+            dict_df.update(dict_scores)
+            df = pd.DataFrame(dict_df, index=[0])
             list_df.append(df)
+
             # Concatenate the list and output the list after every iteration
             df = pd.concat(list_df)
             df.to_csv(path_out, index=False)
-
-            # Remove threshold
-            os.remove(path_threshold)
 
 
 if __name__ == "__main__":
