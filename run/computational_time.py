@@ -1,3 +1,4 @@
+import os
 from itertools import combinations
 from typing import List, Tuple
 
@@ -12,6 +13,7 @@ from nilmth.utils.model import initialize_model
 
 
 def main(
+    epochs: int = 10,
     path_config: str = "./nilmth/config.toml",
     path_data: str = "./data-prep",
     path_out: str = "computational_time.csv",
@@ -37,24 +39,26 @@ def main(
         list_combinations += list(combinations(list_appliances, n))
     # Initialize the list of dataframes
     list_df: List[pd.DataFrame] = []
+    # Temporal threshold file
+    path_threshold = "threshold_comp.toml"
     # Loop over the appliance combinations and models
-    for app in list_combinations:
-        for name in LIST_MODELS:
+    for name in LIST_MODELS:
+        for app in list_combinations:
             # Update the configuration with these
-            config.update({"name": name, "appliances": list(app)})
+            config.update({"name": name, "appliances": list(app), "epochs": epochs})
             # Load dataloader
             dataloader_train = DataLoader(
                 path_data,
                 subset="train",
                 shuffle=True,
-                path_threshold=path_config,
+                path_threshold=path_threshold,
                 **config
             )
             dataloader_validation = DataLoader(
                 path_data,
                 subset="validation",
                 shuffle=True,
-                path_threshold=path_config,
+                path_threshold=path_threshold,
                 **config
             )
 
@@ -72,6 +76,9 @@ def main(
             # Concatenate the list and output the list after every iteration
             df = pd.concat(list_df)
             df.to_csv(path_out, index=False)
+
+            # Remove threshold
+            os.remove(path_threshold)
 
 
 if __name__ == "__main__":

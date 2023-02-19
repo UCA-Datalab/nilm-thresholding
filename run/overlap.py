@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -45,17 +46,15 @@ def main(
         list_configs = list(path_configs.iterdir())
     # Initialize the list that will contain the overlaps for each configuration
     list_counts = []
-
+    # Temporal threshold file
+    path_threshold = "threshold_overlap.toml"
     # Loop over all possible configurations
     for path_config in list_configs:
         config = load_config(path_config, "model")
         # Loop over both subsets
         for subset in ["train", "test"]:
             loader = DataLoader(
-                path_data,
-                subset=subset,
-                path_threshold="threshold_overlap.toml",
-                **config
+                path_data, subset=subset, path_threshold=path_threshold, **config
             )
 
             ser = np.stack(
@@ -76,6 +75,9 @@ def main(
         # Update the csv every iteration
         df = pd.concat(list_counts)
         df.to_csv(path_out, index=False)
+
+    # Remove threshold
+    os.remove(path_threshold)
 
 
 if __name__ == "__main__":
