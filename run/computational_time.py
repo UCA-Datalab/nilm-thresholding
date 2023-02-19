@@ -29,13 +29,17 @@ def main(
         Path where the csv is stored, by default "computational_time.csv"
     """
     config = load_config(path_config, "model")
+    # List all possible combination of appliances
     list_appliances = config["appliances"]
     list_combinations: List[Tuple[str]] = []
     for n in range(1, len(list_appliances) + 1):
         list_combinations += list(combinations(list_appliances, n))
+    # Initialize the list of dataframes
     list_df: List[pd.DataFrame] = []
+    # Loop over the appliance combinations and models
     for app in list_combinations:
         for model in LIST_MODELS:
+            # Update the configuration with these
             config.update({"name": model, "appliances": list(app)})
             # Load dataloader
             dataloader_train = DataLoader(
@@ -44,13 +48,15 @@ def main(
             dataloader_validation = DataLoader(
                 path_data, subset="validation", shuffle=True, **config
             )
+            # Initialize and train the model
             model = initialize_model(config)
-            # Train
             time_elapsed = model.train(dataloader_train, dataloader_validation)
+            # Store results in the list of dataframes
             df = pd.DataFrame({"appliances": app, "model": model, "time": time_elapsed})
             list_df.append(df)
+            # Concatenate the list and output the list after every iteration
             df = pd.concat(list_df)
-            df.to_csv(path_out)
+            df.to_csv(path_out, index=False)
 
 
 if __name__ == "__main__":
