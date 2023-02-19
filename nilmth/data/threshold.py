@@ -4,7 +4,7 @@ import numpy as np
 from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 
-from nilmth.utils.config import load_config, store_config, ConfigError
+from nilmth.utils.config import ConfigError, load_config, store_config
 from nilmth.utils.format_list import to_list
 from nilmth.utils.string import APPLIANCE_NAMES, homogenize_string
 
@@ -27,7 +27,7 @@ class Threshold:
         num_status: int = 2,
     ):
         # Set thresholding method parameters
-        self.appliances = ["App"] if appliances is None else sorted(to_list(appliances))
+        self.appliances = ["App"] if appliances is None else to_list(appliances)
         self.num_apps = len(self.appliances)
         self.method = method
         self.num_status = num_status
