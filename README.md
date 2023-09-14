@@ -8,10 +8,11 @@
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
 -->
+![Project Status](https://img.shields.io/badge/Status-Not%20Maintained-red.svg)
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
+<!-- [![Issues][issues-shield]][issues-url] -->
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
 <!-- PROJECT LOGO -->
@@ -24,6 +25,7 @@
   <h3 align="center">NILM: classification VS regression</h3>
 </p>
 
+:warning: **Notice:** This project is no longer actively maintained. Feel free to use the existing code, but please note that there won't be further updates or bug fixes.
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
